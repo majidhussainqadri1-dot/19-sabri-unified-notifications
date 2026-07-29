@@ -1,0 +1,17 @@
+صابری یونیفائیڈ نوٹیفکیشنز — اصلاحی ورژن 1.1.0
+
+1) Hostinger Staging کا مکمل Backup لیں۔
+2) اصلاحی ZIP صرف Staging پر نصب کریں۔
+3) Dashboard > Notifications > System Check کھولیں۔
+4) Complete Repair دبائیں۔ یہ کسی غیر متعلق Notifications صفحے کا مواد حذف یا تبدیل نہیں کرے گا۔
+5) Database Version، Notifications Page، Cron اور REST diagnostics جانچیں۔
+6) Test Notification بھیجیں۔
+7) SMTP، SMS اور Push صرف منظور شدہ HTTPS public endpoints کے ساتھ configure کریں۔
+8) File 20 میں صرف ایک Notification Bell رکھیں؛ floating bell بطور default بند ہے۔
+9) Privacy Export/Erasure، Archive/Restore، mobile/keyboard اور rollback tests مکمل کریں۔
+10) RELEASE-CHECKLIST.md مکمل ہوئے بغیر Production پر deploy نہ کریں۔
+
+Page Shortcode: [sabri_notifications]
+Bell Shortcode: [sabri_notification_bell]
+Public Health: /wp-json/sabri-notifications/v1/health
+Admin Diagnostics: /wp-json/sabri-notifications/v1/health/details

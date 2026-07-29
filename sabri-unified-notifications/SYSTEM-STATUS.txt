@@ -1,0 +1,26 @@
+SABRI UNIFIED NOTIFICATIONS & ALERTS 1.1.0 — CORRECTIVE CANDIDATE
+
+Implemented corrections:
+- Encrypted device tokens and provider secrets
+- Device-token ownership protection
+- HTTPS/public-network webhook validation and no redirects
+- Non-destructive page ownership and repair
+- Automatic schema upgrades and legacy migration
+- Atomic queue leases and per-device push delivery records
+- Privacy-aware external previews
+- Archive, restore, history, and category counts
+- Private no-cache/noindex headers
+- Administrator-only detailed health diagnostics
+- WordPress privacy export/erasure
+- Expanded audit events
+- Approved-comment notifications only
+- Digest global email control
+- File 20 single-bell compatibility
+- Accessibility, RTL, touch-target, reduced-motion, and Sabri Orange corrections
+
+Current state:
+- Local PHP syntax: PASS
+- Local JavaScript syntax: PASS
+- Static corrective audit: PASS
+- Hostinger staging install/upgrade/provider/rollback acceptance: PENDING
+- Production release: NOT YET APPROVED

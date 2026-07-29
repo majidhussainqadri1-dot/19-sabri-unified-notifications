@@ -1,0 +1,28 @@
+name: File 19 Quality
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - "fix/**"
+      - "baseline/**"
+
+permissions:
+  contents: read
+
+jobs:
+  static-audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.3"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Run static audit
+        run: |
+          bash tests/static-audit.sh
+          php tests/unit-lite.php
