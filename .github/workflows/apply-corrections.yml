@@ -4,6 +4,10 @@ on:
   push:
     branches:
       - fix/file-19-security-privacy-release
+  pull_request:
+    branches:
+      - main
+    types: [opened, synchronize, reopened]
 
 permissions:
   contents: write
