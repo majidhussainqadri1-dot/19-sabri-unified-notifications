@@ -1,1 +1,3 @@
-Copyright (c) 2026 Sabri Homeopathy. All rights reserved. Private institutional software.
+Copyright (c) 2026 Sabri Homeopathy. All rights reserved.
+
+This source is published in this repository for controlled institutional development, review, backup, and deployment. Repository visibility does not grant permission to copy, redistribute, sublicense, sell, or create derivative commercial products except with prior written authorization from Sabri Homeopathy.

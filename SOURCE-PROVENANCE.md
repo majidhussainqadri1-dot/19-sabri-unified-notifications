@@ -1,24 +1,19 @@
 # Source Provenance — File 19
 
-## Original package
+## Immutable original baseline
 
-- Archive: `19 sabri-unified-notifications-1.0.0.zip`
-- Plugin: `Sabri Unified Notifications & Alerts`
-- Version: `1.0.0`
-- Plugin directory: `sabri-unified-notifications/`
+- Original archive: `19 sabri-unified-notifications-1.0.0.zip`
+- Original archive SHA-256: `510cbc0ba8bf5b98b656d63bf473940d90d2f5c171cc65d4abdbb178da2550c5`
 - Original source files: `18`
-- Archive SHA-256: `510cbc0ba8bf5b98b656d63bf473940d90d2f5c171cc65d4abdbb178da2550c5`
+- Preservation branch: `baseline/file-19-original-import`
+- Baseline pull request: `#1`
 
-## Import method
+The baseline branch remains the unmodified evidentiary import of the supplied package.
 
-The source tree in this branch was extracted from the original ZIP and imported without intentional source-code modification. Repository governance files such as this provenance record, `MANIFEST.md`, `STATUS.md`, and `CHECKSUMS.sha256` are repository metadata and were not part of the original WordPress package.
+## Corrective development line
 
-The GitHub connector used for this import writes UTF-8 repository files and does not directly commit the local binary ZIP archive. Therefore, the repository preserves the complete extracted source tree and records the original archive checksum, but the binary ZIP itself is not included in this baseline commit.
+- Branch: `fix/file-19-security-privacy-release`
+- Corrective version: `1.1.0`
+- Basis: the complete security, privacy, reliability, integration, accessibility, and release-readiness review recorded on PR #1.
 
-## Baseline branch
-
-`baseline/file-19-original-import`
-
-## Control rule
-
-This branch is a preservation baseline. Any audit corrections, security fixes, migrations, or release changes must be made in a separate branch and must not rewrite this original-import history.
+The corrective branch intentionally changes source code and adds governance/tests. It does not rewrite or replace the original baseline history.

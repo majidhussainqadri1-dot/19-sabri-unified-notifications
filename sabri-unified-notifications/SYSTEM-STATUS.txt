@@ -1,35 +1,26 @@
-SABRI UNIFIED NOTIFICATIONS & ALERTS 1.0.0
+SABRI UNIFIED NOTIFICATIONS & ALERTS 1.1.0 — CORRECTIVE CANDIDATE
 
-Included:
-- Central notification database
-- Responsive notification centre
-- Floating and shortcode bell
-- Unread counters
-- Categories and priority levels
-- Mark read, mark all read, archive and history
-- Real-time-style polling updates without page refresh
-- Browser alerts while the site/browser permits them
-- User notification preferences
-- Quiet hours and Do Not Disturb
-- Email channel through WordPress mail
-- Optional SMS webhook
-- Optional external/mobile push webhook
-- Delivery queue, retries and failure log
-- Daily and weekly email digest jobs
-- Device token registration REST API
-- WordPress comment and security event integrations
-- Marketplace and Network notification-table synchronisation
-- Admin dashboard, settings, delivery log and system check
-- Complete Repair and test notification
-- REST health endpoint
-- Safe Mode route
+Implemented corrections:
+- Encrypted device tokens and provider secrets
+- Device-token ownership protection
+- HTTPS/public-network webhook validation and no redirects
+- Non-destructive page ownership and repair
+- Automatic schema upgrades and legacy migration
+- Atomic queue leases and per-device push delivery records
+- Privacy-aware external previews
+- Archive, restore, history, and category counts
+- Private no-cache/noindex headers
+- Administrator-only detailed health diagnostics
+- WordPress privacy export/erasure
+- Expanded audit events
+- Approved-comment notifications only
+- Digest global email control
+- File 20 single-bell compatibility
+- Accessibility, RTL, touch-target, reduced-motion, and Sabri Orange corrections
 
-External configuration still required for:
-- Reliable transactional email (recommended SMTP provider)
-- SMS provider account and webhook
-- Mobile/background push provider and app/service-worker integration
-
-REST health:
-/wp-json/sabri-notifications/v1/health
-Safe Mode:
-/?sun_notifications_app=1
+Current state:
+- Local PHP syntax: PASS
+- Local JavaScript syntax: PASS
+- Static corrective audit: PASS
+- Hostinger staging install/upgrade/provider/rollback acceptance: PENDING
+- Production release: NOT YET APPROVED

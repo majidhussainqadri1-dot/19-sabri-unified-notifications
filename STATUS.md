@@ -1,32 +1,35 @@
 # File 19 Status
 
-## Current repository state
+## Current state
 
-**Baseline source import completed.**
+**Corrective source implementation completed on a separate branch.**
 
-- Original source files imported: **18/18**
-- Baseline branch: `baseline/file-19-original-import`
-- Package version: `1.0.0`
-- Original ZIP integrity: recorded by SHA-256
-- Source provenance: documented
-- Source manifest: documented
-- Individual source checksums: documented
+- Original baseline: preserved and unchanged
+- Corrective branch: `fix/file-19-security-privacy-release`
+- Corrective version: `1.1.0`
+- PHP syntax: PASS
+- JavaScript syntax: PASS
+- Static regression audit: PASS
+- Unit-lite encryption/privacy/link checks: PASS
 
-## What this status proves
+## Corrected areas
 
-This repository contains the complete extracted source tree from the supplied File 19 ZIP package.
+- push-token ownership and encrypted token storage;
+- encrypted/masked provider secrets with controlled key rotation support;
+- webhook SSRF restrictions;
+- non-destructive page repair;
+- database migration runner;
+- atomic queue leases and per-device push records;
+- privacy-aware external previews;
+- archive/history/restore and category counts;
+- privacy export/erasure and private cache/index controls;
+- administrator-only detailed diagnostics;
+- approved-comment notifications;
+- digest control, audit coverage, File 20 bell compatibility;
+- accessibility, RTL, touch targets, reduced motion, and approved branding.
 
-## What this status does not prove
+## Remaining acceptance gate
 
-The baseline import alone does not establish production readiness. The following remain separate acceptance stages:
+This branch is a **corrective release candidate, not a production-approved release**. Hostinger staging must still pass fresh install, upgrade from 1.0.0, real database migration, overlapping cron, SMTP/SMS/push provider, Marketplace/Network/File 20 integration, responsive/accessibility, backup, rollback, and post-install acceptance tests.
 
-- PHP syntax and coding-standard audit
-- Security and privacy review
-- WordPress fresh-install test
-- Upgrade and database-migration test
-- Integration tests with Membership Core, Network, Marketplace, and Unified Application Shell
-- SMTP, SMS, browser, and push-provider configuration tests
-- Responsive and accessibility acceptance
-- Backup, rollback, staging, and live-deployment acceptance
-
-Under the project change-control rule, any defect found during review must be corrected and retested before File 19 advances to release acceptance.
+The branch must remain unmerged until those tests pass and every discovered regression is corrected and retested.

@@ -1,28 +1,17 @@
-صابری یونیفائیڈ نوٹیفکیشنز — تنصیب
-ورژن 1.0.0
+صابری یونیفائیڈ نوٹیفکیشنز — اصلاحی ورژن 1.1.0
 
-1) UpdraftPlus یا Hostinger سے مکمل Backup لیں۔
-2) WordPress Dashboard > Plugins > Add Plugin > Upload Plugin کھولیں۔
-3) sabri-unified-notifications-1.0.0.zip اپلوڈ کریں۔
-4) Install Now اور پھر Activate Plugin دبائیں۔
-5) Dashboard کے بائیں مینو میں Notifications > System Check کھولیں۔
-6) Complete Repair دبائیں۔
-7) Notifications Page، Database Tables، REST API اور Cron کے سامنے Ready دیکھیں۔
-8) Send Test Notification دبائیں۔
-9) ویب سائٹ پر Notifications Page اور Bell کھول کر ٹیسٹ کریں۔
-10) LiteSpeed اور Hostinger Cache صاف کریں۔
+1) Hostinger Staging کا مکمل Backup لیں۔
+2) اصلاحی ZIP صرف Staging پر نصب کریں۔
+3) Dashboard > Notifications > System Check کھولیں۔
+4) Complete Repair دبائیں۔ یہ کسی غیر متعلق Notifications صفحے کا مواد حذف یا تبدیل نہیں کرے گا۔
+5) Database Version، Notifications Page، Cron اور REST diagnostics جانچیں۔
+6) Test Notification بھیجیں۔
+7) SMTP، SMS اور Push صرف منظور شدہ HTTPS public endpoints کے ساتھ configure کریں۔
+8) File 20 میں صرف ایک Notification Bell رکھیں؛ floating bell بطور default بند ہے۔
+9) Privacy Export/Erasure، Archive/Restore، mobile/keyboard اور rollback tests مکمل کریں۔
+10) RELEASE-CHECKLIST.md مکمل ہوئے بغیر Production پر deploy نہ کریں۔
 
-خودکار Page:
-/notifications/
-Shortcode:
-[sabri_notifications]
-
-Bell Shortcode:
-[sabri_notification_bell]
-
-اہم حقیقت:
-- In-App نظام فوراً کام کرسکتا ہے۔
-- Email کی کامیابی WordPress mail/SMTP configuration پر منحصر ہے۔
-- SMS کے لیے SMS provider webhook درکار ہے۔
-- External/Mobile Push کے لیے Push provider webhook یا مستقبل کی Mobile App integration درکار ہے۔
-- Secret Keys عام Page، Chat یا Screenshot میں ظاہر نہ کریں۔
+Page Shortcode: [sabri_notifications]
+Bell Shortcode: [sabri_notification_bell]
+Public Health: /wp-json/sabri-notifications/v1/health
+Admin Diagnostics: /wp-json/sabri-notifications/v1/health/details

@@ -3,7 +3,8 @@ defined('ABSPATH') || exit;
 
 final class SUN_Integrations {
     public static function init(): void {
-        add_action('wp_insert_comment', [self::class, 'comment_created'], 10, 2);
+        add_action('comment_post', [self::class, 'comment_posted'], 10, 3);
+        add_action('transition_comment_status', [self::class, 'comment_status_changed'], 10, 3);
         add_action('wp_login', [self::class, 'login_alert'], 20, 2);
         add_action('after_password_reset', [self::class, 'password_changed'], 10, 2);
         add_action('profile_update', [self::class, 'profile_updated'], 10, 3);
@@ -114,8 +115,18 @@ final class SUN_Integrations {
         ));
     }
 
-    public static function comment_created(int $comment_id, WP_Comment $comment): void {
-        if ((string) $comment->comment_approved === 'spam') return;
+    public static function comment_posted(int $comment_id, int|string $approved, array $commentdata): void {
+        if ((string) $approved !== '1') return;
+        $comment = get_comment($comment_id);
+        if ($comment instanceof WP_Comment) self::notify_approved_comment($comment_id, $comment);
+    }
+
+    public static function comment_status_changed(string $new_status, string $old_status, WP_Comment $comment): void {
+        if ($new_status !== 'approved' || $old_status === 'approved') return;
+        self::notify_approved_comment((int) $comment->comment_ID, $comment);
+    }
+
+    private static function notify_approved_comment(int $comment_id, WP_Comment $comment): void {
         $post = get_post((int) $comment->comment_post_ID);
         if (!$post instanceof WP_Post || (int) $post->post_author <= 0 || (int) $post->post_author === (int) $comment->user_id) return;
         $commenter = $comment->user_id ? get_userdata((int) $comment->user_id) : null;
@@ -126,8 +137,11 @@ final class SUN_Integrations {
             'category' => 'social',
             'type' => 'comment',
             'priority' => 'normal',
+            'sensitivity' => 'private',
             'title' => $name . ' commented on your post',
             'body' => wp_trim_words(wp_strip_all_tags((string) $comment->comment_content), 22),
+            'external_title' => 'New comment',
+            'external_body' => 'Sign in to view the approved comment on your post.',
             'link' => get_comment_link($comment),
             'entity_type' => 'comment',
             'entity_id' => $comment_id,
