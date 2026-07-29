@@ -37,7 +37,7 @@ jobs:
           unzip -o file19-corrective-tree.reassembled.zip -d .
           rm -rf bootstrap-parts
           rm -f file19-corrective-tree.reassembled.zip file19-corrective-tree.zip
-          rm -f CORRECTION-TRIGGER.md CORRECTION-WORK-IN-PROGRESS.md
+          rm -f CORRECTION-TRIGGER.md CORRECTION-WORK-IN-PROGRESS.md BOOTSTRAP-TRIGGER.md
           rm -f .github/workflows/apply-corrections.yml
           chmod +x tests/static-audit.sh
 
