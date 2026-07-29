@@ -22,20 +22,23 @@ jobs:
           ref: fix/file-19-security-privacy-release
           fetch-depth: 0
 
-      - name: Verify corrective bundle
+      - name: Reassemble and verify corrective bundle
         shell: bash
         run: |
           set -euo pipefail
-          test -f file19-corrective-tree.zip
-          echo "2217f3585e9bd61cd9501a158b49f4fb1677364e2d2705851e6f6f400af952d6  file19-corrective-tree.zip" | sha256sum --check --strict
-          unzip -t file19-corrective-tree.zip
+          cat bootstrap-parts/part-* > file19-corrective-tree.reassembled.zip
+          echo "2217f3585e9bd61cd9501a158b49f4fb1677364e2d2705851e6f6f400af952d6  file19-corrective-tree.reassembled.zip" | sha256sum --check --strict
+          unzip -t file19-corrective-tree.reassembled.zip
 
       - name: Apply corrected repository tree
         shell: bash
         run: |
           set -euo pipefail
-          unzip -o file19-corrective-tree.zip -d .
-          rm -f file19-corrective-tree.zip .github/workflows/apply-corrections.yml
+          unzip -o file19-corrective-tree.reassembled.zip -d .
+          rm -rf bootstrap-parts
+          rm -f file19-corrective-tree.reassembled.zip file19-corrective-tree.zip
+          rm -f CORRECTION-TRIGGER.md CORRECTION-WORK-IN-PROGRESS.md
+          rm -f .github/workflows/apply-corrections.yml
           chmod +x tests/static-audit.sh
 
       - name: Run corrective quality gates
