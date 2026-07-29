@@ -1,0 +1,35 @@
+SABRI UNIFIED NOTIFICATIONS & ALERTS 1.0.0
+
+Included:
+- Central notification database
+- Responsive notification centre
+- Floating and shortcode bell
+- Unread counters
+- Categories and priority levels
+- Mark read, mark all read, archive and history
+- Real-time-style polling updates without page refresh
+- Browser alerts while the site/browser permits them
+- User notification preferences
+- Quiet hours and Do Not Disturb
+- Email channel through WordPress mail
+- Optional SMS webhook
+- Optional external/mobile push webhook
+- Delivery queue, retries and failure log
+- Daily and weekly email digest jobs
+- Device token registration REST API
+- WordPress comment and security event integrations
+- Marketplace and Network notification-table synchronisation
+- Admin dashboard, settings, delivery log and system check
+- Complete Repair and test notification
+- REST health endpoint
+- Safe Mode route
+
+External configuration still required for:
+- Reliable transactional email (recommended SMTP provider)
+- SMS provider account and webhook
+- Mobile/background push provider and app/service-worker integration
+
+REST health:
+/wp-json/sabri-notifications/v1/health
+Safe Mode:
+/?sun_notifications_app=1
