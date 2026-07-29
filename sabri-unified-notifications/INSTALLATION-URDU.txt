@@ -1,0 +1,28 @@
+صابری یونیفائیڈ نوٹیفکیشنز — تنصیب
+ورژن 1.0.0
+
+1) UpdraftPlus یا Hostinger سے مکمل Backup لیں۔
+2) WordPress Dashboard > Plugins > Add Plugin > Upload Plugin کھولیں۔
+3) sabri-unified-notifications-1.0.0.zip اپلوڈ کریں۔
+4) Install Now اور پھر Activate Plugin دبائیں۔
+5) Dashboard کے بائیں مینو میں Notifications > System Check کھولیں۔
+6) Complete Repair دبائیں۔
+7) Notifications Page، Database Tables، REST API اور Cron کے سامنے Ready دیکھیں۔
+8) Send Test Notification دبائیں۔
+9) ویب سائٹ پر Notifications Page اور Bell کھول کر ٹیسٹ کریں۔
+10) LiteSpeed اور Hostinger Cache صاف کریں۔
+
+خودکار Page:
+/notifications/
+Shortcode:
+[sabri_notifications]
+
+Bell Shortcode:
+[sabri_notification_bell]
+
+اہم حقیقت:
+- In-App نظام فوراً کام کرسکتا ہے۔
+- Email کی کامیابی WordPress mail/SMTP configuration پر منحصر ہے۔
+- SMS کے لیے SMS provider webhook درکار ہے۔
+- External/Mobile Push کے لیے Push provider webhook یا مستقبل کی Mobile App integration درکار ہے۔
+- Secret Keys عام Page، Chat یا Screenshot میں ظاہر نہ کریں۔
