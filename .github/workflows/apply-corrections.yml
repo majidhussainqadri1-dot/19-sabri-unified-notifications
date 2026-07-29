@@ -10,7 +10,6 @@ permissions:
 
 jobs:
   apply:
-    if: ${{ hashFiles('file19-corrective-tree.zip') != '' }}
     runs-on: ubuntu-latest
     steps:
       - name: Check out corrective branch
@@ -23,6 +22,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          test -f file19-corrective-tree.zip
           echo "2217f3585e9bd61cd9501a158b49f4fb1677364e2d2705851e6f6f400af952d6  file19-corrective-tree.zip" | sha256sum --check --strict
           unzip -t file19-corrective-tree.zip
 
