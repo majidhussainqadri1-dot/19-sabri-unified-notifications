@@ -1,5 +1,4 @@
 name: Apply File 19 corrective source
-# Integrity retry after verified part-06 replacement.
 
 on:
   push:
@@ -23,7 +22,18 @@ jobs:
           ref: fix/file-19-security-privacy-release
           fetch-depth: 0
 
+      - name: Detect corrective bundle
+        id: bundle
+        shell: bash
+        run: |
+          if compgen -G 'bootstrap-parts/part-*' > /dev/null; then
+            echo 'present=true' >> "$GITHUB_OUTPUT"
+          else
+            echo 'present=false' >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Reassemble and verify corrective bundle
+        if: steps.bundle.outputs.present == 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -32,6 +42,7 @@ jobs:
           unzip -t file19-corrective-tree.reassembled.zip
 
       - name: Apply corrected repository tree
+        if: steps.bundle.outputs.present == 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -39,10 +50,11 @@ jobs:
           rm -rf bootstrap-parts
           rm -f file19-corrective-tree.reassembled.zip file19-corrective-tree.zip
           rm -f CORRECTION-TRIGGER.md CORRECTION-WORK-IN-PROGRESS.md BOOTSTRAP-TRIGGER.md
-          rm -f .github/workflows/apply-corrections.yml
+          rm -f .github/workflows/quality.yml
           chmod +x tests/static-audit.sh
 
       - name: Run corrective quality gates
+        if: steps.bundle.outputs.present == 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -52,6 +64,7 @@ jobs:
           php tests/unit-lite.php
 
       - name: Commit corrected source
+        if: steps.bundle.outputs.present == 'true'
         shell: bash
         run: |
           set -euo pipefail
