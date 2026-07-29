@@ -1,4 +1,5 @@
 name: Apply File 19 corrective source
+# Integrity retry after verified part-06 replacement.
 
 on:
   push:
