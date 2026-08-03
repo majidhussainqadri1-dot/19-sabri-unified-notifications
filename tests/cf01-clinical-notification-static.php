@@ -7,6 +7,7 @@ $main = (string) file_get_contents($root . '/sabri-unified-notifications/sabri-u
 $provider = (string) file_get_contents($root . '/sabri-unified-notifications/includes/class-sun-cf01-clinical-notifications.php');
 $core = (string) file_get_contents($root . '/sabri-unified-notifications/includes/class-sun-core.php');
 $channels = (string) file_get_contents($root . '/sabri-unified-notifications/includes/class-sun-channels.php');
+$db = (string) file_get_contents($root . '/sabri-unified-notifications/includes/class-sun-db.php');
 $utils = (string) file_get_contents($root . '/sabri-unified-notifications/includes/class-sun-utils.php');
 
 $checks = 0;
@@ -50,7 +51,7 @@ cf01_static_check(str_contains($core, 'if(!$mandatory&&empty($prefs[\'categories
 cf01_static_check(str_contains($core, 'if(!empty($prefs[\'do_not_disturb\'])&&!$mandatory)$channels=[]'), 'non-mandatory clinical notifications honor do-not-disturb');
 cf01_static_check(str_contains($core, 'if(self::is_quiet_now($prefs)&&!$mandatory)'), 'non-mandatory clinical notifications honor quiet hours');
 cf01_static_check(str_contains($channels, "status='retry'") && str_contains($channels, 'waiting_config'), 'provider outage and retry states remain explicit');
-cf01_static_check(str_contains($channels, 'notification_channel_device'), 'channel/device delivery deduplication remains database-backed');
+cf01_static_check(str_contains($db, 'UNIQUE KEY notification_channel_device (notification_id,channel,device_id)'), 'channel/device delivery deduplication remains database-backed');
 cf01_static_check(str_contains($utils, "'clinical'=>['Private clinical update'"), 'legacy generic clinical preview fallback remains protected');
 cf01_static_check(str_contains($provider, "'Cache-Control', 'private, no-store"), 'destination response is private and no-store');
 cf01_static_check(str_contains($provider, "'X-Robots-Tag', 'noindex, nofollow, noarchive, nosnippet'"), 'destination response is non-indexable');
