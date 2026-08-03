@@ -228,6 +228,15 @@ final class SUN_CF01_Clinical_Notifications {
             return self::error('sun_cf01_recipient_unavailable', 'The clinical notification recipient is unavailable.', 404);
         }
 
+        $preferences = SUN_Core::get_preferences($user_id);
+        if (!$template_mandatory && empty($preferences['categories'][(string) $template['category']])) {
+            return new WP_Error(
+                'sun_cf01_notification_suppressed',
+                'The recipient has disabled this routine notification category.',
+                ['status' => 202, 'suppressed' => true, 'retryable' => false]
+            );
+        }
+
         $priority = self::priority($urgency, $template_mandatory);
         $stable_dedupe = hash(
             'sha256',
@@ -392,10 +401,13 @@ final class SUN_CF01_Clinical_Notifications {
         if ($value === '') {
             return gmdate('Y-m-d H:i:s', $now + self::DEFAULT_TTL);
         }
-        if (strlen($value) > 40 || preg_match('/^\d{4}-\d{2}-\d{2}[T ][0-2]\d:[0-5]\d:[0-5]\d(?:Z| ?UTC)?$/', trim($value)) !== 1) {
+        $value = trim($value);
+        if (strlen($value) > 40
+            || preg_match('/^\d{4}-\d{2}-\d{2}(?:T(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\dZ| (?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d UTC)$/', $value) !== 1) {
             return '';
         }
-        $timestamp = strtotime($value);
+        $normalized = str_ends_with($value, 'Z') ? substr($value, 0, -1) . ' UTC' : $value;
+        $timestamp = strtotime($normalized);
         if ($timestamp === false || $timestamp < $now + self::MIN_TTL || $timestamp > $now + self::MAX_TTL) {
             return '';
         }
