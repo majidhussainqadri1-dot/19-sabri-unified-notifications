@@ -8,6 +8,7 @@ mapfile -t php_files < <(find . -name '*.php' -type f -print | LC_ALL=C sort)
 test "${#php_files[@]}" -ge 14
 for file in "${php_files[@]}"; do php -l "$file" >/dev/null; done
 node --check assets/js/sun.js
+bash -n "$repo_root/tools/package.sh"
 
 grep -q "Version: 1.1.1" sabri-unified-notifications.php
 grep -q "define('SUN_VERSION', '1.1.1')" sabri-unified-notifications.php
@@ -38,5 +39,6 @@ test -f CF01-CLINICAL-NOTIFICATION-CONTRACT.md
 cd "$repo_root"
 php tests/cf01-clinical-notification-static.php
 php tests/cf01-clinical-notification-runtime.php
+php tests/cf01-clinical-notification-fresh-review.php
 
 echo "Static audit passed (${#php_files[@]} plugin PHP files)."
