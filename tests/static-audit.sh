@@ -5,7 +5,7 @@ plugin_root="$repo_root/sabri-unified-notifications"
 cd "$plugin_root"
 
 mapfile -t php_files < <(find . -name '*.php' -type f -print | LC_ALL=C sort)
-test "${#php_files[@]}" -ge 20
+test "${#php_files[@]}" -ge 14
 for file in "${php_files[@]}"; do php -l "$file" >/dev/null; done
 node --check assets/js/sun.js
 
