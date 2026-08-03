@@ -7,22 +7,107 @@ on:
       - main
       - "fix/**"
       - "baseline/**"
+      - "codex/**"
 
 permissions:
   contents: read
 
 jobs:
-  static-audit:
-    runs-on: ubuntu-latest
+  quality:
+    name: PHP ${{ matrix.php }} quality and CF-01 contracts
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.0', '8.3']
     steps:
-      - uses: actions/checkout@v4
-      - uses: shivammathur/setup-php@v2
+      - name: Checkout exact immutable head
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
         with:
-          php-version: "8.3"
-      - uses: actions/setup-node@v4
+          persist-credentials: false
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - name: Set up PHP
+        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240
         with:
-          node-version: "22"
-      - name: Run static audit
+          php-version: ${{ matrix.php }}
+          coverage: none
+          tools: none
+      - name: Set up Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22'
+      - name: Run inherited and CF-01 quality gates
         run: |
+          set -euo pipefail
           bash tests/static-audit.sh
           php tests/unit-lite.php
+          git diff --check
+
+  deterministic-package:
+    name: Deterministic File 19 1.1.1 package
+    needs: quality
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Checkout exact immutable head
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          persist-credentials: false
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - name: Set up PHP
+        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240
+        with:
+          php-version: '8.3'
+          coverage: none
+          tools: none
+      - name: Set up Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22'
+      - name: Install package dependencies
+        run: sudo apt-get update && sudo apt-get install -y rsync zip
+      - name: Build twice and verify exact package provenance
+        run: |
+          set -euo pipefail
+          BASE='19-sabri-unified-notifications-1.1.1'
+          rm -rf build
+          bash tools/package.sh >/tmp/file19-package-first.log
+          for suffix in zip zip.sha256 manifest.sha256; do
+            test -f "build/${BASE}.${suffix}"
+          done
+          first_hash="$(sha256sum "build/${BASE}.zip" | cut -d' ' -f1)"
+          cp "build/${BASE}.zip" /tmp/file19-package-first.zip
+          cp "build/${BASE}.zip.sha256" /tmp/file19-package-first.zip.sha256
+          cp "build/${BASE}.manifest.sha256" /tmp/file19-package-first.manifest.sha256
+
+          rm -rf build
+          bash tools/package.sh >/tmp/file19-package-second.log
+          second_hash="$(sha256sum "build/${BASE}.zip" | cut -d' ' -f1)"
+          test "$first_hash" = "$second_hash"
+          cmp -s /tmp/file19-package-first.zip "build/${BASE}.zip"
+          cmp -s /tmp/file19-package-first.zip.sha256 "build/${BASE}.zip.sha256"
+          cmp -s /tmp/file19-package-first.manifest.sha256 "build/${BASE}.manifest.sha256"
+          (
+            cd build
+            sha256sum -c "${BASE}.zip.sha256" >/dev/null
+          )
+          VERIFY="$(mktemp -d)"
+          unzip -q "build/${BASE}.zip" -d "$VERIFY"
+          cmp -s "build/${BASE}.manifest.sha256" "$VERIFY/sabri-unified-notifications/MANIFEST.sha256"
+          (
+            cd "$VERIFY"
+            sha256sum -c sabri-unified-notifications/MANIFEST.sha256 >/dev/null
+          )
+          rm -rf "$VERIFY" /tmp/file19-package-first.zip /tmp/file19-package-first.zip.sha256 /tmp/file19-package-first.manifest.sha256 /tmp/file19-package-first.log /tmp/file19-package-second.log
+          echo "Deterministic package SHA-256: $first_hash"
+      - name: Upload governed File 19 candidate
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: file-19-unified-notifications-1.1.1-${{ github.event.pull_request.head.sha || github.sha }}
+          path: |
+            build/19-sabri-unified-notifications-1.1.1.zip
+            build/19-sabri-unified-notifications-1.1.1.zip.sha256
+            build/19-sabri-unified-notifications-1.1.1.manifest.sha256
+          if-no-files-found: error
+          retention-days: 14

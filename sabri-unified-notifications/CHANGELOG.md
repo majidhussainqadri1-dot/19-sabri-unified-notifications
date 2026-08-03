@@ -1,5 +1,19 @@
 # Changelog
 
+## 1.1.1 — CF-01 privacy-minimal clinical notification contract candidate
+
+- Added versioned `sun.cf01.notification-request` contract `1.0.0`.
+- Added a strict producer helper that rejects arbitrary title/body, unknown fields, nested values, direct URLs and bearer-like references.
+- Added File 19-owned fixed generic in-app templates and invariant external preview text.
+- Added opaque recipient UUID resolution and fail-closed producer authorization adapters.
+- Added hashed deduplication identity without storing a clinical object identifier.
+- Added routine preference, mute, do-not-disturb and quiet-hours inheritance.
+- Limited mandatory delivery to fixed critical access-security templates.
+- Added authenticated, recipient-bound, same-origin, non-bearer destination resolution with native CF-01 action-time authorization.
+- Added explicit non-authority law: delivery/read/archive status cannot mutate or authorize clinical state.
+- Added static and runtime/adversarial contract suites and PHP 8.0/8.3 CI coverage.
+- No patient table, clinical content, real-data route, migration, staging or production authorization is included.
+
 ## 1.1.0 — Corrective security, privacy, reliability, and integration release
 
 - Prevented push-token ownership transfer between user accounts.
