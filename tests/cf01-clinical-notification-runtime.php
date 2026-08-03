@@ -74,6 +74,8 @@ final class SUN_Core {
     public static array $created = [];
     public static array $dedupe = [];
     public static string $mode = 'normal';
+    public static array $preferences = ['categories' => ['appointments' => true, 'security' => true]];
+    public static function get_preferences(int $user_id): array { return self::$preferences; }
     public static function create(array $args): int {
         self::$created[] = $args;
         if (self::$mode !== 'normal') return 0;
@@ -160,6 +162,15 @@ $GLOBALS['cf01_filters']['sun_cf01_resolve_recipient_platform_uuid'] = static fu
     return $uuid === 'f47ac10b-58cc-4372-a567-0e02b2c3d479' ? 42 : 0;
 };
 
+$bare_time = SUN_CF01_Clinical_Notifications::request(valid_request([
+    'expires_at' => gmdate('Y-m-d H:i:s', time() + 86400),
+]));
+runtime_check(error_code($bare_time) === 'sun_cf01_expiry_invalid', 'bare server-local expiry is rejected');
+$invalid_hour = SUN_CF01_Clinical_Notifications::request(valid_request([
+    'expires_at' => gmdate('Y-m-d', time() + 86400) . 'T29:00:00Z',
+]));
+runtime_check(error_code($invalid_hour) === 'sun_cf01_expiry_invalid', 'invalid UTC hour is rejected');
+
 $result = SUN_CF01_Clinical_Notifications::request(valid_request());
 runtime_check($result === 101, 'authorized privacy-minimal notification is created');
 $created = SUN_Core::$created[count(SUN_Core::$created) - 1];
@@ -177,9 +188,16 @@ $replay = SUN_CF01_Clinical_Notifications::request(valid_request());
 runtime_check($replay === 101, 'idempotent replay returns the same notification identity');
 runtime_check(count(SUN_Core::$dedupe) === 1, 'idempotent replay creates no second dedupe identity');
 
-SUN_Core::$mode = 'preference_suppressed';
+SUN_Core::$preferences['categories']['appointments'] = false;
+$created_before_suppression = count(SUN_Core::$created);
 $suppressed = SUN_CF01_Clinical_Notifications::request(valid_request(['dedupe_key' => 'dedupe.suppressed123']));
-runtime_check(error_code($suppressed) === 'sun_cf01_notification_not_created', 'routine opt-out or quiet-hour suppression is not falsely reported as delivered');
+runtime_check(error_code($suppressed) === 'sun_cf01_notification_suppressed', 'routine category opt-out returns an explicit suppressed outcome');
+runtime_check(($suppressed instanceof WP_Error) && (($suppressed->get_error_data()['retryable'] ?? true) === false), 'preference suppression is explicitly non-retryable');
+runtime_check(count(SUN_Core::$created) === $created_before_suppression, 'suppressed notification never reaches the delivery core');
+SUN_Core::$preferences['categories']['appointments'] = true;
+SUN_Core::$mode = 'database_failure';
+$failed = SUN_CF01_Clinical_Notifications::request(valid_request(['dedupe_key' => 'dedupe.databasefail123']));
+runtime_check(error_code($failed) === 'sun_cf01_notification_not_created', 'database failure remains distinct from preference suppression');
 SUN_Core::$mode = 'normal';
 
 $mandatory = SUN_CF01_Clinical_Notifications::request(valid_request([
@@ -231,6 +249,18 @@ $GLOBALS['cf01_filters']['sun_cf01_clinical_destination_resolve'] = static funct
 };
 $resolution = SUN_CF01_Clinical_Notifications::resolve_destination(new WP_REST_Request(['id' => 101]));
 runtime_check(error_code($resolution) === 'sun_cf01_destination_unavailable', 'bearer-like query parameter is rejected');
+
+$GLOBALS['cf01_filters']['sun_cf01_clinical_destination_resolve'] = static function (): array {
+    return ['authorized' => true, 'contains_bearer_authorization' => false, 'url' => 'https://example.com/clinical/private?next%5Bauthorization_token%5D=secret'];
+};
+$resolution = SUN_CF01_Clinical_Notifications::resolve_destination(new WP_REST_Request(['id' => 101]));
+runtime_check(error_code($resolution) === 'sun_cf01_destination_unavailable', 'encoded nested bearer key is rejected');
+
+$GLOBALS['cf01_filters']['sun_cf01_clinical_destination_resolve'] = static function (): array {
+    return ['authorized' => true, 'contains_bearer_authorization' => false, 'url' => 'https://example.com/clinical/private?next=aaaaaaaaaa.bbbbbbbbbb.cccccccccc'];
+};
+$resolution = SUN_CF01_Clinical_Notifications::resolve_destination(new WP_REST_Request(['id' => 101]));
+runtime_check(error_code($resolution) === 'sun_cf01_destination_unavailable', 'JWT-like query value is rejected');
 
 $GLOBALS['cf01_filters']['sun_cf01_clinical_destination_resolve'] = static function ($default, string $reference, int $user_id): array {
     return [
