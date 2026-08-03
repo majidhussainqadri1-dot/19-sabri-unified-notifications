@@ -46,18 +46,18 @@ cf01_static_check(str_contains($provider, "'link' => SUN_Utils::page_url()"), 'e
 cf01_static_check(str_contains($provider, "'source' => 'cf01'") && str_contains($provider, "'source_id' => 0"), 'notification is namespaced without exposing a clinical object ID');
 cf01_static_check(str_contains($provider, "'entity_type' => ''") && str_contains($provider, "'entity_id' => 0"), 'no clinical entity identity is stored in generic entity columns');
 cf01_static_check(str_contains($provider, "'security_required'") && str_contains($provider, "'access_security'"), 'mandatory delivery is restricted to access-security templates');
-cf01_static_check(str_contains($core, "if(!$mandatory&&empty($prefs['categories'][$category]))return 0"), 'non-mandatory clinical notifications honor category opt-out');
-cf01_static_check(str_contains($core, "if(!empty($prefs['do_not_disturb'])&&!$mandatory)$channels=[]"), 'non-mandatory clinical notifications honor do-not-disturb');
-cf01_static_check(str_contains($core, "if(self::is_quiet_now($prefs)&&!$mandatory)"), 'non-mandatory clinical notifications honor quiet hours');
+cf01_static_check(str_contains($core, 'if(!$mandatory&&empty($prefs[\'categories\'][$category]))return 0'), 'non-mandatory clinical notifications honor category opt-out');
+cf01_static_check(str_contains($core, 'if(!empty($prefs[\'do_not_disturb\'])&&!$mandatory)$channels=[]'), 'non-mandatory clinical notifications honor do-not-disturb');
+cf01_static_check(str_contains($core, 'if(self::is_quiet_now($prefs)&&!$mandatory)'), 'non-mandatory clinical notifications honor quiet hours');
 cf01_static_check(str_contains($channels, "status='retry'") && str_contains($channels, 'waiting_config'), 'provider outage and retry states remain explicit');
 cf01_static_check(str_contains($channels, 'notification_channel_device'), 'channel/device delivery deduplication remains database-backed');
 cf01_static_check(str_contains($utils, "'clinical'=>['Private clinical update'"), 'legacy generic clinical preview fallback remains protected');
 cf01_static_check(str_contains($provider, "'Cache-Control', 'private, no-store"), 'destination response is private and no-store');
 cf01_static_check(str_contains($provider, "'X-Robots-Tag', 'noindex, nofollow, noarchive, nosnippet'"), 'destination response is non-indexable');
-cf01_static_check(str_contains($provider, "isset($parts['user'])") && str_contains($provider, "isset($parts['pass'])"), 'same-origin resolver rejects URL user information');
+cf01_static_check(str_contains($provider, "isset(\$parts['user'])") && str_contains($provider, "isset(\$parts['pass'])"), 'same-origin resolver rejects URL user information');
 cf01_static_check(str_contains($provider, "'bearer_authorization' => false"), 'destination response carries no bearer authorization');
-cf01_static_check(!preg_match('/patient_name|diagnosis|symptoms|remedy|potency|dosage|clinical_note|attachment_name|guardian_detail|break_glass_reason|signed_url\s*=>/i', implode("\n", [
-    substr($provider, strpos($provider, "SUN_Core::create([") ?: 0, 2600),
-])), 'created notification payload contains no prohibited clinical fields');
+$create_offset = strpos($provider, 'SUN_Core::create([');
+$create_payload = $create_offset === false ? '' : substr($provider, $create_offset, 2600);
+cf01_static_check(!preg_match('/patient_name|diagnosis|symptoms|remedy|potency|dosage|clinical_note|attachment_name|guardian_detail|break_glass_reason|signed_url\s*=>/i', $create_payload), 'created notification payload contains no prohibited clinical fields');
 
 echo "File 19 CF-01 static contracts: $checks PASS, 0 FAIL\n";
