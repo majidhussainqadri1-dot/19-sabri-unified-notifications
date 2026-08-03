@@ -21,7 +21,7 @@ function cf01_fresh_check(bool $condition, string $message): void {
 
 cf01_fresh_check(str_contains($provider, "'sun_cf01_notification_suppressed'"), 'routine category suppression has an explicit outcome');
 cf01_fresh_check(str_contains($provider, "'retryable' => false"), 'preference suppression is explicitly non-retryable');
-cf01_fresh_check(str_contains($provider, "str_ends_with($value, 'Z')") && str_contains($provider, " . ' UTC'"), 'expiry normalization requires explicit UTC semantics');
+cf01_fresh_check(str_contains($provider, 'str_ends_with($value, \'Z\')') && str_contains($provider, " . ' UTC'"), 'expiry normalization requires explicit UTC semantics');
 cf01_fresh_check(str_contains($provider, '(?:[01]\\d|2[0-3])'), 'expiry grammar rejects hours outside 00 through 23');
 cf01_fresh_check(str_contains($provider, 'parse_str($query, $query_values)'), 'destination query keys are decoded before inspection');
 cf01_fresh_check(str_contains($provider, 'authorization|auth|bearer|signature|signed|secret|password|session'), 'compound bearer and credential key families are rejected');
