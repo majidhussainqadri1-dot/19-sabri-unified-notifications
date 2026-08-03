@@ -431,8 +431,27 @@ final class SUN_CF01_Clinical_Notifications {
             return false;
         }
         $query = (string) ($parts['query'] ?? '');
-        if ($query !== '' && preg_match('/(?:^|&)(?:token|auth|authorization|signature|sig|key|secret|password|session)=/i', $query)) {
-            return false;
+        if ($query !== '') {
+            parse_str($query, $query_values);
+            $stack = [is_array($query_values) ? $query_values : []];
+            while ($stack !== []) {
+                $values = array_pop($stack);
+                foreach ($values as $key => $value) {
+                    $key = strtolower((string) $key);
+                    if (preg_match('/(?:token|authorization|auth|bearer|signature|signed|secret|password|session|api[_-]?key|access[_-]?key)/i', $key)) {
+                        return false;
+                    }
+                    if (is_array($value)) {
+                        $stack[] = $value;
+                        continue;
+                    }
+                    $value = (string) $value;
+                    if (stripos($value, 'bearer ') !== false
+                        || preg_match('/^[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}$/', $value)) {
+                        return false;
+                    }
+                }
+            }
         }
         return true;
     }
