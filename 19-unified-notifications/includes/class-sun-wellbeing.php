@@ -10,7 +10,6 @@ final class SUN_Wellbeing {
 		$unread=(int)$wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM {$notes} WHERE recipient_id=%d AND created_at>=%s AND status='unread'",$user_id,$since));
 		$archived=(int)$wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM {$notes} WHERE recipient_id=%d AND created_at>=%s AND status='archived'",$user_id,$since));
 		$failed=(int)$wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM {$deliv} WHERE recipient_id=%d AND created_at>=%s AND status IN ('failed','dead_letter','bounced')",$user_id,$since));
-		$disabled=(int)$wpdb->get_var($wpdb->get_var? '': '');
 		$disabled=(int)$wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM {$prefs} WHERE user_id=%d AND enabled=0",$user_id));
 		$disabled_subscriptions=(int)$wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM {$subs} WHERE user_id=%d AND enabled=0",$user_id));
 		$avg_unread_age=(float)$wpdb->get_var($wpdb->prepare("SELECT COALESCE(AVG(TIMESTAMPDIFF(SECOND,created_at,%s))/3600,0) FROM {$notes} WHERE recipient_id=%d AND created_at>=%s AND status='unread'",SUN_Database::now(),$user_id,$since));
