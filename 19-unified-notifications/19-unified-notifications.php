@@ -23,7 +23,6 @@ define( 'SUN_URL', plugin_dir_url( __FILE__ ) );
 define( 'SUN_BASENAME', plugin_basename( __FILE__ ) );
 define( 'SUN_TEXT_DOMAIN', 'sabri-unified-notifications' );
 define( 'SUN_REST_NAMESPACE', 'sabri-notifications/v1' );
-
 define( 'SUN_MIN_WP_VERSION', '7.0' );
 define( 'SUN_MIN_PHP_VERSION', '8.3' );
 
@@ -32,6 +31,7 @@ require_once SUN_PATH . 'includes/class-sun-crypto.php';
 require_once SUN_PATH . 'includes/class-sun-audit.php';
 require_once SUN_PATH . 'includes/class-sun-four-plan-compliance.php';
 require_once SUN_PATH . 'includes/class-sun-operational-gate.php';
+require_once SUN_PATH . 'includes/class-sun-provider-circuit.php';
 require_once SUN_PATH . 'includes/class-sun-auth.php';
 require_once SUN_PATH . 'includes/class-sun-producer-registry.php';
 require_once SUN_PATH . 'includes/class-sun-event-validator.php';
