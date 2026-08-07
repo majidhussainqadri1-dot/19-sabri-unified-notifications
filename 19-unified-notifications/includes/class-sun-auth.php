@@ -19,35 +19,42 @@ final class SUN_Auth {
 		$user_id = absint( $user_id );
 		$user    = get_userdata( $user_id );
 		$base    = array(
-			'contract'        => 'sun.identity.v2',
-			'user_id'         => $user_id,
-			'owner_available' => false,
-			'active'          => false,
-			'verified'        => false,
-			'suspended'       => true,
-			'revoked'         => false,
-			'risk_blocked'    => false,
-			'guardian_ok'     => false,
-			'consent_ok'      => false,
-			'locale'          => $user ? get_user_locale( $user_id ) : 'en_US',
-			'timezone'        => '',
+			'contract'          => 'sun.identity.v2',
+			'user_id'           => $user_id,
+			'owner_available'   => false,
+			'active'            => false,
+			'verified'          => false,
+			'email_verified'    => false,
+			'phone_verified'    => false,
+			'suspended'         => true,
+			'revoked'           => false,
+			'risk_blocked'      => false,
+			'guardian_ok'       => false,
+			'consent_ok'        => false,
+			'founder'           => false,
+			'institutional_role'=> '',
+			'locale'            => $user ? get_user_locale( $user_id ) : 'en_US',
+			'timezone'          => '',
 		);
 
 		/*
-		 * Canonical File 00 contract. File 00 should return a compact current-state
-		 * claim array. Null means the owner is unavailable and protected actions
-		 * fail closed instead of silently trusting duplicate user-meta.
+		 * Canonical File 00 contract. Null means the owner is unavailable and
+		 * protected actions fail closed instead of trusting duplicate user-meta.
 		 */
 		$claims = apply_filters( 'sabri_membership_claims_v2', null, $user_id );
 		if ( is_array( $claims ) ) {
-			$base['owner_available'] = true;
-			$base['active']          = ! empty( $claims['active'] );
-			$base['verified']        = ! empty( $claims['verified'] ) || ! empty( $claims['identity_verified'] );
-			$base['suspended']       = ! empty( $claims['suspended'] );
-			$base['revoked']         = ! empty( $claims['revoked'] );
-			$base['risk_blocked']    = ! empty( $claims['risk_blocked'] ) || ( isset( $claims['risk_state'] ) && in_array( $claims['risk_state'], array( 'blocked', 'denied' ), true ) );
-			$base['guardian_ok']     = array_key_exists( 'guardian_ok', $claims ) ? (bool) $claims['guardian_ok'] : empty( $claims['guardian_required'] );
-			$base['consent_ok']      = array_key_exists( 'consent_ok', $claims ) ? (bool) $claims['consent_ok'] : true;
+			$base['owner_available']    = true;
+			$base['active']             = ! empty( $claims['active'] );
+			$base['verified']           = ! empty( $claims['verified'] ) || ! empty( $claims['identity_verified'] );
+			$base['email_verified']     = ! empty( $claims['email_verified'] );
+			$base['phone_verified']     = ! empty( $claims['phone_verified'] );
+			$base['suspended']          = ! empty( $claims['suspended'] );
+			$base['revoked']            = ! empty( $claims['revoked'] );
+			$base['risk_blocked']       = ! empty( $claims['risk_blocked'] ) || ( isset( $claims['risk_state'] ) && in_array( sanitize_key( (string) $claims['risk_state'] ), array( 'blocked', 'denied' ), true ) );
+			$base['guardian_ok']        = array_key_exists( 'guardian_ok', $claims ) ? (bool) $claims['guardian_ok'] : empty( $claims['guardian_required'] );
+			$base['consent_ok']         = array_key_exists( 'consent_ok', $claims ) ? (bool) $claims['consent_ok'] : true;
+			$base['founder']            = ! empty( $claims['founder'] );
+			$base['institutional_role'] = isset( $claims['institutional_role'] ) ? sanitize_key( (string) $claims['institutional_role'] ) : '';
 			if ( ! empty( $claims['locale'] ) ) {
 				$base['locale'] = sanitize_locale_name( (string) $claims['locale'] );
 			}
@@ -100,11 +107,18 @@ final class SUN_Auth {
 
 	/** @param int $user_id User ID. @return bool */
 	public function is_founder( $user_id ) {
-		$user_id = absint( $user_id );
-		$claims  = $this->assertions( $user_id );
-		$from_owner = ! empty( $claims['owner_available'] ) && ( ! empty( $claims['founder'] ) || ( isset( $claims['institutional_role'] ) && 'founder' === sanitize_key( (string) $claims['institutional_role'] ) ) );
+		$user_id    = absint( $user_id );
+		$claims     = $this->assertions( $user_id );
+		$from_owner = ! empty( $claims['owner_available'] ) && ( ! empty( $claims['founder'] ) || 'founder' === (string) $claims['institutional_role'] );
+
+		/*
+		 * A configured numeric ID is only an emergency/bootstrap compatibility
+		 * aid when an explicit host filter enables it. It cannot silently outrank
+		 * the canonical File 00 institutional claim.
+		 */
 		$configured = defined( 'SUN_FOUNDER_USER_ID' ) ? absint( SUN_FOUNDER_USER_ID ) : 0;
-		$bootstrap  = $configured > 0 && $configured === $user_id;
+		$bootstrap  = $configured > 0 && $configured === $user_id && (bool) apply_filters( 'sun_allow_founder_bootstrap', false, $user_id, $claims );
+
 		return (bool) apply_filters( 'sun_is_founder', $from_owner || $bootstrap, $user_id, $claims );
 	}
 }
