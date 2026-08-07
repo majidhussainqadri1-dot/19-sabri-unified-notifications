@@ -33,7 +33,26 @@ final class SUN_Privacy {
 		$rows = $wpdb->get_results( $wpdb->prepare( 'SELECT public_id,category,priority,title,summary,status,created_at,read_at,archived_at FROM ' . SUN_Database::table( 'notifications' ) . ' WHERE recipient_id=%d ORDER BY id ASC LIMIT %d OFFSET %d', $user->ID, $limit, $offset ), ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
 		$data = array();
 		foreach ( $rows as $row ) {
-			$data[] = array( 'group_id'=>'sabri-notifications', 'group_label'=>__( 'Notifications', 'sabri-unified-notifications' ), 'item_id'=>'notification-' . $row['public_id'], 'data'=>array_map( static function( $key, $value ){ return array( 'name'=>ucwords( str_replace( '_',' ',$key ) ), 'value'=>(string) $value ); }, array_keys( $row ), array_values( $row ) ) );
+			$data[] = $this->export_item( 'sabri-notifications', __( 'Notifications', 'sabri-unified-notifications' ), 'notification-' . $row['public_id'], $row );
+		}
+
+		/*
+		 * Preference/device/delivery metadata is exported once on page 1. Tokens,
+		 * encrypted payloads, provider message IDs and error bodies are excluded.
+		 */
+		if ( 1 === max( 1, absint( $page ) ) ) {
+			$prefs = $wpdb->get_results( $wpdb->prepare( 'SELECT category,channel,enabled,digest_frequency,quiet_enabled,quiet_start,quiet_end,timezone,consent_source,consent_at,created_at,updated_at FROM ' . SUN_Database::table( 'preferences' ) . ' WHERE user_id=%d ORDER BY id ASC', $user->ID ), ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+			foreach ( $prefs as $index => $pref ) {
+				$data[] = $this->export_item( 'sabri-notification-preferences', __( 'Notification Preferences', 'sabri-unified-notifications' ), 'preference-' . ( $index + 1 ), $pref );
+			}
+			$devices = $wpdb->get_results( $wpdb->prepare( 'SELECT public_id,provider,platform,status,last_seen_at,expires_at,created_at,updated_at FROM ' . SUN_Database::table( 'devices' ) . ' WHERE user_id=%d ORDER BY id ASC', $user->ID ), ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+			foreach ( $devices as $device ) {
+				$data[] = $this->export_item( 'sabri-notification-devices', __( 'Notification Devices', 'sabri-unified-notifications' ), 'device-' . $device['public_id'], $device );
+			}
+			$deliveries = $wpdb->get_results( $wpdb->prepare( 'SELECT public_id,channel,provider,status,attempt_count,scheduled_at,accepted_at,delivered_at,created_at,updated_at FROM ' . SUN_Database::table( 'deliveries' ) . ' WHERE recipient_id=%d ORDER BY id ASC LIMIT 500', $user->ID ), ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+			foreach ( $deliveries as $delivery ) {
+				$data[] = $this->export_item( 'sabri-notification-deliveries', __( 'Notification Delivery History', 'sabri-unified-notifications' ), 'delivery-' . $delivery['public_id'], $delivery );
+			}
 		}
 		return array( 'data'=>$data, 'done'=>count( $rows ) < $limit );
 	}
@@ -45,13 +64,36 @@ final class SUN_Privacy {
 		if ( ! $user ) { return array( 'items_removed'=>false,'items_retained'=>false,'messages'=>array(),'done'=>true ); }
 		$hold = (bool) apply_filters( 'sun_user_retention_hold', false, $user->ID );
 		if ( $hold ) { return array( 'items_removed'=>false,'items_retained'=>true,'messages'=>array( __( 'Some notification records are under an approved retention hold.', 'sabri-unified-notifications' ) ),'done'=>true ); }
-		$notes = SUN_Database::table( 'notifications' );
-		$devices = SUN_Database::table( 'devices' );
-		$prefs = SUN_Database::table( 'preferences' );
-		$wpdb->query( $wpdb->prepare( "UPDATE {$notes} SET status='deleted',title='',summary='',data_ciphertext=NULL,deep_link=NULL,updated_at=%s WHERE recipient_id=%d", SUN_Database::now(), $user->ID ) ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery
+		$notes      = SUN_Database::table( 'notifications' );
+		$devices    = SUN_Database::table( 'devices' );
+		$prefs      = SUN_Database::table( 'preferences' );
+		$deliveries = SUN_Database::table( 'deliveries' );
+		$now        = SUN_Database::now();
+
+		/* Keep only non-identifying operational referential integrity. */
+		$wpdb->query( $wpdb->prepare( "UPDATE {$notes} SET recipient_id=0,status='deleted',title='',summary='',data_ciphertext=NULL,deep_link=NULL,deep_link_context=NULL,read_at=NULL,archived_at=NULL,updated_at=%s WHERE recipient_id=%d", $now, $user->ID ) ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery
+		$wpdb->query( $wpdb->prepare( "UPDATE {$deliveries} SET recipient_id=0,provider_message_id=NULL,last_error_code=NULL,last_error_safe=NULL,updated_at=%s WHERE recipient_id=%d", $now, $user->ID ) ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery
 		$wpdb->delete( $devices, array( 'user_id'=>$user->ID ), array( '%d' ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
 		$wpdb->delete( $prefs, array( 'user_id'=>$user->ID ), array( '%d' ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
-		SUN_Audit::record( 'privacy_erasure_completed', 'user', (string) $user->ID, array( 'purpose'=>'privacy_request' ), 0 );
+
+		/* Provider adapters may consume this without exposing provider secrets here. */
+		do_action( 'sun_privacy_provider_erasure_requested', (int) $user->ID, $email );
+		SUN_Audit::record( 'privacy_erasure_completed', 'user', hash( 'sha256', 'erased:' . $user->ID ), array( 'purpose'=>'privacy_request' ), 0 );
 		return array( 'items_removed'=>true,'items_retained'=>false,'messages'=>array(),'done'=>true );
+	}
+
+	/**
+	 * @param string              $group_id Group ID.
+	 * @param string              $group_label Group label.
+	 * @param string              $item_id Item ID.
+	 * @param array<string,mixed> $row Row.
+	 * @return array<string,mixed>
+	 */
+	private function export_item( $group_id, $group_label, $item_id, array $row ) {
+		$data = array();
+		foreach ( $row as $key => $value ) {
+			$data[] = array( 'name'=>ucwords( str_replace( '_',' ',$key ) ), 'value'=>(string) $value );
+		}
+		return array( 'group_id'=>$group_id, 'group_label'=>$group_label, 'item_id'=>$item_id, 'data'=>$data );
 	}
 }
