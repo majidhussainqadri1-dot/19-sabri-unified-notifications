@@ -29,10 +29,11 @@ require_once SUN_PATH . 'includes/class-sun-crypto.php';
 require_once SUN_PATH . 'includes/class-sun-audit.php';
 require_once SUN_PATH . 'includes/class-sun-auth.php';
 require_once SUN_PATH . 'includes/class-sun-producer-registry.php';
+require_once SUN_PATH . 'includes/class-sun-four-plan-compliance.php';
+require_once SUN_PATH . 'includes/class-sun-subscriptions.php';
 require_once SUN_PATH . 'includes/class-sun-event-validator.php';
 require_once SUN_PATH . 'includes/class-sun-template-engine.php';
 require_once SUN_PATH . 'includes/class-sun-preferences.php';
-require_once SUN_PATH . 'includes/class-sun-four-plan-compliance.php';
 require_once SUN_PATH . 'includes/class-sun-policy-engine.php';
 require_once SUN_PATH . 'includes/class-sun-deep-link.php';
 require_once SUN_PATH . 'includes/adapters/interface-sun-delivery-adapter.php';
@@ -43,6 +44,7 @@ require_once SUN_PATH . 'includes/class-sun-delivery-service.php';
 require_once SUN_PATH . 'includes/class-sun-notification-service.php';
 require_once SUN_PATH . 'includes/class-sun-bulk-service.php';
 require_once SUN_PATH . 'includes/class-sun-reconciliation.php';
+require_once SUN_PATH . 'includes/class-sun-value-metrics.php';
 require_once SUN_PATH . 'includes/class-sun-health.php';
 require_once SUN_PATH . 'includes/class-sun-rest-controller.php';
 require_once SUN_PATH . 'includes/class-sun-renderer.php';
@@ -54,6 +56,7 @@ require_once SUN_PATH . 'includes/class-sun-plugin.php';
 require_once SUN_PATH . 'includes/functions.php';
 
 register_activation_hook( __FILE__, array( 'SUN_Activator', 'activate' ) );
+register_activation_hook( __FILE__, array( 'SUN_Subscriptions', 'install_schema' ) );
 register_deactivation_hook( __FILE__, array( 'SUN_Activator', 'deactivate' ) );
 
 /**
