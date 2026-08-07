@@ -4,20 +4,21 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 PLUGIN="$ROOT/19-unified-notifications"
 BUILD="$ROOT/build"
 STAGE="$BUILD/stage"
-NAME="19-sabri-unified-notifications-2.1.0.zip"
+NAME="19-sabri-unified-notifications-2.2.0.zip"
+CANONICAL="unified-notifications-19"
 
 rm -rf "$STAGE" "$BUILD/$NAME" "$BUILD/$NAME.sha256"
 mkdir -p "$STAGE"
-cp -a "$PLUGIN" "$STAGE/19-unified-notifications"
+cp -a "$PLUGIN" "$STAGE/$CANONICAL"
 
 (
   cd "$STAGE"
-  find 19-unified-notifications -type f ! -name MANIFEST.sha256 -print0 \
+  find "$CANONICAL" -type f ! -name MANIFEST.sha256 -print0 \
     | LC_ALL=C sort -z \
-    | xargs -0 sha256sum > 19-unified-notifications/MANIFEST.sha256
+    | xargs -0 sha256sum > "$CANONICAL/MANIFEST.sha256"
 )
 
-python3 - "$STAGE/19-unified-notifications" "$BUILD/$NAME" <<'PY'
+python3 - "$STAGE/$CANONICAL" "$BUILD/$NAME" <<'PY'
 from __future__ import annotations
 
 import stat
@@ -59,7 +60,7 @@ PY
 
 sha256sum "$BUILD/$NAME" > "$BUILD/$NAME.sha256"
 unzip -t "$BUILD/$NAME" >/dev/null
-[[ "$(unzip -Z1 "$BUILD/$NAME" | head -n1)" == "19-unified-notifications/" ]] || {
+[[ "$(unzip -Z1 "$BUILD/$NAME" | head -n1)" == "$CANONICAL/" ]] || {
   echo "invalid top-level folder" >&2
   exit 1
 }
