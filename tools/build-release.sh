@@ -4,7 +4,7 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 PLUGIN="$ROOT/19-unified-notifications"
 BUILD="$ROOT/build"
 STAGE="$BUILD/stage"
-NAME="19-sabri-unified-notifications-2.0.0.zip"
+NAME="19-sabri-unified-notifications-2.1.0.zip"
 
 rm -rf "$STAGE" "$BUILD/$NAME" "$BUILD/$NAME.sha256"
 mkdir -p "$STAGE"
