@@ -82,6 +82,11 @@ final class SUN_Notification_Service {
 				if ( is_wp_error( $decision ) ) {
 					throw new RuntimeException( $decision->get_error_code() );
 				}
+				if ( ! empty( $decision['suppressed'] ) ) {
+					++$suppressed;
+					do_action( 'sun_notification_suppressed', $event, $recipient, $decision );
+					continue;
+				}
 				$result = $this->create_notification( $event, $recipient, $decision );
 				if ( is_wp_error( $result ) ) {
 					if ( 'sun_notification_duplicate' === $result->get_error_code() ) {
@@ -89,6 +94,7 @@ final class SUN_Notification_Service {
 					}
 					throw new RuntimeException( $result->get_error_code() );
 				}
+				$this->policy->mark_notification_created( $decision );
 				++$created;
 			}
 			$wpdb->update( $events, array( 'status' => 'processed', 'updated_at' => SUN_Database::now() ), array( 'producer' => $event['producer'], 'event_id' => $event['event_id'] ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
