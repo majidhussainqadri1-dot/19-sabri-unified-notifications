@@ -8,7 +8,7 @@ wp_clear_scheduled_hook( 'sun_process_bulk_jobs' );
 delete_transient( 'sun_delivery_queue_lock' );
 if ( ! defined( 'SUN_ALLOW_DESTRUCTIVE_UNINSTALL' ) || true !== SUN_ALLOW_DESTRUCTIVE_UNINSTALL ) { return; }
 global $wpdb;
-foreach ( array( 'bulk_jobs','audit','dead_letters','devices','policies','templates','deliveries','preferences','notifications','events' ) as $logical ) {
+foreach ( array( 'bulk_jobs','audit','dead_letters','devices','policies','templates','deliveries','subscriptions','preferences','notifications','events' ) as $logical ) {
 	$table = $wpdb->prefix . 'sun_' . $logical;
 	$wpdb->query( "DROP TABLE IF EXISTS `{$table}`" ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.DirectDatabaseQuery.SchemaChange
 }
