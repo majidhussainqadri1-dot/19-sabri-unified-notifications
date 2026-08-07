@@ -37,6 +37,17 @@
       } catch (error) { announce(error.message); action.disabled = false; }
       return;
     }
+    const removeSubscription = event.target.closest('[data-sun-delete-subscription]');
+    if (removeSubscription) {
+      removeSubscription.disabled = true;
+      try {
+        await api(`subscriptions/${encodeURIComponent(removeSubscription.dataset.sunDeleteSubscription)}`, { method: 'DELETE' });
+        announce(cfg.i18n?.removed || 'Removed.');
+        const form = removeSubscription.closest('[data-sun-subscription]');
+        if (form) form.remove();
+      } catch (error) { announce(error.message); removeSubscription.disabled = false; }
+      return;
+    }
     const bulk = event.target.closest('[data-sun-bulk-action]');
     if (bulk) {
       bulk.disabled = true;
@@ -50,26 +61,39 @@
     if (filter) {
       const selected = filter.dataset.sunFilter;
       document.querySelectorAll('[data-sun-filter]').forEach((button) => button.setAttribute('aria-pressed', button === filter ? 'true' : 'false'));
-      document.querySelectorAll('[data-sun-status]').forEach((card) => {
-        if (!card.classList.contains('sun-card')) return;
+      document.querySelectorAll('.sun-card[data-sun-status]').forEach((card) => {
         card.hidden = selected !== 'all' && card.dataset.sunStatus !== selected;
       });
     }
   });
   document.addEventListener('submit', async (event) => {
-    const form = event.target.closest('[data-sun-preference]');
+    const preferenceForm = event.target.closest('[data-sun-preference]');
+    const subscriptionForm = event.target.closest('[data-sun-subscription]');
+    const form = preferenceForm || subscriptionForm;
     if (!form) return;
     event.preventDefault();
     const button = form.querySelector('button[type="submit"]');
     if (button) button.disabled = true;
     const values = Object.fromEntries(new FormData(form).entries());
-    values.enabled = form.elements.enabled?.checked || false;
-    values.quiet_enabled = form.elements.quiet_enabled?.checked || false;
-    values.version = Number(values.version || 0);
+    if (preferenceForm) {
+      values.enabled = preferenceForm.elements.enabled?.checked || false;
+      values.quiet_enabled = preferenceForm.elements.quiet_enabled?.checked || false;
+      values.version = Number(values.version || 0);
+      try {
+        const result = await api('preferences', { method: 'POST', body: JSON.stringify(values) });
+        preferenceForm.elements.version.value = result.version;
+        announce(cfg.i18n?.saved || 'Saved.');
+      } catch (error) { announce(error.message); }
+      finally { if (button) button.disabled = false; }
+      return;
+    }
+    values.enabled = subscriptionForm.elements.enabled?.checked || false;
+    if ('version' in values) values.version = Number(values.version || 0);
     try {
-      const result = await api('preferences', { method: 'POST', body: JSON.stringify(values) });
-      form.elements.version.value = result.version;
+      const result = await api('subscriptions', { method: 'POST', body: JSON.stringify(values) });
       announce(cfg.i18n?.saved || 'Saved.');
+      if (subscriptionForm.elements.version) subscriptionForm.elements.version.value = result.version;
+      else window.location.reload();
     } catch (error) { announce(error.message); }
     finally { if (button) button.disabled = false; }
   });
