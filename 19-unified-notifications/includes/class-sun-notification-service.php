@@ -227,6 +227,7 @@ final class SUN_Notification_Service {
 			case 'unread': $data['status'] = 'unread'; $data['read_at'] = null; $data['archived_at'] = null; break;
 			case 'archive': $data['status'] = 'archived'; $data['archived_at'] = SUN_Database::now(); break;
 			case 'unarchive': $data['status'] = empty( $row['read_at'] ) ? 'unread' : 'read'; $data['archived_at'] = null; break;
+			case 'report': $data['status'] = 'archived'; $data['archived_at'] = SUN_Database::now(); break;
 			case 'delete': $data['status'] = 'deleted'; $data['title'] = ''; $data['summary'] = ''; $data['data_ciphertext'] = null; $data['deep_link'] = null; break;
 			default: return new WP_Error( 'sun_notification_action_invalid', __( 'Notification action is invalid.', 'sabri-unified-notifications' ), array( 'status' => 400 ) );
 		}
@@ -234,7 +235,7 @@ final class SUN_Notification_Service {
 		if ( 1 !== (int) $updated ) {
 			return new WP_Error( 'sun_notification_conflict', __( 'This notification changed in another session.', 'sabri-unified-notifications' ), array( 'status' => 409 ) );
 		}
-		SUN_Audit::record( 'notification_' . $action, 'notification', $public_id, array( 'purpose' => 'user_action' ), $user_id );
+		SUN_Audit::record( 'notification_' . $action, 'notification', $public_id, array( 'purpose' => 'report' === $action ? 'user_complaint' : 'user_action', 'category' => (string) $row['category'], 'producer' => (string) $row['producer'] ), $user_id );
 		do_action( 'sun_notification_' . $action, $row, $user_id );
 		return true;
 	}
