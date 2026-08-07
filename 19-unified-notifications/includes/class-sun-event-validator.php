@@ -95,7 +95,15 @@ final class SUN_Event_Validator {
 				'source_version'=>sanitize_text_field((string)($event['source_version']??'')),
 			),
 		);
-		return (array) apply_filters( 'sun_validated_event', $normalized, $event );
+
+		/*
+		 * Security boundary: once validated, the canonical envelope is immutable.
+		 * A mutating filter here would allow downstream code to reintroduce an
+		 * unauthorized owner, recipient, sensitivity, deep link, or payload after
+		 * all checks above. Observers should hook into the post-ingestion actions
+		 * exposed by the notification service instead of rewriting this envelope.
+		 */
+		return $normalized;
 	}
 
 	/** @param mixed $recipients Recipients. @return array<int,array<string,mixed>>|WP_Error */
