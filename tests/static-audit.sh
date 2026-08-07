@@ -10,8 +10,8 @@ node --check "$PLUGIN/assets/js/push-service-worker.js" >/dev/null
 grep -q "Version: 2.2.0" "$PLUGIN/19-unified-notifications.php" || fail "version mismatch"
 grep -q "Requires at least: 7.0.1" "$PLUGIN/19-unified-notifications.php" || fail "WordPress project baseline mismatch"
 grep -q "Requires PHP: 8.3" "$PLUGIN/19-unified-notifications.php" || fail "PHP project baseline mismatch"
-grep -q "version_compare( (string) \$wp_version, '7.0.1'" "$PLUGIN/includes/class-sun-activator.php" || fail "activation WordPress gate mismatch"
-grep -q "version_compare( PHP_VERSION, '8.3'" "$PLUGIN/includes/class-sun-activator.php" || fail "activation PHP gate mismatch"
+grep -Fq "version_compare( (string) \$wp_version, '7.0.1'" "$PLUGIN/includes/class-sun-activator.php" || fail "activation WordPress gate mismatch"
+grep -Fq "version_compare( PHP_VERSION, '8.3'" "$PLUGIN/includes/class-sun-activator.php" || fail "activation PHP gate mismatch"
 for class in database crypto audit four-plan-compliance auth producer-registry event-validator template-engine preferences subscriptions policy-engine deep-link delivery-service notification-service bulk-service reconciliation health wellbeing rest-controller renderer router admin privacy activator plugin; do
   [[ -f "$PLUGIN/includes/class-sun-$class.php" ]] || fail "missing class $class"
 done
@@ -25,6 +25,9 @@ grep -q "donor_advantage.*false" "$PLUGIN/includes/class-sun-four-plan-complianc
 grep -q "search_owner_file.*26" "$PLUGIN/includes/class-sun-four-plan-compliance.php" || fail "File 26 search ownership missing"
 for cv in CV-097 CV-098 CV-099 CV-100 CV-101 CV-102 CV-103 CV-104 CV-105 CV-106; do grep -q "$cv" "$PLUGIN/includes/class-sun-four-plan-compliance.php" || fail "Top-20 capability $cv missing"; done
 grep -q "subscription_scope" "$PLUGIN/includes/class-sun-event-validator.php" || fail "granular subscription event contract missing"
+grep -q "sun_subscription_scope_required" "$PLUGIN/includes/class-sun-event-validator.php" || fail "creator bulletin opt-in enforcement missing"
+grep -Fq "category    = sanitize_key( (string) \$policy['category'] )" "$PLUGIN/includes/class-sun-policy-engine.php" || fail "policy-owned category enforcement missing"
+grep -q "stronger_value" "$PLUGIN/includes/class-sun-policy-engine.php" || fail "priority/sensitivity downgrade prevention missing"
 grep -q "subscription_preference" "$PLUGIN/includes/class-sun-policy-engine.php" || fail "subscription policy suppression missing"
 grep -q "more-notifications-is-not-a-kpi" "$PLUGIN/includes/class-sun-wellbeing.php" || fail "healthy-use guardrail missing"
 ! grep -RInE '\beval\s*\(|\bexec\s*\(|\bshell_exec\s*\(|\bpassthru\s*\(|\bunserialize\s*\(' "$PLUGIN" --include='*.php' || fail "dangerous function found"
