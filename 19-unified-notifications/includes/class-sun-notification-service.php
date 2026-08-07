@@ -260,11 +260,16 @@ final class SUN_Notification_Service {
 
 	/** @param string $public_id Notification ID. @return string|WP_Error */
 	public function resolve_open_target( $public_id ) {
-		$row = $this->get_notification( get_current_user_id(), $public_id );
+		$user_id = get_current_user_id();
+		$row = $this->get_notification( $user_id, $public_id );
 		if ( is_wp_error( $row ) ) { return $row; }
-		$this->mutate( get_current_user_id(), $public_id, 'read', (int) $row['version'] );
-		$target = SUN_Deep_Link::sanitize( (string) $row['deep_link'] );
-		return $target ?: home_url( '/notifications/' );
+		$target = SUN_Deep_Link::authorize_for_notification( (string) $row['deep_link'], $row, $user_id );
+		$this->mutate( $user_id, $public_id, 'read', (int) $row['version'] );
+		if ( '' === $target ) {
+			SUN_Audit::record( 'deep_link_denied', 'notification', $public_id, array( 'purpose' => 'click_time_authorization', 'producer' => (string) $row['producer'], 'event_type' => (string) $row['event_type'] ), $user_id );
+			return home_url( '/notifications/' );
+		}
+		return $target;
 	}
 
 	/** @return int */
