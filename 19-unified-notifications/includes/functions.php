@@ -52,3 +52,30 @@ function sun_get_unread_count( $user_id = null ) {
 function sun_register_notification_producer( $producer, array $config ) {
 	return SUN_Producer_Registry::register_runtime( $producer, $config );
 }
+
+/**
+ * Get scoped notification subscriptions for the current user.
+ *
+ * @return array<int,array<string,mixed>>
+ */
+function sun_get_notification_subscriptions() {
+	if ( ! is_user_logged_in() ) {
+		return array();
+	}
+	return sun_notifications()->subscriptions()->list_for_user( get_current_user_id() );
+}
+
+/**
+ * Set a current-user scoped notification subscription. Domain modules use this
+ * contract for person/topic/community/course/event/doctor/channel subscribe UI;
+ * the domain object itself remains owned by that domain module.
+ *
+ * @param array<string,mixed> $input Subscription input.
+ * @return array<string,mixed>|WP_Error
+ */
+function sun_update_notification_subscription( array $input ) {
+	if ( ! is_user_logged_in() ) {
+		return new WP_Error( 'sun_auth_required', __( 'Authentication is required.', 'sabri-unified-notifications' ) );
+	}
+	return sun_notifications()->subscriptions()->update( get_current_user_id(), $input );
+}
