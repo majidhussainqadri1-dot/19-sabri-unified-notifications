@@ -38,10 +38,7 @@ final class SUN_Auth {
 			'timezone'           => '',
 		);
 
-		/*
-		 * Canonical File 00 contract. Null means the owner is unavailable and
-		 * protected actions fail closed instead of trusting duplicate user-meta.
-		 */
+		/* Canonical File 00 contract. Owner outage keeps protected actions fail-closed. */
 		$claims = apply_filters( 'sabri_membership_claims_v2', null, $user_id );
 		if ( is_array( $claims ) ) {
 			$base['owner_available']    = true;
@@ -51,20 +48,16 @@ final class SUN_Auth {
 			$base['phone_verified']     = ! empty( $claims['phone_verified'] ) || ! empty( $claims['mobile_verified'] );
 			$base['suspended']          = ! empty( $claims['suspended'] );
 			$base['revoked']            = ! empty( $claims['revoked'] );
-			$base['risk_blocked']       = ! empty( $claims['risk_blocked'] ) || ( isset( $claims['risk_state'] ) && in_array( $claims['risk_state'], array( 'blocked', 'denied' ), true ) );
+			$risk_state                 = sanitize_key( (string) ( $claims['risk_state'] ?? '' ) );
+			$base['risk_blocked']       = ! empty( $claims['risk_blocked'] ) || in_array( $risk_state, array( 'blocked', 'denied' ), true );
 			$base['guardian_ok']        = array_key_exists( 'guardian_ok', $claims ) ? (bool) $claims['guardian_ok'] : empty( $claims['guardian_required'] );
 			$base['consent_ok']         = array_key_exists( 'consent_ok', $claims ) ? (bool) $claims['consent_ok'] : true;
 			$base['step_up_verified']   = ! empty( $claims['step_up_verified'] ) || ! empty( $claims['recent_step_up'] );
 			$base['founder']            = ! empty( $claims['founder'] );
 			$base['institutional_role'] = sanitize_key( (string) ( $claims['institutional_role'] ?? '' ) );
-			if ( ! empty( $claims['locale'] ) ) {
-				$base['locale'] = sanitize_locale_name( (string) $claims['locale'] );
-			}
-			if ( ! empty( $claims['timezone'] ) ) {
-				$base['timezone'] = sanitize_text_field( (string) $claims['timezone'] );
-			}
+			if ( ! empty( $claims['locale'] ) ) { $base['locale'] = sanitize_locale_name( (string) $claims['locale'] ); }
+			if ( ! empty( $claims['timezone'] ) ) { $base['timezone'] = sanitize_text_field( (string) $claims['timezone'] ); }
 		}
-
 		return (array) apply_filters( 'sun_identity_assertions', $base, $user_id );
 	}
 
@@ -81,25 +74,19 @@ final class SUN_Auth {
 	/** @return bool */
 	public function can_manage() {
 		$user_id = get_current_user_id();
-		return $user_id > 0
-			&& $this->claims_are_active_and_trusted( $this->assertions( $user_id ) )
-			&& ( current_user_can( 'manage_sabri_notifications' ) || current_user_can( 'manage_options' ) );
+		return $user_id > 0 && $this->claims_are_active_and_trusted( $this->assertions( $user_id ) ) && ( current_user_can( 'manage_sabri_notifications' ) || current_user_can( 'manage_options' ) );
 	}
 
 	/** @return bool */
 	public function can_view_health() {
 		$user_id = get_current_user_id();
-		return $user_id > 0
-			&& $this->claims_are_active_and_trusted( $this->assertions( $user_id ) )
-			&& ( current_user_can( 'view_sabri_notification_health' ) || $this->can_manage() );
+		return $user_id > 0 && $this->claims_are_active_and_trusted( $this->assertions( $user_id ) ) && ( current_user_can( 'view_sabri_notification_health' ) || $this->can_manage() );
 	}
 
 	/** @return bool */
 	public function can_retry() {
 		$user_id = get_current_user_id();
-		return $user_id > 0
-			&& $this->claims_are_active_and_trusted( $this->assertions( $user_id ) )
-			&& ( current_user_can( 'retry_sabri_notification_delivery' ) || $this->can_manage() );
+		return $user_id > 0 && $this->claims_are_active_and_trusted( $this->assertions( $user_id ) ) && ( current_user_can( 'retry_sabri_notification_delivery' ) || $this->can_manage() );
 	}
 
 	/** @return bool */
@@ -113,21 +100,11 @@ final class SUN_Auth {
 			&& $this->is_founder( $user_id );
 	}
 
-	/**
-	 * Revalidate a stored actor for background/cron execution.
-	 *
-	 * @param int  $user_id User ID.
-	 * @param bool $require_step_up Whether recent step-up evidence is required.
-	 * @return bool
-	 */
+	/** @param int $user_id User ID. @param bool $require_step_up Require recent step-up. @return bool */
 	public function is_governance_actor_eligible( $user_id, $require_step_up = false ) {
 		$claims = $this->assertions( $user_id );
-		if ( ! $this->claims_are_active_and_trusted( $claims ) ) {
-			return false;
-		}
-		if ( $require_step_up && empty( $claims['step_up_verified'] ) ) {
-			return false;
-		}
+		if ( ! $this->claims_are_active_and_trusted( $claims ) ) { return false; }
+		if ( $require_step_up && empty( $claims['step_up_verified'] ) ) { return false; }
 		return $this->is_founder( $user_id );
 	}
 
@@ -135,28 +112,24 @@ final class SUN_Auth {
 	public function is_founder( $user_id ) {
 		$user_id = absint( $user_id );
 		$claims  = $this->assertions( $user_id );
-		if ( ! $this->claims_are_active_and_trusted( $claims ) ) {
-			return false;
-		}
-
+		if ( ! $this->claims_are_active_and_trusted( $claims ) ) { return false; }
 		if ( ! empty( $claims['founder'] ) || 'founder' === $claims['institutional_role'] ) {
 			return (bool) apply_filters( 'sun_is_founder', true, $user_id, $claims );
 		}
 
 		/*
-		 * Compatibility bootstrap is permitted only when File 00 is available and
-		 * has not supplied a conflicting institutional role. It can never bypass
-		 * suspension/revocation/risk/guardian/consent checks or owner outage.
+		 * Emergency/bootstrap compatibility never outranks File 00 silently.
+		 * It requires an explicit host opt-in in addition to an exact configured ID.
 		 */
 		$configured = defined( 'SUN_FOUNDER_USER_ID' ) ? absint( SUN_FOUNDER_USER_ID ) : 0;
-		$bootstrap  = '' === $claims['institutional_role'] && $configured > 0 && $configured === $user_id;
+		$bootstrap  = '' === $claims['institutional_role']
+			&& $configured > 0
+			&& $configured === $user_id
+			&& (bool) apply_filters( 'sun_allow_founder_bootstrap', false, $user_id, $claims );
 		return (bool) apply_filters( 'sun_is_founder', $bootstrap, $user_id, $claims );
 	}
 
-	/**
-	 * @param array<string,mixed> $claims Claims.
-	 * @return bool
-	 */
+	/** @param array<string,mixed> $claims Claims. @return bool */
 	private function claims_are_active_and_trusted( array $claims ) {
 		$ok = ! empty( $claims['owner_available'] )
 			&& ! empty( $claims['active'] )
