@@ -1,0 +1,96 @@
+<?php
+/**
+ * External delivery queue, retries, digests and dead-letter handling.
+ */
+
+if ( ! defined( 'ABSPATH' ) ) { exit; }
+
+final class SUN_Delivery_Service {
+	/** @var array<string,SUN_Delivery_Adapter> */ private $adapters = array();
+	/** @var SUN_Template_Engine */ private $templates;
+	/** @var SUN_Auth */ private $auth;
+
+	/** @param SUN_Template_Engine $templates Templates. @param SUN_Auth $auth Authorization. */
+	public function __construct( SUN_Template_Engine $templates, SUN_Auth $auth ) {
+		$this->templates=$templates; $this->auth=$auth;
+		$this->register_adapter(new SUN_Email_Adapter($auth,$templates));
+		$this->register_adapter(new SUN_Push_Adapter());
+		$this->register_adapter(new SUN_SMS_Adapter($auth));
+	}
+	/** @param SUN_Delivery_Adapter $adapter Adapter. @return void */ public function register_adapter(SUN_Delivery_Adapter $adapter){$this->adapters[$adapter->channel()]=$adapter;}
+
+	/** @param int $notification_id Notification ID. @param int $recipient_id Recipient. @param array<string,mixed> $decision Decision. @param string $notification_dedupe Dedupe. @return int|WP_Error */
+	public function enqueue($notification_id,$recipient_id,array $decision,$notification_dedupe){
+		global $wpdb;$channel=sanitize_key((string)($decision['channel']??''));if(!isset($this->adapters[$channel])){return new WP_Error('sun_adapter_missing',__('The requested delivery channel is unavailable.','sabri-unified-notifications'));}
+		$dedupe=hash('sha256',$notification_dedupe.'|'.$channel.'|'.(string)($decision['digest_key']??''));$table=SUN_Database::table('deliveries');$exists=(int)$wpdb->get_var($wpdb->prepare("SELECT id FROM {$table} WHERE dedupe_key=%s LIMIT 1",$dedupe)); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery
+		if($exists){return $exists;}$now=SUN_Database::now();$ok=$wpdb->insert($table,array('public_id'=>SUN_Database::uuid(),'notification_id'=>absint($notification_id),'recipient_id'=>absint($recipient_id),'channel'=>$channel,'status'=>'queued','attempt_count'=>0,'max_attempts'=>max(1,min(10,(int)apply_filters('sun_delivery_max_attempts',5,$channel))),'scheduled_at'=>(string)($decision['scheduled_at']??$now),'next_attempt_at'=>(string)($decision['scheduled_at']??$now),'digest_key'=>empty($decision['digest_key'])?null:sanitize_text_field((string)$decision['digest_key']),'dedupe_key'=>$dedupe,'created_at'=>$now,'updated_at'=>$now)); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+		return false===$ok?new WP_Error('sun_delivery_queue_failed',__('The notification delivery could not be queued.','sabri-unified-notifications')):(int)$wpdb->insert_id;
+	}
+
+	/** @param int $limit Batch. @return array<string,int> */
+	public function process_queue($limit=25){
+		global $wpdb;$limit=max(1,min(100,absint($limit)));$token=$this->acquire_lock();if(!$token){return array('processed'=>0,'accepted'=>0,'failed'=>0,'suppressed'=>0,'skipped'=>0);}$stats=array('processed'=>0,'accepted'=>0,'failed'=>0,'suppressed'=>0,'skipped'=>0);
+		try{$table=SUN_Database::table('deliveries');$rows=$wpdb->get_results($wpdb->prepare("SELECT * FROM {$table} WHERE status IN ('queued','failed') AND scheduled_at<=%s AND (next_attempt_at IS NULL OR next_attempt_at<=%s) ORDER BY id ASC LIMIT %d",SUN_Database::now(),SUN_Database::now(),$limit),ARRAY_A); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery
+			foreach((array)$rows as $delivery){++$stats['processed'];$result=$this->process_one($delivery);$status=is_wp_error($result)?'failed':(string)($result['status']??'failed');if('delivered'===$status){$status='accepted';}if(!isset($stats[$status])){$status='failed';}++$stats[$status];}
+		}finally{$this->release_lock($token);}return $stats;
+	}
+
+	/** @param array<string,mixed> $delivery Delivery. @return array<string,mixed>|WP_Error */
+	public function process_one(array $delivery){
+		if(!$this->claim($delivery)){return array('status'=>'skipped','reason'=>'claim_conflict');}$delivery['attempt_count']=(int)$delivery['attempt_count']+1;
+		if(!empty($delivery['digest_key'])){return $this->process_digest($delivery);}
+		return $this->send_single($delivery);
+	}
+
+	/** @param string $channel Channel. @param array<string,mixed> $payload Payload. @param WP_REST_Request|null $request Request. @return true|WP_Error */
+	public function provider_webhook($channel,array $payload,$request=null){
+		global $wpdb;$channel=sanitize_key($channel);if(!apply_filters('sun_verify_provider_webhook',false,$channel,$payload,$request)){return new WP_Error('sun_webhook_unverified',__('Provider webhook verification failed.','sabri-unified-notifications'),array('status'=>401));}
+		$provider_id=sanitize_text_field((string)($payload['provider_message_id']??''));$status=sanitize_key((string)($payload['status']??''));$allowed=array('accepted','delivered','bounced','failed','suppressed');if(!$provider_id||!in_array($status,$allowed,true)){return new WP_Error('sun_webhook_invalid',__('Provider webhook payload is invalid.','sabri-unified-notifications'),array('status'=>400));}
+		$table=SUN_Database::table('deliveries');$row=$wpdb->get_row($wpdb->prepare("SELECT id,status,channel FROM {$table} WHERE provider_message_id=%s LIMIT 1",$provider_id),ARRAY_A); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery
+		if(!$row||$row['channel']!==$channel){return new WP_Error('sun_webhook_delivery_not_found',__('Delivery evidence was not found.','sabri-unified-notifications'),array('status'=>404));}
+		$transitions=array('accepted'=>array('accepted','delivered','bounced','failed','suppressed'),'delivered'=>array('delivered'),'bounced'=>array('bounced'),'failed'=>array('failed','delivered'),'suppressed'=>array('suppressed'));
+		if(!in_array($status,$transitions[$row['status']]??array($status),true)){return new WP_Error('sun_webhook_transition_invalid',__('Provider status transition is invalid.','sabri-unified-notifications'),array('status'=>409));}
+		$data=array('status'=>$status,'updated_at'=>SUN_Database::now());if('delivered'===$status){$data['delivered_at']=SUN_Database::now();}$updated=$wpdb->update($table,$data,array('id'=>(int)$row['id'])); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+		if(false===$updated){return new WP_Error('sun_webhook_update_failed',__('Provider status could not be recorded.','sabri-unified-notifications'));}SUN_Audit::record('provider_status_updated','delivery',$provider_id,array('status'=>$status,'purpose'=>'delivery_status'),0);return true;
+	}
+
+	/** @return array<int,array<string,mixed>> */ public function adapter_health(){return array_values(array_map(static function($adapter){return $adapter->health();},$this->adapters));}
+
+	/** @param array<string,mixed> $delivery Delivery. @return array<string,mixed>|WP_Error */
+	private function send_single(array $delivery){
+		$notification=$this->load_notification((int)$delivery['notification_id']);if(is_wp_error($notification)){return $this->record_failure($delivery,$notification);}if(!$this->auth->is_recipient_eligible((int)$delivery['recipient_id'])){$result=array('status'=>'suppressed','reason'=>'recipient_ineligible');$this->finalize($delivery,$result);return $result;}$adapter=$this->adapters[(string)$delivery['channel']]??null;if(!$adapter){return $this->record_failure($delivery,new WP_Error('sun_adapter_missing',__('Delivery channel unavailable.','sabri-unified-notifications')));}$result=$adapter->send($delivery,$notification);if(is_wp_error($result)){return $this->record_failure($delivery,$result);}$this->finalize($delivery,$result);return $result;
+	}
+
+	/** @param array<string,mixed> $first First delivery. @return array<string,mixed>|WP_Error */
+	private function process_digest(array $first){
+		global $wpdb;$table=SUN_Database::table('deliveries');$rows=array($first);$others=$wpdb->get_results($wpdb->prepare("SELECT * FROM {$table} WHERE id<>%d AND recipient_id=%d AND channel=%s AND digest_key=%s AND status IN ('queued','failed') AND scheduled_at<=%s AND (next_attempt_at IS NULL OR next_attempt_at<=%s) ORDER BY id ASC LIMIT 49",(int)$first['id'],(int)$first['recipient_id'],$first['channel'],$first['digest_key'],SUN_Database::now(),SUN_Database::now()),ARRAY_A); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery
+		foreach((array)$others as $row){if($this->claim($row)){$row['attempt_count']=(int)$row['attempt_count']+1;$rows[]=$row;}}
+		if(!$this->auth->is_recipient_eligible((int)$first['recipient_id'])){$result=array('status'=>'suppressed','reason'=>'recipient_ineligible');foreach($rows as $row){$this->finalize($row,$result);}return $result;}
+		$notes=array();$valid_rows=array();foreach($rows as $row){$note=$this->load_notification((int)$row['notification_id']);if(is_wp_error($note)){$this->record_failure($row,$note);continue;}$notes[]=$note;$valid_rows[]=$row;}
+		if(empty($notes)){return new WP_Error('sun_digest_empty',__('No deliverable notifications remain in this digest.','sabri-unified-notifications'));}
+		$max_items=max(1,min(25,(int)apply_filters('sun_digest_max_items',10,$first['channel'])));$shown=array_slice($notes,0,$max_items);$overflow=max(0,count($notes)-count($shown));$lines=array();foreach($shown as $note){$external=$note['external'][$first['channel']]??array();$lines[]=trim((string)($external['title']??$note['title']).' — '.(string)($external['body']??$note['summary']));}
+		if($overflow){$lines[]=sprintf(__('And %d more updates.','sabri-unified-notifications'),$overflow);}$digest=$notes[0];$digest['title']=sprintf(_n('%d new update','%d new updates',count($notes),'sabri-unified-notifications'),count($notes));$digest['summary']=implode("\n",$lines);$digest['external'][$first['channel']]=array('title'=>$digest['title'],'body'=>$digest['summary']);$adapter=$this->adapters[(string)$first['channel']]??null;if(!$adapter){$error=new WP_Error('sun_adapter_missing',__('Delivery channel unavailable.','sabri-unified-notifications'));foreach($valid_rows as $row){$this->record_failure($row,$error);}return $error;}$result=$adapter->send($first,$digest);if(is_wp_error($result)){foreach($valid_rows as $row){$this->record_failure($row,$result);}return $result;}foreach($valid_rows as $row){$this->finalize($row,$result);}SUN_Audit::record('digest_sent','delivery_digest',(string)$first['digest_key'],array('count'=>count($valid_rows),'overflow'=>$overflow,'channel'=>$first['channel'],'purpose'=>'digest_delivery'),0);return $result;
+	}
+
+	/** @param array<string,mixed> $delivery Delivery. @return bool */
+	private function claim(array $delivery){global $wpdb;$table=SUN_Database::table('deliveries');$claimed=$wpdb->query($wpdb->prepare("UPDATE {$table} SET status='sending',attempt_count=attempt_count+1,last_attempt_at=%s,updated_at=%s WHERE id=%d AND status IN ('queued','failed')",SUN_Database::now(),SUN_Database::now(),(int)$delivery['id']));return 1===(int)$claimed;} // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery
+
+	/** @param int $notification_id ID. @return array<string,mixed>|WP_Error */
+	private function load_notification($notification_id){global $wpdb;$row=$wpdb->get_row($wpdb->prepare('SELECT * FROM '.SUN_Database::table('notifications').' WHERE id=%d LIMIT 1',$notification_id),ARRAY_A); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+		if(!$row||in_array($row['status'],array('expired','deleted'),true)){return new WP_Error('sun_notification_unavailable',__('The notification is no longer available.','sabri-unified-notifications'));}$variables=array();$sensitivity='standard';if(!empty($row['data_ciphertext'])){$plain=SUN_Crypto::decrypt($row['data_ciphertext']);if(!is_wp_error($plain)){$decoded=json_decode($plain,true);if(is_array($decoded)){$variables=(array)($decoded['variables']??array());$sensitivity=(string)($decoded['_sensitivity']??'standard');}}}$row['external']=array();foreach(array('email','push','sms') as $channel){$template=$this->templates->resolve($row['event_type'],$channel,$row['locale'],$row['template_key']);$row['external'][$channel]=$this->templates->render($template,$variables,$channel,$sensitivity);}return $row;
+	}
+
+	/** @param array<string,mixed> $delivery Delivery. @param array<string,mixed> $result Result. @return void */
+	private function finalize(array $delivery,array $result){global $wpdb;$status=sanitize_key((string)($result['status']??'accepted'));if(!in_array($status,array('accepted','delivered','suppressed','bounced'),true)){$status='accepted';}$data=array('status'=>$status,'provider'=>sanitize_key((string)($result['provider']??'')),'provider_message_id'=>sanitize_text_field((string)($result['provider_message_id']??'')),'last_error_code'=>empty($result['reason'])?null:sanitize_key((string)$result['reason']),'last_error_safe'=>empty($result['reason'])?null:sanitize_text_field((string)$result['reason']),'updated_at'=>SUN_Database::now());if(in_array($status,array('accepted','delivered'),true)){$data['accepted_at']=SUN_Database::now();}if('delivered'===$status){$data['delivered_at']=SUN_Database::now();}$wpdb->update(SUN_Database::table('deliveries'),$data,array('id'=>(int)$delivery['id']));SUN_Audit::record('delivery_'.$status,'delivery',(string)$delivery['public_id'],array('channel'=>$delivery['channel'],'purpose'=>'delivery'),0);} // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+
+	/** @param array<string,mixed> $delivery Delivery. @param WP_Error $error Error. @return WP_Error */
+	private function record_failure(array $delivery,WP_Error $error){global $wpdb;$attempts=(int)$delivery['attempt_count'];$max=(int)$delivery['max_attempts'];$terminal=$attempts>=$max;$delay=min(DAY_IN_SECONDS,(int)pow(2,max(1,$attempts))*MINUTE_IN_SECONDS+wp_rand(1,60));$next=gmdate('Y-m-d H:i:s',time()+$delay);$wpdb->update(SUN_Database::table('deliveries'),array('status'=>$terminal?'dead_letter':'failed','next_attempt_at'=>$terminal?null:$next,'last_error_code'=>sanitize_key($error->get_error_code()),'last_error_safe'=>sanitize_text_field($error->get_error_message()),'updated_at'=>SUN_Database::now()),array('id'=>(int)$delivery['id'])); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+		if($terminal){$dead=SUN_Database::table('dead_letters');$exists=(int)$wpdb->get_var($wpdb->prepare("SELECT id FROM {$dead} WHERE delivery_id=%d AND status='open' LIMIT 1",(int)$delivery['id']));if(!$exists){$wpdb->insert($dead,array('public_id'=>SUN_Database::uuid(),'delivery_id'=>(int)$delivery['id'],'object_type'=>'delivery','error_code'=>sanitize_key($error->get_error_code()),'error_safe'=>sanitize_text_field($error->get_error_message()),'attempt_count'=>$attempts,'next_action'=>'operator_review','status'=>'open','created_at'=>SUN_Database::now(),'updated_at'=>SUN_Database::now()));}} // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery
+		SUN_Audit::record($terminal?'delivery_dead_lettered':'delivery_failed','delivery',(string)$delivery['public_id'],array('error_code'=>$error->get_error_code(),'attempt'=>$attempts,'purpose'=>'delivery'),0);return $error;
+	}
+
+	/** @return string|false */
+	private function acquire_lock(){global $wpdb;$name='sun_delivery_queue_lock';$token=SUN_Database::uuid();$payload=wp_json_encode(array('token'=>$token,'created'=>time()));if(add_option($name,$payload,'',false)){return $token;}$current=json_decode((string)get_option($name,''),true);if(is_array($current)&&time()-(int)($current['created']??0)>180){delete_option($name);if(add_option($name,$payload,'',false)){return $token;}}return false;}
+	/** @param string $token Token. @return void */
+	private function release_lock($token){$current=json_decode((string)get_option('sun_delivery_queue_lock',''),true);if(is_array($current)&&hash_equals((string)($current['token']??''),(string)$token)){delete_option('sun_delivery_queue_lock');}}
+}

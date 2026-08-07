@@ -1,0 +1,46 @@
+name: File 19 Quality
+
+on:
+  push:
+    branches: [ main, 'file-19-*' ]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  source-and-package:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.1', '8.3', '8.4']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          coverage: none
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Deterministic unit assertions
+        run: php tests/unit.php
+      - name: Static, syntax and security-pattern audit
+        run: bash tests/static-audit.sh
+      - name: Clean-extract deterministic package audit
+        run: bash tests/package-audit.sh
+      - name: Verify deterministic release checksum
+        run: |
+          sha256sum build/19-sabri-unified-notifications-2.0.0.zip
+          (cd build && sha256sum -c ../RELEASE-SHA256.txt)
+      - name: Upload release candidate
+        if: matrix.php == '8.3'
+        uses: actions/upload-artifact@v4
+        with:
+          name: file-19-notifications-2.0.0
+          path: |
+            build/19-sabri-unified-notifications-2.0.0.zip
+            build/19-sabri-unified-notifications-2.0.0.zip.sha256
+          if-no-files-found: error

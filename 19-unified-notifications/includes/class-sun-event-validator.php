@@ -1,0 +1,154 @@
+<?php
+/**
+ * Strict domain-event envelope validation and minimization.
+ */
+
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+
+final class SUN_Event_Validator {
+	/** @var SUN_Producer_Registry */
+	private $registry;
+
+	/** @param SUN_Producer_Registry $registry Registry. */
+	public function __construct( SUN_Producer_Registry $registry ) {
+		$this->registry = $registry;
+	}
+
+	/**
+	 * Validate and normalize an event envelope.
+	 *
+	 * @param array<string,mixed> $event Event.
+	 * @return array<string,mixed>|WP_Error
+	 */
+	public function validate( array $event ) {
+		$required = array( 'producer', 'owner', 'event_id', 'event_type', 'schema_version', 'occurred_at', 'recipients' );
+		foreach ( $required as $field ) {
+			if ( ! isset( $event[ $field ] ) || '' === $event[ $field ] || array() === $event[ $field ] ) {
+				return new WP_Error( 'sun_event_missing_' . $field, sprintf( __( 'The event field “%s” is required.', 'sabri-unified-notifications' ), $field ), array( 'status' => 400 ) );
+			}
+		}
+
+		$producer       = sanitize_key( (string) $event['producer'] );
+		$event_type     = sanitize_text_field( (string) $event['event_type'] );
+		$authorization  = $this->registry->authorize_type( $producer, $event_type );
+		if ( is_wp_error( $authorization ) ) {
+			return $authorization;
+		}
+		if ( ! preg_match( '/^[A-Z][A-Za-z0-9]*(?:\.[A-Z][A-Za-z0-9]*)+$/', $event_type ) ) {
+			return new WP_Error( 'sun_event_type_invalid', __( 'The event type must use a versioned domain fact name.', 'sabri-unified-notifications' ), array( 'status' => 400 ) );
+		}
+		$event_id = sanitize_text_field( (string) $event['event_id'] );
+		if ( strlen( $event_id ) > 191 || ! preg_match( '/^[A-Za-z0-9._:\-]+$/', $event_id ) ) {
+			return new WP_Error( 'sun_event_id_invalid', __( 'The event identifier is invalid.', 'sabri-unified-notifications' ), array( 'status' => 400 ) );
+		}
+		$schema = sanitize_text_field( (string) $event['schema_version'] );
+		if ( ! preg_match( '/^v?[0-9]+(?:\.[0-9]+){0,2}$/', $schema ) ) {
+			return new WP_Error( 'sun_schema_version_invalid', __( 'The event schema version is invalid.', 'sabri-unified-notifications' ), array( 'status' => 400 ) );
+		}
+		$occurred = strtotime( (string) $event['occurred_at'] );
+		if ( false === $occurred || $occurred > time() + 300 || $occurred < time() - YEAR_IN_SECONDS ) {
+			return new WP_Error( 'sun_event_time_invalid', __( 'The event time is invalid.', 'sabri-unified-notifications' ), array( 'status' => 400 ) );
+		}
+
+		$recipients = $this->normalize_recipients( $event['recipients'] );
+		if ( is_wp_error( $recipients ) ) {
+			return $recipients;
+		}
+		$data = isset( $event['data'] ) && is_array( $event['data'] ) ? $this->sanitize_data( $event['data'] ) : array();
+		if ( strlen( wp_json_encode( $data ) ) > (int) apply_filters( 'sun_event_data_max_bytes', 65536, $producer ) ) {
+			return new WP_Error( 'sun_event_data_too_large', __( 'The event data exceeds the allowed size.', 'sabri-unified-notifications' ), array( 'status' => 413 ) );
+		}
+
+		$normalized = array(
+			'producer'       => $producer,
+			'owner'          => sanitize_text_field( (string) $event['owner'] ),
+			'event_id'       => $event_id,
+			'event_type'     => $event_type,
+			'schema_version' => $schema,
+			'occurred_at'    => gmdate( 'Y-m-d H:i:s', $occurred ),
+			'recipients'     => $recipients,
+			'actor'          => isset( $event['actor'] ) && is_array( $event['actor'] ) ? $this->sanitize_identity_ref( $event['actor'] ) : array(),
+			'subject'        => isset( $event['subject'] ) && is_array( $event['subject'] ) ? $this->sanitize_identity_ref( $event['subject'] ) : array(),
+			'trace_id'       => sanitize_text_field( (string) ( $event['trace_id'] ?? SUN_Database::uuid() ) ),
+			'category'       => sanitize_key( (string) ( $event['category'] ?? '' ) ),
+			'priority'       => sanitize_key( (string) ( $event['priority'] ?? '' ) ),
+			'sensitivity'    => sanitize_key( (string) ( $event['sensitivity'] ?? 'standard' ) ),
+			'template_key'   => sanitize_key( (string) ( $event['template_key'] ?? '' ) ),
+			'deep_link'      => esc_url_raw( (string) ( $event['deep_link'] ?? '' ) ),
+			'deep_context'   => sanitize_text_field( (string) ( $event['deep_context'] ?? '' ) ),
+			'expires_at'     => $this->normalize_optional_datetime( $event['expires_at'] ?? null ),
+			'data'           => $data,
+			'meta'           => array(
+				'idempotency_key' => sanitize_text_field( (string) ( $event['idempotency_key'] ?? '' ) ),
+				'source_version'   => sanitize_text_field( (string) ( $event['source_version'] ?? '' ) ),
+			),
+		);
+		return (array) apply_filters( 'sun_validated_event', $normalized, $event );
+	}
+
+	/**
+	 * @param mixed $recipients Recipients.
+	 * @return array<int,array<string,mixed>>|WP_Error
+	 */
+	private function normalize_recipients( $recipients ) {
+		if ( ! is_array( $recipients ) || count( $recipients ) > (int) apply_filters( 'sun_event_max_recipients', 1000 ) ) {
+			return new WP_Error( 'sun_recipients_invalid', __( 'The event recipients are invalid.', 'sabri-unified-notifications' ), array( 'status' => 400 ) );
+		}
+		$out  = array();
+		$seen = array();
+		foreach ( $recipients as $recipient ) {
+			if ( is_numeric( $recipient ) ) {
+				$recipient = array( 'user_id' => absint( $recipient ) );
+			}
+			if ( ! is_array( $recipient ) || empty( $recipient['user_id'] ) ) {
+				return new WP_Error( 'sun_recipient_invalid', __( 'Every recipient must contain a canonical user identifier.', 'sabri-unified-notifications' ), array( 'status' => 400 ) );
+			}
+			$user_id = absint( $recipient['user_id'] );
+			if ( $user_id < 1 || isset( $seen[ $user_id ] ) ) {
+				continue;
+			}
+			$seen[ $user_id ] = true;
+			$out[] = array(
+				'user_id' => $user_id,
+				'locale'  => sanitize_text_field( (string) ( $recipient['locale'] ?? '' ) ),
+				'channels'=> isset( $recipient['channels'] ) && is_array( $recipient['channels'] ) ? array_values( array_unique( array_map( 'sanitize_key', $recipient['channels'] ) ) ) : array(),
+			);
+		}
+		return empty( $out ) ? new WP_Error( 'sun_recipients_empty', __( 'The event has no valid recipients.', 'sabri-unified-notifications' ), array( 'status' => 400 ) ) : $out;
+	}
+
+	/** @param array<string,mixed> $reference Reference. @return array<string,mixed> */
+	private function sanitize_identity_ref( array $reference ) {
+		return array(
+			'type'      => sanitize_key( (string) ( $reference['type'] ?? 'object' ) ),
+			'id'        => sanitize_text_field( (string) ( $reference['id'] ?? '' ) ),
+			'public_id' => sanitize_text_field( (string) ( $reference['public_id'] ?? '' ) ),
+		);
+	}
+
+	/** @param mixed $value Value. @return mixed */
+	private function sanitize_data( $value ) {
+		if ( is_array( $value ) ) {
+			$out = array();
+			foreach ( array_slice( $value, 0, 100, true ) as $key => $item ) {
+				$out[ sanitize_key( (string) $key ) ] = $this->sanitize_data( $item );
+			}
+			return $out;
+		}
+		if ( is_bool( $value ) || is_int( $value ) || is_float( $value ) || null === $value ) {
+			return $value;
+		}
+		return sanitize_textarea_field( (string) $value );
+	}
+
+	/** @param mixed $value Value. @return string|null */
+	private function normalize_optional_datetime( $value ) {
+		if ( empty( $value ) ) {
+			return null;
+		}
+		$timestamp = strtotime( (string) $value );
+		return false === $timestamp ? null : gmdate( 'Y-m-d H:i:s', $timestamp );
+	}
+}
