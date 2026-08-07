@@ -4,7 +4,7 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 PLUGIN="$ROOT/19-unified-notifications"
 BUILD="$ROOT/build"
 STAGE="$BUILD/stage"
-NAME="19-sabri-unified-notifications-2.0.0.zip"
+NAME="19-sabri-unified-notifications-2.1.0.zip"
 
 rm -rf "$STAGE" "$BUILD/$NAME" "$BUILD/$NAME.sha256"
 mkdir -p "$STAGE"
@@ -54,12 +54,7 @@ with ZipFile(archive, 'w', compression=ZIP_DEFLATED, compresslevel=9, strict_tim
         mode = 0o755 if path.stat().st_mode & stat.S_IXUSR else 0o644
         info.external_attr = (stat.S_IFREG | mode) << 16
         info.compress_type = ZIP_DEFLATED
-        zf.writestr(
-            info,
-            path.read_bytes(),
-            compress_type=ZIP_DEFLATED,
-            compresslevel=9,
-        )
+        zf.writestr(info, path.read_bytes(), compress_type=ZIP_DEFLATED, compresslevel=9)
 PY
 
 sha256sum "$BUILD/$NAME" > "$BUILD/$NAME.sha256"

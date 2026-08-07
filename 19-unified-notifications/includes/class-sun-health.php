@@ -38,7 +38,7 @@ final class SUN_Health {
 		);
 		$status = in_array( false, $checks, true ) ? 'degraded' : 'healthy';
 		return array(
-			'contract'      => 'sun.health.v1',
+			'contract'      => 'sun.health.v2',
 			'status'        => $status,
 			'plugin_version'=> SUN_VERSION,
 			'db_version'    => get_option( 'sun_db_version', '' ),
@@ -48,6 +48,7 @@ final class SUN_Health {
 			'tables'        => $tables,
 			'metrics'       => $metrics,
 			'adapters'      => $this->delivery->adapter_health(),
+			'four_plan_compliance' => SUN_Four_Plan_Compliance::snapshot(),
 			'last_reconciliation' => get_option( 'sun_last_reconciliation', array() ),
 			'generated_at'  => SUN_Database::now(),
 		);
