@@ -62,9 +62,24 @@ final class SUN_Policy_Engine {
 	/** @param string $event_type Event type. @return array<string,mixed>|null */
 	private function find_policy( $event_type ) {
 		global $wpdb;
-		$rows=$wpdb->get_results("SELECT * FROM ".SUN_Database::table('policies')." WHERE status='active' ORDER BY id ASC",ARRAY_A); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.PreparedSQL.NotPrepared
-		foreach($rows as $row){if($this->registry->matches_pattern($event_type,$row['event_pattern'])){return $row;}}
-		return null;
+		$rows=$wpdb->get_results("SELECT * FROM ".SUN_Database::table('policies')." WHERE status='active'",ARRAY_A); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.PreparedSQL.NotPrepared
+		$best=null;$best_score=-1;$best_id=-1;
+		foreach((array)$rows as $row){
+			$pattern=(string)($row['event_pattern']??'');
+			if(!$this->registry->matches_pattern($event_type,$pattern)){continue;}
+			$score=$this->policy_specificity($event_type,$pattern);
+			$id=(int)($row['id']??0);
+			if($score>$best_score||($score===$best_score&&$id>$best_id)){$best=$row;$best_score=$score;$best_id=$id;}
+		}
+		return $best;
+	}
+
+	/** @param string $event_type Event type. @param string $pattern Pattern. @return int */
+	private function policy_specificity( $event_type, $pattern ) {
+		$event_type=(string)$event_type;$pattern=(string)$pattern;
+		if(hash_equals($event_type,$pattern)){return 100000+strlen($pattern);}
+		$literal=str_replace('*','',$pattern);
+		return strlen($literal);
 	}
 
 	/** @param string $base Base. @param string $hint Hint. @param string[] $ordered Ordered weakest to strongest. @param string $fallback Fallback. @return string */
