@@ -14,6 +14,9 @@ Canonical notification infrastructure for the **Sabri Social Homeopathy Platform
 - WordPress minimum: **7.0**
 - Review basis: three central governing plans + File 19 dedicated master plan
 - Review cycles: **40 sequential review → fix/retest rounds**
+- Defect-bearing rounds: **18**
+- Clean rounds: **22**
+- Deterministic plugin ZIP SHA-256: `3e6c87a4a45d4064f19e1166323e0a5d1b13307845534fe3711dc0792ef9d4df`
 
 This repository implements the File 19 master plan and later governing amendments: one in-app center and File 20 bell, versioned domain-event intake, explicit lawful recipients, current File 00 verified-account revalidation, idempotent fan-out, preferences, quiet hours, digests, email/push/SMS adapters, retry/dead-letter handling, provider circuit breakers, coordinated safe mode, devices, privacy lifecycle, health diagnostics, reconciliation and Founder-approved bounded bulk notices.
 
@@ -21,7 +24,7 @@ Four-plan governance is machine-readable in `SUN_Four_Plan_Compliance`: the late
 
 ## Truth of status
 
-Specified and coded status are repository evidence. Packaged and automated-QA-green status must be tied to the exact final 2.2.0 head and deterministic artifact. This does **not** claim Hostinger staging acceptance, live provider delivery, live deployment or operational acceptance. Those gates require the real platform, provider credentials, companion modules, backup/restore, rollback rehearsal and Founder acceptance.
+Specified, coded, deterministically packaged and automated-QA-green status are repository evidence. PR #9 exact-head CI validates PHP 8.3/8.4, deterministic unit assertions, syntax/static four-plan security/privacy audit, clean-extract canonical package integrity and deterministic reproduction. This does **not** claim Hostinger staging acceptance, live provider delivery, live deployment or operational acceptance. Those gates require the real platform, provider credentials, companion modules, backup/restore, rollback rehearsal and Founder acceptance.
 
 ## Commands
 
@@ -31,7 +34,7 @@ bash tests/static-audit.sh
 bash tests/package-audit.sh
 ```
 
-The release artifact is built as `build/19-sabri-unified-notifications-2.2.0.zip` with canonical top-level folder `unified-notifications-19/`.
+The release artifact is built as `build/19-sabri-unified-notifications-2.2.0.zip` with canonical top-level folder `unified-notifications-19/`. The exact expected checksum is also recorded in root `RELEASE-SHA256.txt` and verified in CI.
 
 ## Public integration
 
