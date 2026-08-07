@@ -31,10 +31,13 @@ jobs:
         run: bash tests/static-audit.sh
       - name: Clean-extract deterministic package audit
         run: bash tests/package-audit.sh
-      - name: Verify deterministic release checksum
+      - name: Verify deterministic release reproduction
         run: |
-          sha256sum build/19-sabri-unified-notifications-2.1.0.zip
-          (cd build && sha256sum -c ../RELEASE-SHA256.txt)
+          first="$(sha256sum build/19-sabri-unified-notifications-2.1.0.zip | awk '{print $1}')"
+          bash tools/build-release.sh >/tmp/sun-rebuild.log
+          second="$(sha256sum build/19-sabri-unified-notifications-2.1.0.zip | awk '{print $1}')"
+          test "$first" = "$second"
+          cat build/19-sabri-unified-notifications-2.1.0.zip.sha256
       - name: Upload release candidate
         if: matrix.php == '8.3'
         uses: actions/upload-artifact@v4
