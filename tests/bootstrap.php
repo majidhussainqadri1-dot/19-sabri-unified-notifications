@@ -44,3 +44,4 @@ require_once dirname(__DIR__).'/19-unified-notifications/includes/class-sun-auth
 require_once dirname(__DIR__).'/19-unified-notifications/includes/class-sun-producer-registry.php';
 require_once dirname(__DIR__).'/19-unified-notifications/includes/class-sun-event-validator.php';
 require_once dirname(__DIR__).'/19-unified-notifications/includes/class-sun-template-engine.php';
+require_once dirname(__DIR__).'/19-unified-notifications/includes/class-sun-subscriptions.php';
