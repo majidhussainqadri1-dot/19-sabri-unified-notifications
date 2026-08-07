@@ -62,7 +62,7 @@ final class SUN_Plugin {
 	/** @param array<string,mixed> $atts Attributes. @return string */ public function center_shortcode($atts=array()){return $this->renderer->render_center(shortcode_atts(array(),$atts,'sabri_notifications'));}
 	/** @return void */ public function output_bell(){echo $this->renderer->render_bell();} // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 	/** @param array<string,mixed> $contract Contract. @return array<string,mixed> */ public function shell_contract($contract){$contract['file19']=array('version'=>SUN_VERSION,'slot'=>'sun_file20_notification_slot','bell_shortcode'=>'[sabri_notification_bell]','center'=>home_url('/notifications/'),'settings'=>home_url('/settings/notifications/'),'single_bell'=>true);return $contract;}
-	/** @return void */ public function maybe_upgrade(){if(SUN_DB_VERSION!==get_option('sun_db_version')){SUN_Activator::install_schema();update_option('sun_db_version',SUN_DB_VERSION,false);update_option('sun_plugin_version',SUN_VERSION,false);SUN_Activator::schedule_events();}}
+	/** @param mixed ...$unused WordPress upgrade-hook context is intentionally ignored. @return void */ public function maybe_upgrade(...$unused){if(SUN_DB_VERSION!==get_option('sun_db_version')){SUN_Activator::install_schema();update_option('sun_db_version',SUN_DB_VERSION,false);update_option('sun_plugin_version',SUN_VERSION,false);SUN_Activator::schedule_events();}}
 	/** @return SUN_Notification_Service */ public function notifications(){return $this->notifications;}
 	/** @return SUN_Preferences */ public function preferences(){return $this->preferences;}
 	/** @return SUN_Subscriptions */ public function subscriptions(){return $this->subscriptions;}
