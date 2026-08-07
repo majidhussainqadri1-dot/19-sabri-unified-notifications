@@ -62,9 +62,12 @@ This checksum covers the deterministic installable plugin folder `unified-notifi
 
 ## Post-Round-40 DoD verification
 
-Because Round 40 itself required a final code correction, the File 19 DoD requires fresh post-change verification rather than treating the Round-40 review as proof of its own fix.
+Because Round 40 itself required a final code correction, File 19's Definition of Done requires fresh post-change verification rather than treating Round 40 as proof of its own fix.
 
-- Verification A — **CLEAN / CI SUCCESS**: exact-head PHP 8.3 + 8.4 unit/static/package/reproducibility/frozen-checksum workflow run `31203217333` completed successfully after the final checksum was frozen.
-- Verification B — **required on the ledger-updated exact head**: the ledger-only commit that records the forty-round result triggers the same frozen-checksum CI again. Its result is intentionally not pre-claimed inside this document; it must be read from GitHub evidence.
+- Verification A — **CLEAN / CI SUCCESS**: exact-head PHP 8.3 + 8.4 unit/static/package/reproducibility/frozen-checksum workflow run `31203217333` passed after the Round-40 code correction and final plugin checksum freeze.
+- Verification B — **one additional release-workflow hygiene defect group found and fixed outside the requested 40-round tally**: repository comparison found two obsolete 2.3 workflows (`file19-final-gate-2.3.yml` and `release-evidence-2.3.yml`) that could remain stale after the 2.4.0 handoff. Both were removed; this does not alter the requested 31/9 tally because it belongs to the mandatory post-change DoD verification, not a numbered review round.
+- Verification C — **CLEAN / CI SUCCESS**: after removal of those obsolete workflows, exact-head quality run `31203442681` completed successfully with PHP 8.3 + 8.4, unit assertions, static/security regression audit, clean-extract package audit, deterministic rebuild and frozen checksum verification.
+
+The plugin checksum remains `f452b54775f7a75707093b550de4bbc618f7dc27c0eb8947c96ea43e53997051` because root ledger/workflow metadata is not packaged inside the installable plugin ZIP.
 
 Staging-Accepted, Live-Deployed and Operational remain separate evidence gates under the governing plans.
