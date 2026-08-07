@@ -9,12 +9,12 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 final class SUN_Auth {
 	/**
-	 * Return current File 00 identity assertions.
+	 * Return current File 00 v2 identity assertions.
 	 *
 	 * Protected notification actions fail closed when the canonical membership
-	 * assertion provider is unavailable. Local WordPress metadata is used only
-	 * for presentation fallbacks such as locale/timezone; it never grants
-	 * account eligibility, Founder authority, verification or guardian status.
+	 * assertion provider is unavailable. Legacy/local user metadata is never an
+	 * authority substitute. Local WordPress data is used only for locale/timezone
+	 * presentation fallbacks.
 	 *
 	 * @param int $user_id User ID.
 	 * @return array<string,mixed>
@@ -23,10 +23,7 @@ final class SUN_Auth {
 		$user_id = absint( $user_id );
 		$user    = get_userdata( $user_id );
 		$claims  = apply_filters( 'sabri_membership_claims_v2', null, $user_id );
-		if ( ! is_array( $claims ) ) {
-			$claims = apply_filters( 'sabri_membership_claims', array(), $user_id );
-		}
-		$claims = is_array( $claims ) ? $claims : array();
+		$claims  = is_array( $claims ) ? $claims : array();
 		$available = ! empty( $claims );
 		$status = sanitize_key( (string) ( $claims['account_status'] ?? $claims['status'] ?? 'unknown' ) );
 		$blocked_states = array( 'suspended', 'revoked', 'blocked', 'security_hold', 'deleted', 'rejected' );
@@ -61,7 +58,7 @@ final class SUN_Auth {
 			'consent_ok'        => $consent_ok,
 			'email_verified'    => $approved && ! empty( $claims['email_verified'] ),
 			'phone_verified'    => $approved && ! empty( $claims['phone_verified'] ),
-			'founder'           => ! empty( $claims['institutional_founder'] ) || ! empty( $claims['founder'] ),
+			'founder'           => $approved && ( ! empty( $claims['institutional_founder'] ) || ! empty( $claims['founder'] ) ),
 			'verified_doctor'   => $approved && ! empty( $claims['verified_doctor'] ),
 			'locale'            => $locale ?: 'en_US',
 			'timezone'          => $timezone,
@@ -83,34 +80,36 @@ final class SUN_Auth {
 
 	/** @return bool */
 	public function can_manage() {
-		return current_user_can( 'manage_sabri_notifications' ) || current_user_can( 'manage_options' );
+		$user_id = get_current_user_id();
+		return $user_id > 0 && $this->is_recipient_eligible( $user_id ) && ( current_user_can( 'manage_sabri_notifications' ) || current_user_can( 'manage_options' ) );
 	}
 
 	/** @return bool */
 	public function can_view_health() {
-		return current_user_can( 'view_sabri_notification_health' ) || $this->can_manage();
+		$user_id = get_current_user_id();
+		return $user_id > 0 && $this->is_recipient_eligible( $user_id ) && ( current_user_can( 'view_sabri_notification_health' ) || $this->can_manage() );
 	}
 
 	/** @return bool */
 	public function can_retry() {
-		return current_user_can( 'retry_sabri_notification_delivery' ) || $this->can_manage();
+		$user_id = get_current_user_id();
+		return $user_id > 0 && $this->is_recipient_eligible( $user_id ) && ( current_user_can( 'retry_sabri_notification_delivery' ) || $this->can_manage() );
 	}
 
 	/** @return bool */
 	public function can_send_bulk() {
-		return current_user_can( 'send_sabri_bulk_notifications' ) && $this->is_founder( get_current_user_id() );
+		$user_id = get_current_user_id();
+		return $user_id > 0 && $this->is_recipient_eligible( $user_id ) && current_user_can( 'send_sabri_bulk_notifications' ) && $this->is_founder( $user_id );
 	}
 
 	/** @param int $user_id User ID. @return bool */
 	public function is_founder( $user_id ) {
 		$claims = $this->assertions( $user_id );
-		$founder = ! empty( $claims['claims_available'] ) && ! empty( $claims['founder'] );
+		$founder = ! empty( $claims['claims_available'] ) && ! empty( $claims['active'] ) && ! empty( $claims['founder'] );
 		return (bool) apply_filters( 'sun_is_founder', $founder, absint( $user_id ), $claims );
 	}
 
-	/**
-	 * @return string
-	 */
+	/** @return string */
 	private function eligibility_reason( $available, $suspended, $risk_hold, $guardian_ok, $consent_ok, $status ) {
 		if ( ! $available ) {
 			return 'membership-provider-unavailable';
