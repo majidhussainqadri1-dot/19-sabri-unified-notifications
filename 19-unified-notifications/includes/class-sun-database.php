@@ -20,7 +20,7 @@ final class SUN_Database {
 	public static function table( $logical ) {
 		global $wpdb;
 		$allowed = array(
-			'events', 'notifications', 'preferences', 'deliveries', 'templates',
+			'events', 'notifications', 'preferences', 'subscriptions', 'deliveries', 'templates',
 			'policies', 'devices', 'dead_letters', 'audit', 'bulk_jobs',
 		);
 		if ( ! in_array( $logical, $allowed, true ) ) {
@@ -29,11 +29,7 @@ final class SUN_Database {
 		return $wpdb->prefix . self::$prefix . $logical;
 	}
 
-	/**
-	 * Generate a stable UUID.
-	 *
-	 * @return string
-	 */
+	/** @return string */
 	public static function uuid() {
 		if ( function_exists( 'wp_generate_uuid4' ) ) {
 			return wp_generate_uuid4();
@@ -44,20 +40,12 @@ final class SUN_Database {
 		return vsprintf( '%s%s-%s-%s-%s-%s%s%s', str_split( bin2hex( $data ), 4 ) );
 	}
 
-	/**
-	 * UTC database timestamp.
-	 *
-	 * @return string
-	 */
+	/** @return string */
 	public static function now() {
 		return function_exists( 'current_time' ) ? current_time( 'mysql', true ) : gmdate( 'Y-m-d H:i:s' );
 	}
 
-	/**
-	 * Begin a transaction when supported.
-	 *
-	 * @return void
-	 */
+	/** @return void */
 	public static function begin() {
 		global $wpdb;
 		$wpdb->query( 'START TRANSACTION' ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
@@ -75,21 +63,13 @@ final class SUN_Database {
 		$wpdb->query( 'ROLLBACK' ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
 	}
 
-	/**
-	 * Stable JSON encoding for hashing and audit evidence.
-	 *
-	 * @param mixed $value Value.
-	 * @return string
-	 */
+	/** @param mixed $value Value. @return string */
 	public static function canonical_json( $value ) {
 		$value = self::sort_recursive( $value );
 		return (string) wp_json_encode( $value, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE );
 	}
 
-	/**
-	 * @param mixed $value Value.
-	 * @return mixed
-	 */
+	/** @param mixed $value Value. @return mixed */
 	private static function sort_recursive( $value ) {
 		if ( ! is_array( $value ) ) {
 			return $value;
