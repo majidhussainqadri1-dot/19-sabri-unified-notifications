@@ -32,7 +32,7 @@
           body: JSON.stringify({ action: action.dataset.sunAction, version: Number(card.dataset.sunVersion || 0) }),
         });
         updateCount(result.unread_count);
-        if (action.dataset.sunAction === 'archive') card.hidden = true;
+        if (action.dataset.sunAction === 'archive' || action.dataset.sunAction === 'report') card.hidden = true;
         else window.location.reload();
       } catch (error) { announce(error.message); action.disabled = false; }
       return;
@@ -57,18 +57,21 @@
     }
   });
   document.addEventListener('submit', async (event) => {
-    const form = event.target.closest('[data-sun-preference]');
+    const prefForm = event.target.closest('[data-sun-preference]');
+    const subscriptionForm = event.target.closest('[data-sun-subscription]');
+    const form = prefForm || subscriptionForm;
     if (!form) return;
     event.preventDefault();
     const button = form.querySelector('button[type="submit"]');
     if (button) button.disabled = true;
     const values = Object.fromEntries(new FormData(form).entries());
     values.enabled = form.elements.enabled?.checked || false;
-    values.quiet_enabled = form.elements.quiet_enabled?.checked || false;
     values.version = Number(values.version || 0);
+    if (prefForm) values.quiet_enabled = form.elements.quiet_enabled?.checked || false;
     try {
-      const result = await api('preferences', { method: 'POST', body: JSON.stringify(values) });
-      form.elements.version.value = result.version;
+      const endpoint = subscriptionForm ? 'subscriptions' : 'preferences';
+      const result = await api(endpoint, { method: 'POST', body: JSON.stringify(values) });
+      if (form.elements.version) form.elements.version.value = result.version;
       announce(cfg.i18n?.saved || 'Saved.');
     } catch (error) { announce(error.message); }
     finally { if (button) button.disabled = false; }
