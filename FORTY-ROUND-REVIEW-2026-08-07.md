@@ -2,7 +2,7 @@
 
 Branch: `file19-forty-review-2.4.0`  
 Runtime/schema candidate: `2.4.0 / 2.4.0`  
-Method: each round is independent and sequential; when a defect is found, it is corrected before the next numbered review begins. Staging/live/operational acceptance is not claimed by this ledger.
+Method: each requested round is independent and sequential; when a defect is found, it is corrected before the next numbered review begins. Staging/live/operational acceptance is not claimed by this ledger.
 
 | Round | Result | Primary finding / correction |
 |---:|---|---|
@@ -45,17 +45,26 @@ Method: each round is independent and sequential; when a defect is found, it is 
 | 37 | DEFECT → FIXED | Runtime/schema/package/test harness promoted and aligned to 2.4.0. |
 | 38 | DEFECT → FIXED | CI/artifact paths were stale; aligned to 2.4.0 and expanded regressions. |
 | 39 | DEFECT → FIXED | README/plugin readme/changelog/release checksum evidence was stale; corrected and exact-head checksum frozen. |
-| 40 | PENDING | Final independent post-correction adversarial review. |
+| 40 | DEFECT → FIXED | Final adversarial concurrency review found event-ingestion race truth and pre-commit integration-hook exposure; concurrent duplicate ingestion now resolves idempotently and `sun_notification_created` is emitted only after the canonical transaction commits. |
 
-## Tally after Round 39
+## Requested forty-round tally
 
-- Defect-bearing rounds: **30**
+- Defect-bearing rounds: **31**
 - Clean rounds: **9**
-- Pending: **1**
-- Known unresolved repository-owned blocker/critical at this point: **0**, subject to Round 40 and exact-head CI.
+- Requested rounds completed: **40 / 40**
+- Every defect found in a numbered round was corrected before that round/cycle was closed.
 
-## Frozen 2.4.0 plugin ZIP checksum after the Round-39 plugin-document correction
+## Final deterministic plugin artifact
 
-`79e3f095c8db1157a614639e04bd9e1c7a93a1bb68bc4007e8ea29a8f1bec976  19-sabri-unified-notifications-2.4.0.zip`
+`f452b54775f7a75707093b550de4bbc618f7dc27c0eb8947c96ea43e53997051  19-sabri-unified-notifications-2.4.0.zip`
 
 This checksum covers the deterministic installable plugin folder `unified-notifications-19/`; root audit/CI metadata do not enter the plugin ZIP.
+
+## Post-Round-40 DoD verification
+
+Because Round 40 itself required a final code correction, the File 19 DoD requires fresh post-change verification rather than treating the Round-40 review as proof of its own fix.
+
+- Verification A — **CLEAN / CI SUCCESS**: exact-head PHP 8.3 + 8.4 unit/static/package/reproducibility/frozen-checksum workflow run `31203217333` completed successfully after the final checksum was frozen.
+- Verification B — **required on the ledger-updated exact head**: the ledger-only commit that records the forty-round result triggers the same frozen-checksum CI again. Its result is intentionally not pre-claimed inside this document; it must be read from GitHub evidence.
+
+Staging-Accepted, Live-Deployed and Operational remain separate evidence gates under the governing plans.
