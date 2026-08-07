@@ -16,12 +16,7 @@ final class SUN_Event_Validator {
 		$this->registry = $registry;
 	}
 
-	/**
-	 * Validate and normalize an event envelope.
-	 *
-	 * @param array<string,mixed> $event Event.
-	 * @return array<string,mixed>|WP_Error
-	 */
+	/** @param array<string,mixed> $event Event. @return array<string,mixed>|WP_Error */
 	public function validate( array $event ) {
 		$required = array( 'producer', 'owner', 'event_id', 'event_type', 'schema_version', 'occurred_at', 'recipients' );
 		foreach ( $required as $field ) {
@@ -33,9 +28,7 @@ final class SUN_Event_Validator {
 		$producer      = sanitize_key( (string) $event['producer'] );
 		$event_type    = sanitize_text_field( (string) $event['event_type'] );
 		$authorization = $this->registry->authorize_type( $producer, $event_type );
-		if ( is_wp_error( $authorization ) ) {
-			return $authorization;
-		}
+		if ( is_wp_error( $authorization ) ) { return $authorization; }
 		$config = $this->registry->get( $producer );
 		$owner  = sanitize_text_field( (string) $event['owner'] );
 		if ( ! $config || ! $this->same_owner( $owner, (string) ( $config['owner'] ?? '' ) ) ) {
@@ -58,13 +51,15 @@ final class SUN_Event_Validator {
 		}
 
 		$recipients = $this->normalize_recipients( $event['recipients'] );
-		if ( is_wp_error( $recipients ) ) {
-			return $recipients;
-		}
+		if ( is_wp_error( $recipients ) ) { return $recipients; }
 		$scope = $this->normalize_subscription_scope( $event['subscription_scope'] ?? null );
-		if ( is_wp_error( $scope ) ) {
-			return $scope;
+		if ( is_wp_error( $scope ) ) { return $scope; }
+
+		$catalog = SUN_Four_Plan_Compliance::event_catalog();
+		if ( ! empty( $catalog[ $event_type ]['subscription_required'] ) && ( empty( $scope ) || empty( $scope['required'] ) ) ) {
+			return new WP_Error( 'sun_subscription_scope_required', __( 'This notification event requires an explicit opt-in subscription scope.', 'sabri-unified-notifications' ), array( 'status' => 400 ) );
 		}
+
 		$data = isset( $event['data'] ) && is_array( $event['data'] ) ? $this->sanitize_data( $event['data'] ) : array();
 		if ( strlen( wp_json_encode( $data ) ) > (int) apply_filters( 'sun_event_data_max_bytes', 65536, $producer ) ) {
 			return new WP_Error( 'sun_event_data_too_large', __( 'The event data exceeds the allowed size.', 'sabri-unified-notifications' ), array( 'status' => 413 ) );
@@ -106,16 +101,12 @@ final class SUN_Event_Validator {
 		$out  = array();
 		$seen = array();
 		foreach ( $recipients as $recipient ) {
-			if ( is_numeric( $recipient ) ) {
-				$recipient = array( 'user_id' => absint( $recipient ) );
-			}
+			if ( is_numeric( $recipient ) ) { $recipient = array( 'user_id' => absint( $recipient ) ); }
 			if ( ! is_array( $recipient ) || empty( $recipient['user_id'] ) ) {
 				return new WP_Error( 'sun_recipient_invalid', __( 'Every recipient must contain a canonical user identifier.', 'sabri-unified-notifications' ), array( 'status' => 400 ) );
 			}
 			$user_id = absint( $recipient['user_id'] );
-			if ( $user_id < 1 || isset( $seen[ $user_id ] ) ) {
-				continue;
-			}
+			if ( $user_id < 1 || isset( $seen[ $user_id ] ) ) { continue; }
 			$seen[ $user_id ] = true;
 			$out[] = array(
 				'user_id' => $user_id,
@@ -128,9 +119,7 @@ final class SUN_Event_Validator {
 
 	/** @param mixed $scope Scope. @return array<string,mixed>|WP_Error */
 	private function normalize_subscription_scope( $scope ) {
-		if ( null === $scope || array() === $scope || '' === $scope ) {
-			return array();
-		}
+		if ( null === $scope || array() === $scope || '' === $scope ) { return array(); }
 		if ( ! is_array( $scope ) ) {
 			return new WP_Error( 'sun_subscription_scope_invalid', __( 'The notification subscription scope is invalid.', 'sabri-unified-notifications' ), array( 'status' => 400 ) );
 		}
@@ -156,31 +145,23 @@ final class SUN_Event_Validator {
 	private function sanitize_data( $value ) {
 		if ( is_array( $value ) ) {
 			$out = array();
-			foreach ( array_slice( $value, 0, 100, true ) as $key => $item ) {
-				$out[ sanitize_key( (string) $key ) ] = $this->sanitize_data( $item );
-			}
+			foreach ( array_slice( $value, 0, 100, true ) as $key => $item ) { $out[ sanitize_key( (string) $key ) ] = $this->sanitize_data( $item ); }
 			return $out;
 		}
-		if ( is_bool( $value ) || is_int( $value ) || is_float( $value ) || null === $value ) {
-			return $value;
-		}
+		if ( is_bool( $value ) || is_int( $value ) || is_float( $value ) || null === $value ) { return $value; }
 		return sanitize_textarea_field( (string) $value );
 	}
 
 	/** @param mixed $value Value. @return string|null */
 	private function normalize_optional_datetime( $value ) {
-		if ( empty( $value ) ) {
-			return null;
-		}
+		if ( empty( $value ) ) { return null; }
 		$timestamp = strtotime( (string) $value );
 		return false === $timestamp ? null : gmdate( 'Y-m-d H:i:s', $timestamp );
 	}
 
 	/** @param string $left Left. @param string $right Right. @return bool */
 	private function same_owner( $left, $right ) {
-		$normal = static function( $value ) {
-			return strtolower( preg_replace( '/[^a-z0-9]+/i', '', (string) $value ) );
-		};
+		$normal = static function( $value ) { return strtolower( preg_replace( '/[^a-z0-9]+/i', '', (string) $value ) ); };
 		return '' !== $normal( $left ) && hash_equals( $normal( $right ), $normal( $left ) );
 	}
 }
