@@ -1,73 +1,90 @@
-# File 19 — Four-Plan Audit and Corrective Register
+# File 19 — Fresh Four-Plan Audit and Corrective Register
 
 Date: 2026-08-07 (Pakistan Standard Time)
-Corrective release: 2.1.0 / schema 2.1.0
+Corrective release: 2.2.0 / schema 2.2.0
+Baseline re-reviewed: main 720be418f548d03a1def9a841f8173c2f1e8919b
 
 ## Governing corpus and precedence
 
-1. SSH-PMP-2026-v3.0 — platform constitution, canonical ownership, status truth, verified entry, security/privacy and release gates.
-2. Sabri Recovered Directives v2.1 — later Founder amendments including central green, RTL/right-priority, one complete free tier, no donor advantage, global single navigation, continued review/fix and privacy/minimization.
-3. Sabri Continuous Value / Top-20 Superset v1.0 — one-roof value, top-platform notification utility, user control, healthy-use, low-bandwidth/accessibility, File 26 discovery ownership and continuous-value governance.
-4. SSH-F19-PLAN-2026-v1.0 — File 19 canonical notification entity, single bell/center, preferences, quiet hours, digests, adapters, retry/dead-letter, audit, privacy, migration, rollback and QA.
+1. SSH-PMP-2026-v3.0 — platform constitution, canonical ownership, seven status layers, security/privacy and release gates.
+2. Sabri Recovered Directives v2.1 — later Founder amendments: central green, RTL/right-priority, one complete free tier, zero donor advantage, continued review/fix, Islamic privacy/minimization and post-GitHub harmonization.
+3. Sabri Continuous Value / Top-20 Superset v1.0 — CV-097 through CV-106 notification requirements, healthy-use, one-roof value, accessibility and File 26 discovery ownership.
+4. SSH-F19-PLAN-2026-v1.0 — File 19 canonical notification projection/entity, single bell/center, preferences, quiet hours, digests, delivery adapters, retries/dead-letter, device lifecycle, privacy, migration, rollback, QA and DoD.
 
-Precedence applied: latest explicit Founder/safety rule > recovered directives > later central Top-20 constitution > dedicated File 19 requirement > verified runtime evidence. Older paid-tier language in an earlier file plan is not an active runtime rule.
+Precedence applied: latest explicit Founder/safety rule > recovered directives > later Top-20 central constitution > dedicated File 19 plan > verified runtime evidence. Historical paid-tier language is superseded by the current one-complete-free-tier law.
 
-## Review round 1 — Constitution, ownership and business-law
+## Fresh review round 1 — Constitution, runtime baseline, packaging and ownership
 
-Defects found:
-- No executable four-plan trace/precedence manifest.
-- Runtime baseline still declared WordPress 6.6 / PHP 8.1 rather than the current project baseline.
-- No explicit machine-readable guarantee that donor/payment state cannot affect notification delivery, importance or access.
-- File 26 search/discovery ownership and File 20/25 shell/visual ownership were only documentary, not executable governance metadata.
-
-Corrections:
-- Added `SUN_Four_Plan_Compliance` with all four governing plan IDs, canonical owners, green/RTL/free-tier/no-donor rules and no-duplicate-backend invariants.
-- Raised corrective runtime/schema to 2.1.0 and project minimums to WordPress 7.0 / PHP 8.3.
-
-Result: no known repository-owned constitution/business-law blocker.
-
-## Review round 2 — Identity, authorization, privacy and trust
-
-Defects found:
-- Critical: File 19 treated local `sun_*` user-meta as suspension/verification/guardian truth, violating File 00 canonical ownership.
-- Critical: when File 00 was absent, protected notification actions could fall back to duplicated local identity state instead of failing closed.
-- High: recipient eligibility did not explicitly re-evaluate revocation, risk blocking and consent state.
-- Medium: Founder determination did not consume canonical institutional claims.
+Defects found on the 2.1.0 main baseline:
+- Activation code still admitted WordPress 6.6 and PHP 8.1 even though the plugin header/governing project baseline had moved to WordPress 7.0.1 / PHP 8.3.
+- Deterministic ZIP still used `19-unified-notifications/` as its top folder instead of the File 19 plan's canonical package folder `unified-notifications-19/`.
+- Release tooling and CI still identified the old 2.1.0 artifact.
 
 Corrections:
-- Reworked `SUN_Auth` to consume `sabri_membership_claims_v2` on every protected path.
-- Removed local File 19 identity metadata as authority.
-- Added live active/verified/suspended/revoked/risk/guardian/consent checks and fail-closed behavior when canonical claims are unavailable.
-- Founder governance now accepts the canonical institutional claim, with the configured Founder ID only as bootstrap compatibility.
+- Activation and metadata now require WordPress 7.0.1 and PHP 8.3; health reports baseline drift as degraded.
+- Runtime/schema raised to 2.2.0.
+- Deterministic release ZIP now stages exactly one `unified-notifications-19/` top-level folder and verifies its embedded manifest.
+- Package and CI tests now target 2.2.0 and the canonical package folder.
 
-Result: no known repository-owned identity/authorization blocker.
+Round result: defects found and corrected.
 
-## Review round 3 — Top-20 value, UX, healthy-use and cross-file integration
+## Fresh review round 2 — File 00 identity, authorization and provenance
 
-Findings:
-- Single bell/center, filters, read/archive/bulk controls, quiet hours, digests, email/push/SMS, safe deep links, queue/retry/dead-letter, green visual system, RTL, reduced motion and responsive behavior already existed.
-- No paid/donor priority path exists in policy resolution; the compliance contract now makes that prohibition explicit.
-- Search/discovery remains outside File 19 and is explicitly assigned to File 26; File 19 exposes notifications rather than creating a second search backend.
-- File 20 remains the one-bell placement owner and File 25 remains visual-token owner.
+Defects found:
+- `SUN_Auth` consumed File 00 claims but silently discarded `email_verified` and `phone_verified`; therefore channel defaults/adapters could not consistently receive the canonical verification facts.
+- It also discarded `founder` and `institutional_role` before `is_founder()` checked them; canonical Founder authorization therefore did not work as documented.
+- The configured numeric Founder ID could act as an implicit fallback, potentially outranking File 00.
+- A registered producer's event type was checked, but the event's claimed `owner` was not bound to the producer registry contract.
 
-Correction:
-- Added regression assertions for four-plan ownership, green brand, one complete free tier and no donor advantage.
+Corrections:
+- File 00 email, phone, Founder and institutional-role claims are preserved as minimal current assertions.
+- Canonical File 00 Founder identity now works; numeric bootstrap is disabled unless an explicit host filter enables it.
+- Protected recipient eligibility remains fail-closed when File 00 is unavailable and rechecks active/verified/suspended/revoked/risk/guardian/consent state.
+- Event validation now rejects producer/owner mismatches and normalizes the registered owner as provenance.
 
-Result: no known repository-owned Top-20/UX/cross-file blocker.
+Round result: defects found and corrected.
 
-## Review round 4 — Adversarial release, regression and truth-status
+## Fresh review round 3 — Top-20 CV-097–CV-106 value completion
 
-Adversarial cases reviewed:
-- duplicate/replayed producer events; cross-origin deep links; broad-role bulk recipients; unsafe template variables/scripts; sensitive external previews; provider failure; dead-letter retry; stale identity claims; File 00 outage; donation/payment influence; duplicate bell ownership; search-owner drift; rollback/package reproducibility.
+Defects found:
+- The prior compliance registry named Top-20 governance generally but did not implement the explicit CV-099 granular subscription family (person/topic/community/course/event/doctor/channel with frequency).
+- CV-101 appointment reminders, CV-102 correction/retraction alerts, CV-103 account-security alerts and CV-104 opt-in creator bulletins lacked an explicit semantic contract/catalog in File 19.
+- CV-106 notification-fatigue measurement was absent.
+- The central settings surface had category/channel preferences but no explicit subscription management.
 
-Corrections and evidence:
-- Added deterministic tests for fail-closed File 00 outage and valid verified canonical claims.
-- Added deterministic four-plan compliance assertions.
-- Updated release/build/CI identity to the corrective 2.1.0 artifact.
-- Four-plan compliance is included in operational health evidence without exposing user data.
+Corrections:
+- Added canonical `subscriptions` table and `SUN_Subscriptions` with optimistic concurrency, explicit scope types, enable/disable and immediate/daily/weekly frequency.
+- Added producer-supplied `subscription_scope` validation; opt-in-required scoped events are suppressed unless subscribed. Security/safety/system notices cannot be suppressed by ordinary subscription records.
+- Subscription frequency now governs external digest scheduling when present, while the in-app center remains the unified eligible-update history.
+- Added Top-20 capability registry CV-097 through CV-106 and semantic event catalog for appointment, correction/retraction, security and creator-bulletin facts. Native domain owners remain the source of truth.
+- Added privacy-minimized `SUN_Wellbeing` 30-day aggregates and `/wellbeing` endpoint; the guardrail explicitly states that more notifications are not a KPI.
+- Added REST/PHP integration for granular subscriptions and an accessible central settings UI for viewing, updating, adding and removing them.
 
-Truth-status after this audit:
-- Specified: complete for repository-owned File 19 scope.
-- Coded: corrective 2.1.0 branch complete for identified defects.
-- Packaged/Automated-QA: must be proven by the PR exact-head CI artifact/checksum.
-- Staging-Accepted, Live-Deployed, Operational: not claimed; require real Hostinger/WordPress/provider/integration evidence.
+Round result: defects found and corrected.
+
+## Fresh review round 4 — Adversarial privacy, regression, UI and release evidence
+
+Defects found:
+- The new subscription records initially required explicit privacy export/erasure and guarded-uninstall coverage.
+- Delivery ledger erasure retained direct recipient IDs after notification content deletion.
+- Regression tests did not yet prove canonical Founder/email/phone claims, producer-owner binding, Top-20 capability inventory, scope validation, canonical package folder or healthy-use marker.
+
+Corrections:
+- Privacy exporter now includes safe preference, subscription, device metadata and bounded delivery history; raw device tokens and notification ciphertext are not exported.
+- Erasure removes devices/preferences/subscriptions, deletes notification content/deep links and pseudonymizes direct recipient IDs/provider IDs in retained delivery tombstones, subject to an approved retention hold.
+- Guarded destructive uninstall includes the subscription table; default uninstall remains non-destructive.
+- Accessible responsive subscription and wellbeing surfaces were added without creating a second shell or visual-system owner.
+- Deterministic unit/static/package suites were expanded to cover the fresh defects and Top-20 requirements.
+
+Round result: defects found and corrected. Final exact-head package/Automated-QA evidence must come from CI after this final source change.
+
+## Truth-status rule
+
+Repository completion and production completion are intentionally separate:
+- Specified: complete for known File 19 repository-owned scope after the four-plan reconciliation.
+- Coded: 2.2.0 corrective candidate contains all corrections above.
+- Packaged / Automated-QA Green: only after exact-head CI proves deterministic build, package integrity and tests.
+- Staging-Accepted: requires real WordPress/Hostinger, File 00/20/24/25/26 integrations, provider credentials, role/device/browser/accessibility/load/security/backup/restore/rollback evidence and Founder acceptance.
+- Live-Deployed / Operational: not inferred from source or CI.
+
+Zero-known-defect means zero known unresolved repository-owned blocker after the four fresh reviews; it is not a claim of mathematical infallibility and review reopens on new evidence.
