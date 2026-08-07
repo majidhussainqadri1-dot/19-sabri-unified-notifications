@@ -1,6 +1,6 @@
 <?php
 /**
- * Notification policy, channel, mandatory, quiet-hour and digest decisions.
+ * Notification policy, channel, mandatory, quiet-hour, digest and subscription decisions.
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -8,15 +8,15 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 final class SUN_Policy_Engine {
-	/** @var SUN_Preferences */
-	private $preferences;
-	/** @var SUN_Producer_Registry */
-	private $registry;
+	/** @var SUN_Preferences */ private $preferences;
+	/** @var SUN_Producer_Registry */ private $registry;
+	/** @var SUN_Subscriptions */ private $subscriptions;
 
-	/** @param SUN_Preferences $preferences Preferences. @param SUN_Producer_Registry $registry Registry. */
-	public function __construct( SUN_Preferences $preferences, SUN_Producer_Registry $registry ) {
-		$this->preferences = $preferences;
-		$this->registry    = $registry;
+	/** @param SUN_Preferences $preferences Preferences. @param SUN_Producer_Registry $registry Registry. @param SUN_Subscriptions $subscriptions Subscriptions. */
+	public function __construct( SUN_Preferences $preferences, SUN_Producer_Registry $registry, SUN_Subscriptions $subscriptions ) {
+		$this->preferences   = $preferences;
+		$this->registry      = $registry;
+		$this->subscriptions = $subscriptions;
 	}
 
 	/**
@@ -27,7 +27,6 @@ final class SUN_Policy_Engine {
 	 * @return array<string,mixed>|WP_Error
 	 */
 	public function decide( array $event, array $recipient ) {
-		global $wpdb;
 		$policy = $this->find_policy( $event['event_type'] );
 		if ( ! $policy ) {
 			return new WP_Error( 'sun_policy_missing', __( 'No active notification policy matches this event.', 'sabri-unified-notifications' ) );
@@ -36,8 +35,23 @@ final class SUN_Policy_Engine {
 		$priority    = in_array( $event['priority'], array( 'low', 'normal', 'high', 'critical' ), true ) ? $event['priority'] : $policy['priority'];
 		$mandatory   = (bool) $policy['mandatory'];
 		$sensitivity = in_array( $event['sensitivity'], array( 'standard', 'sensitive', 'restricted', 'secret' ), true ) ? $event['sensitivity'] : $policy['sensitivity'];
-		$channels    = json_decode( (string) $policy['channels_json'], true );
-		$channels    = is_array( $channels ) ? array_values( array_intersect( $channels, $this->preferences->channels() ) ) : array( 'in_app' );
+
+		$subscription = $this->subscriptions->evaluate_event( (int) $recipient['user_id'], $event, $category );
+		if ( empty( $subscription['allowed'] ) ) {
+			return array(
+				'suppressed'      => true,
+				'suppress_reason' => 'subscription_preference',
+				'category'        => $category,
+				'priority'        => $priority,
+				'mandatory'       => false,
+				'sensitivity'     => $sensitivity,
+				'channels'        => array(),
+				'deliveries'      => array(),
+			);
+		}
+
+		$channels = json_decode( (string) $policy['channels_json'], true );
+		$channels = is_array( $channels ) ? array_values( array_intersect( $channels, $this->preferences->channels() ) ) : array( 'in_app' );
 		if ( ! empty( $recipient['channels'] ) ) {
 			$channels = array_values( array_intersect( $channels, $recipient['channels'] ) );
 		}
@@ -54,8 +68,14 @@ final class SUN_Policy_Engine {
 			if ( 'in_app' === $channel ) {
 				continue;
 			}
-			$base   = $this->preferences->next_delivery_time( $recipient['user_id'], $category, $channel, $mandatory );
-			$digest = $mandatory || ! $policy['digest_allowed'] ? array( 'time' => $base, 'key' => null ) : $this->preferences->digest_schedule( $recipient['user_id'], $category, $channel, $base );
+			$base = $this->preferences->next_delivery_time( $recipient['user_id'], $category, $channel, $mandatory );
+			if ( $mandatory || ! $policy['digest_allowed'] ) {
+				$digest = array( 'time' => $base, 'key' => null );
+			} elseif ( ! empty( $subscription['frequency'] ) ) {
+				$digest = $this->digest_for_frequency( (string) $subscription['frequency'], $base, (string) $pref['timezone'] );
+			} else {
+				$digest = $this->preferences->digest_schedule( $recipient['user_id'], $category, $channel, $base );
+			}
 			$deliveries[] = array(
 				'channel'      => $channel,
 				'scheduled_at' => $digest['time']->format( 'Y-m-d H:i:s' ),
@@ -63,15 +83,17 @@ final class SUN_Policy_Engine {
 			);
 		}
 		return array(
-			'policy_key'      => $policy['policy_key'],
-			'policy_version'  => $policy['version'],
-			'category'        => $category,
-			'priority'        => $priority,
-			'mandatory'       => $mandatory,
-			'sensitivity'     => $sensitivity,
-			'digest_allowed'  => (bool) $policy['digest_allowed'],
-			'channels'        => $channels,
-			'deliveries'      => $deliveries,
+			'suppressed'             => false,
+			'policy_key'             => $policy['policy_key'],
+			'policy_version'         => $policy['version'],
+			'category'               => $category,
+			'priority'               => $priority,
+			'mandatory'              => $mandatory,
+			'sensitivity'            => $sensitivity,
+			'digest_allowed'         => (bool) $policy['digest_allowed'],
+			'subscription_frequency' => $subscription['frequency'],
+			'channels'               => $channels,
+			'deliveries'             => $deliveries,
 		);
 	}
 
@@ -86,7 +108,28 @@ final class SUN_Policy_Engine {
 			if ( $this->registry->matches_pattern( $event_type, $row['event_pattern'] ) ) {
 				return $row;
 			}
-		}
 		return null;
+	}
+
+	/** @param string $frequency Frequency. @param DateTimeImmutable $base Base UTC. @param string $timezone Timezone. @return array{time:DateTimeImmutable,key:string|null} */
+	private function digest_for_frequency( $frequency, DateTimeImmutable $base, $timezone ) {
+		if ( 'immediate' === $frequency ) {
+			return array( 'time' => $base, 'key' => null );
+		}
+		try {
+			$tz = new DateTimeZone( $timezone ?: 'UTC' );
+		} catch ( Exception $e ) {
+			$tz = new DateTimeZone( 'UTC' );
+		}
+		$local = $base->setTimezone( $tz );
+		if ( 'daily' === $frequency ) {
+			$next = $local->setTime( 8, 0 );
+			if ( $next <= $local ) {
+				$next = $next->modify( '+1 day' );
+			}
+			return array( 'time' => $next->setTimezone( new DateTimeZone( 'UTC' ) ), 'key' => 'daily:' . $next->format( 'Y-m-d' ) );
+		}
+		$next = $local->modify( 'next monday' )->setTime( 8, 0 );
+		return array( 'time' => $next->setTimezone( new DateTimeZone( 'UTC' ) ), 'key' => 'weekly:' . $next->format( 'o-W' ) );
 	}
 }
