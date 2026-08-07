@@ -9,6 +9,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 final class SUN_Event_Validator {
 	/** @var SUN_Producer_Registry */ private $registry;
+	/** @var int */ private $data_nodes = 0;
 	/** @param SUN_Producer_Registry $registry Registry. */
 	public function __construct( SUN_Producer_Registry $registry ) { $this->registry = $registry; }
 
@@ -65,7 +66,9 @@ final class SUN_Event_Validator {
 			return new WP_Error( 'sun_subscription_scope_required', __( 'This notification event requires an explicit opt-in subscription scope.', 'sabri-unified-notifications' ), array( 'status' => 400 ) );
 		}
 
-		$data = isset( $event['data'] ) && is_array( $event['data'] ) ? $this->sanitize_data( $event['data'] ) : array();
+		$this->data_nodes = 0;
+		$data = isset( $event['data'] ) && is_array( $event['data'] ) ? $this->sanitize_data( $event['data'], 0 ) : array();
+		if ( is_wp_error( $data ) ) { return $data; }
 		if ( strlen( wp_json_encode( $data ) ) > (int) apply_filters( 'sun_event_data_max_bytes', 65536, $producer ) ) {
 			return new WP_Error( 'sun_event_data_too_large', __( 'The event data exceeds the allowed size.', 'sabri-unified-notifications' ), array( 'status' => 413 ) );
 		}
@@ -136,9 +139,23 @@ final class SUN_Event_Validator {
 		return array('type'=>sanitize_key((string)($reference['type']??'object')),'id'=>sanitize_text_field((string)($reference['id']??'')),'public_id'=>sanitize_text_field((string)($reference['public_id']??'')));
 	}
 
-	/** @param mixed $value Value. @return mixed */
-	private function sanitize_data( $value ) {
-		if(is_array($value)){$out=array();foreach(array_slice($value,0,100,true) as $key=>$item){$out[sanitize_key((string)$key)]=$this->sanitize_data($item);}return $out;}
+	/** @param mixed $value Value. @param int $depth Depth. @return mixed|WP_Error */
+	private function sanitize_data( $value, $depth = 0 ) {
+		++$this->data_nodes;
+		$max_depth = max( 1, (int) apply_filters( 'sun_event_data_max_depth', 8 ) );
+		$max_nodes = max( 1, (int) apply_filters( 'sun_event_data_max_nodes', 5000 ) );
+		if ( $depth > $max_depth || $this->data_nodes > $max_nodes ) {
+			return new WP_Error( 'sun_event_data_complexity_exceeded', __( 'The event data is too deeply nested or complex.', 'sabri-unified-notifications' ), array( 'status' => 413 ) );
+		}
+		if ( is_array( $value ) ) {
+			$out=array();
+			foreach(array_slice($value,0,100,true) as $key=>$item){
+				$clean=$this->sanitize_data($item,$depth+1);
+				if(is_wp_error($clean)){return $clean;}
+				$out[sanitize_key((string)$key)]=$clean;
+			}
+			return $out;
+		}
 		if(is_bool($value)||is_int($value)||is_float($value)||null===$value){return $value;}
 		return sanitize_textarea_field((string)$value);
 	}
