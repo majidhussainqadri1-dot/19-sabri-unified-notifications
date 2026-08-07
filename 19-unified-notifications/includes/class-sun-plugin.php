@@ -32,7 +32,7 @@ final class SUN_Plugin {
 		$value_metrics=new SUN_Value_Metrics();
 		$this->health=new SUN_Health($delivery,$value_metrics);
 		$this->bulk=new SUN_Bulk_Service($this->notifications,$this->auth);
-		$this->renderer=new SUN_Renderer($this->notifications,$this->preferences);
+		$this->renderer=new SUN_Renderer($this->notifications,$this->preferences,$this->subscriptions);
 		$rest=new SUN_REST_Controller($this->notifications,$this->preferences,$this->subscriptions,$delivery,$reconciliation,$this->health,$this->auth,$this->registry);
 		$router=new SUN_Router($this->renderer,$this->notifications);
 		$admin=new SUN_Admin($this->health,$reconciliation,$this->bulk,$this->auth);
