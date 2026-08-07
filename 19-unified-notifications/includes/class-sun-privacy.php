@@ -35,6 +35,15 @@ final class SUN_Privacy {
 		foreach ( $rows as $row ) {
 			$data[] = array( 'group_id'=>'sabri-notifications', 'group_label'=>__( 'Notifications', 'sabri-unified-notifications' ), 'item_id'=>'notification-' . $row['public_id'], 'data'=>array_map( static function( $key, $value ){ return array( 'name'=>ucwords( str_replace( '_',' ',$key ) ), 'value'=>(string) $value ); }, array_keys( $row ), array_values( $row ) ) );
 		}
+		if ( 1 === absint( $page ) ) {
+			$subscriptions = $wpdb->get_results(
+				$wpdb->prepare( 'SELECT scope_type,scope_id,event_pattern,enabled,frequency,updated_at FROM ' . SUN_Database::table( 'subscriptions' ) . ' WHERE user_id=%d ORDER BY id ASC LIMIT 500', $user->ID ),
+				ARRAY_A
+			); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+			foreach ( (array) $subscriptions as $index => $row ) {
+				$data[] = array( 'group_id'=>'sabri-notification-subscriptions', 'group_label'=>__( 'Notification Subscriptions', 'sabri-unified-notifications' ), 'item_id'=>'subscription-' . $index, 'data'=>array_map( static function( $key, $value ){ return array( 'name'=>ucwords( str_replace( '_',' ',$key ) ), 'value'=>(string) $value ); }, array_keys( $row ), array_values( $row ) ) );
+			}
+		}
 		return array( 'data'=>$data, 'done'=>count( $rows ) < $limit );
 	}
 
@@ -48,9 +57,11 @@ final class SUN_Privacy {
 		$notes = SUN_Database::table( 'notifications' );
 		$devices = SUN_Database::table( 'devices' );
 		$prefs = SUN_Database::table( 'preferences' );
+		$subscriptions = SUN_Database::table( 'subscriptions' );
 		$wpdb->query( $wpdb->prepare( "UPDATE {$notes} SET status='deleted',title='',summary='',data_ciphertext=NULL,deep_link=NULL,updated_at=%s WHERE recipient_id=%d", SUN_Database::now(), $user->ID ) ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery
 		$wpdb->delete( $devices, array( 'user_id'=>$user->ID ), array( '%d' ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
 		$wpdb->delete( $prefs, array( 'user_id'=>$user->ID ), array( '%d' ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+		$wpdb->delete( $subscriptions, array( 'user_id'=>$user->ID ), array( '%d' ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
 		SUN_Audit::record( 'privacy_erasure_completed', 'user', (string) $user->ID, array( 'purpose'=>'privacy_request' ), 0 );
 		return array( 'items_removed'=>true,'items_retained'=>false,'messages'=>array(),'done'=>true );
 	}
