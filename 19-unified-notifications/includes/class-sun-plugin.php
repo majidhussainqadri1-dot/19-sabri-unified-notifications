@@ -33,12 +33,13 @@ final class SUN_Plugin {
 		$this->health=new SUN_Health($delivery);
 		$this->wellbeing=new SUN_Wellbeing();
 		$this->bulk=new SUN_Bulk_Service($this->notifications,$this->auth);
-		$this->renderer=new SUN_Renderer($this->notifications,$this->preferences);
+		$this->renderer=new SUN_Renderer($this->notifications,$this->preferences,$this->subscriptions,$this->wellbeing);
 		$rest=new SUN_REST_Controller($this->notifications,$this->preferences,$this->subscriptions,$this->wellbeing,$delivery,$reconciliation,$this->health,$this->auth,$this->registry);
 		$router=new SUN_Router($this->renderer,$this->notifications);
 		$admin=new SUN_Admin($this->health,$reconciliation,$this->bulk,$this->auth);
 		$privacy=new SUN_Privacy();
 		add_action('plugins_loaded',array($this,'load_textdomain'));
+		add_action('plugins_loaded',array($this,'maybe_upgrade'),1);
 		$this->register_cron_interval();
 		add_action('init',array($router,'register'),5);
 		add_action('rest_api_init',array($rest,'register_routes'));
