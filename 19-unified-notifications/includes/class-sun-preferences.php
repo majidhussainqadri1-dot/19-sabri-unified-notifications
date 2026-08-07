@@ -129,7 +129,9 @@ final class SUN_Preferences {
 			}
 		} else {
 			$data['created_at'] = $now;
-			$wpdb->insert( $table, $data );
+			if ( false === $wpdb->insert( $table, $data ) ) {
+				return new WP_Error( 'sun_preference_write_failed', __( 'The notification setting could not be saved.', 'sabri-unified-notifications' ), array( 'status' => 500 ) );
+			}
 		}
 		SUN_Audit::record( 'preference_changed', 'preference', $user_id . ':' . $category . ':' . $channel, array( 'purpose' => 'user_choice' ), $user_id );
 		do_action( 'sun_notification_preference_changed', $user_id, $category, $channel, $data );
@@ -208,10 +210,11 @@ final class SUN_Preferences {
 	 */
 	public function register_device( $user_id, array $input ) {
 		global $wpdb;
+		$user_id  = absint( $user_id );
 		$provider = sanitize_key( (string) ( $input['provider'] ?? 'webpush' ) );
 		$platform = sanitize_key( (string) ( $input['platform'] ?? 'web' ) );
 		$token    = wp_json_encode( $input['token'] ?? array() );
-		if ( strlen( $token ) < 20 || strlen( $token ) > 8192 ) {
+		if ( $user_id < 1 || strlen( $token ) < 20 || strlen( $token ) > 8192 ) {
 			return new WP_Error( 'sun_device_token_invalid', __( 'The push device token is invalid.', 'sabri-unified-notifications' ), array( 'status' => 400 ) );
 		}
 		$cipher = SUN_Crypto::encrypt( $token );
@@ -221,22 +224,46 @@ final class SUN_Preferences {
 		$hash  = hash( 'sha256', $provider . ':' . $token );
 		$now   = SUN_Database::now();
 		$table = SUN_Database::table( 'devices' );
+		$existing = $wpdb->get_row(
+			$wpdb->prepare( "SELECT id,public_id,user_id FROM {$table} WHERE provider=%s AND token_hash=%s LIMIT 1", $provider, $hash ),
+			ARRAY_A
+		); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery
+		if ( $existing && (int) $existing['user_id'] !== $user_id ) {
+			return new WP_Error( 'sun_device_token_owned', __( 'This notification device is already bound to another account.', 'sabri-unified-notifications' ), array( 'status' => 409 ) );
+		}
+
 		$wpdb->query(
 			$wpdb->prepare(
 				"UPDATE {$table} SET status='revoked',updated_at=%s WHERE user_id=%d AND provider=%s AND token_hash<>%s AND status IN ('pending','active')",
 				$now, $user_id, $provider, $hash
 			)
 		); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery
-		$public_id = SUN_Database::uuid();
-		$wpdb->query(
-			$wpdb->prepare(
-				"INSERT INTO {$table} (public_id,user_id,provider,platform,token_hash,token_ciphertext,status,last_seen_at,created_at,updated_at) VALUES (%s,%d,%s,%s,%s,%s,'active',%s,%s,%s) ON DUPLICATE KEY UPDATE user_id=VALUES(user_id),platform=VALUES(platform),token_ciphertext=VALUES(token_ciphertext),status='active',last_seen_at=VALUES(last_seen_at),updated_at=VALUES(updated_at)",
-				$public_id, $user_id, $provider, $platform, $hash, $cipher, $now, $now, $now
-			)
-		); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery
-		$actual_public_id = (string) $wpdb->get_var( $wpdb->prepare( "SELECT public_id FROM {$table} WHERE provider=%s AND token_hash=%s LIMIT 1", $provider, $hash ) ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery
+
+		if ( $existing ) {
+			$updated = $wpdb->update(
+				$table,
+				array( 'platform'=>$platform, 'token_ciphertext'=>$cipher, 'status'=>'active', 'last_seen_at'=>$now, 'updated_at'=>$now ),
+				array( 'id'=>(int)$existing['id'], 'user_id'=>$user_id )
+			); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+			if ( false === $updated ) {
+				return new WP_Error( 'sun_device_write_failed', __( 'The notification device could not be saved.', 'sabri-unified-notifications' ), array( 'status' => 500 ) );
+			}
+			$public_id = (string) $existing['public_id'];
+		} else {
+			$public_id = SUN_Database::uuid();
+			$inserted = $wpdb->insert(
+				$table,
+				array(
+					'public_id'=>$public_id,'user_id'=>$user_id,'provider'=>$provider,'platform'=>$platform,'token_hash'=>$hash,'token_ciphertext'=>$cipher,
+					'status'=>'active','last_seen_at'=>$now,'created_at'=>$now,'updated_at'=>$now,
+				)
+			); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+			if ( false === $inserted ) {
+				return new WP_Error( 'sun_device_write_failed', __( 'The notification device could not be saved.', 'sabri-unified-notifications' ), array( 'status' => 500 ) );
+			}
+		}
 		SUN_Audit::record( 'device_registered', 'device', $hash, array( 'purpose' => 'push_delivery', 'provider' => $provider ), $user_id );
-		return array( 'id' => $actual_public_id ?: $public_id, 'provider' => $provider, 'platform' => $platform, 'status' => 'active' );
+		return array( 'id' => $public_id, 'provider' => $provider, 'platform' => $platform, 'status' => 'active' );
 	}
 
 	/** @param int $user_id User ID. @param string $public_id Public ID. @return bool */
