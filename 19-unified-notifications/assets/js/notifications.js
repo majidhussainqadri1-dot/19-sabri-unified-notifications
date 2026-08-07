@@ -1,7 +1,7 @@
 (() => {
   'use strict';
   const cfg = window.SUNNotifications || {};
-  const statusNodes = () => document.querySelectorAll('[data-sun-status]');
+  const statusNodes = () => document.querySelectorAll('.sun-live-region[data-sun-status]');
   const announce = (message) => statusNodes().forEach((node) => { node.textContent = message; });
   const api = async (path, options = {}) => {
     const response = await fetch(`${cfg.restUrl || ''}${path}`, { credentials: 'same-origin', headers: { 'Content-Type': 'application/json', 'X-WP-Nonce': cfg.nonce || '', ...(options.headers || {}) }, ...options });
@@ -15,7 +15,7 @@
     const action=event.target.closest('[data-sun-action]');if(action){const card=action.closest('[data-sun-id]');if(!card)return;action.disabled=true;try{const result=await api(`notifications/${encodeURIComponent(card.dataset.sunId)}`,{method:'POST',body:JSON.stringify({action:action.dataset.sunAction,version:Number(card.dataset.sunVersion||0)})});updateCount(result.unread_count);if(action.dataset.sunAction==='archive')card.hidden=true;else window.location.reload();}catch(error){announce(error.message);action.disabled=false;}return;}
     const remove=event.target.closest('[data-sun-delete-subscription]');if(remove){remove.disabled=true;try{await api(`subscriptions/${encodeURIComponent(remove.dataset.sunDeleteSubscription)}`,{method:'DELETE'});announce(cfg.i18n?.removed||'Removed.');remove.closest('[data-sun-subscription]')?.remove();}catch(error){announce(error.message);remove.disabled=false;}return;}
     const bulk=event.target.closest('[data-sun-bulk-action]');if(bulk){bulk.disabled=true;try{const result=await api('notifications/bulk',{method:'POST',body:JSON.stringify({action:bulk.dataset.sunBulkAction})});updateCount(result.unread_count);window.location.reload();}catch(error){announce(error.message);bulk.disabled=false;}return;}
-    const filter=event.target.closest('[data-sun-filter]');if(filter){const selected=filter.dataset.sunFilter;document.querySelectorAll('[data-sun-filter]').forEach((button)=>button.setAttribute('aria-pressed',button===filter?'true':'false'));document.querySelectorAll('[data-sun-status]').forEach((card)=>{if(!card.classList.contains('sun-card'))return;card.hidden=selected!=='all'&&card.dataset.sunStatus!==selected;});}
+    const filter=event.target.closest('[data-sun-filter]');if(filter){const selected=filter.dataset.sunFilter;document.querySelectorAll('[data-sun-filter]').forEach((button)=>button.setAttribute('aria-pressed',button===filter?'true':'false'));document.querySelectorAll('.sun-card[data-sun-status]').forEach((card)=>{card.hidden=selected!=='all'&&card.dataset.sunStatus!==selected;});}
   });
   document.addEventListener('submit', async (event) => {
     const pref=event.target.closest('[data-sun-preference]');const sub=event.target.closest('[data-sun-subscription]');const form=pref||sub;if(!form)return;event.preventDefault();const button=form.querySelector('button[type="submit"]');if(button)button.disabled=true;const values=Object.fromEntries(new FormData(form).entries());
