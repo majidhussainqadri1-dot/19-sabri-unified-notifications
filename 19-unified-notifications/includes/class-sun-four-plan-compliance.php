@@ -15,7 +15,7 @@ final class SUN_Four_Plan_Compliance {
 	 */
 	public static function snapshot() {
 		return array(
-			'contract'                 => 'sun.four-plan-compliance.v1',
+			'contract'                 => 'sun.four-plan-compliance.v2',
 			'file'                     => 19,
 			'canonical_owner'          => 'Unified Notifications and Alerts',
 			'governing_plans'          => array(
@@ -24,7 +24,12 @@ final class SUN_Four_Plan_Compliance {
 				'Sabri-Continuous-Value-Top-20-v1.0',
 				'SSH-F19-PLAN-2026-v1.0',
 			),
-			'precedence'               => 'latest-founder-and-safety > recovered-directives > top20-central-plan > dedicated-file-plan > verified-runtime-evidence',
+			'central_plan_order'       => array(
+				'Sabri-Continuous-Value-Top-20-v1.0',
+				'Sabri-Recovered-Directives-v2.1',
+				'SSH-PMP-2026-v3.0',
+			),
+			'precedence'               => 'latest-explicit-founder-and-safety > top20-central-plan > recovered-directives > definitive-master-v3 > dedicated-file-plan > verified-runtime-evidence',
 			'brand_primary'            => 'green',
 			'rtl_right_priority'       => true,
 			'single_free_tier'         => true,
@@ -48,6 +53,7 @@ final class SUN_Four_Plan_Compliance {
 				'privacy_minimization',
 				'quiet_hours_and_user_control',
 				'queue_retry_dead_letter_resilience',
+				'provider_circuit_breaker_and_safe_mode',
 				'accessibility_and_low_bandwidth',
 				'non_manipulative_notifications',
 			),
