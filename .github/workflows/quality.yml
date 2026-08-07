@@ -32,7 +32,9 @@ jobs:
       - name: Clean-extract deterministic package audit
         run: bash tests/package-audit.sh
       - name: Verify deterministic release checksum
-        run: (cd build && sha256sum -c ../RELEASE-SHA256.txt)
+        run: |
+          sha256sum build/19-sabri-unified-notifications-2.0.0.zip
+          (cd build && sha256sum -c ../RELEASE-SHA256.txt)
       - name: Upload release candidate
         if: matrix.php == '8.3'
         uses: actions/upload-artifact@v4
