@@ -6,6 +6,7 @@ on:
       - file-19-complete-2.0.0
     paths:
       - '.bootstrap/**'
+      - '.bootstrap2/**'
       - '.github/workflows/materialize-source.yml'
 
 permissions:
@@ -26,7 +27,16 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          cat .bootstrap/source.tar.gz.b64.part* | base64 --decode > /tmp/file19-source.tar.gz
+          cat \
+            .bootstrap2/chunk00 \
+            .bootstrap2/chunk01 \
+            .bootstrap2/chunk02 \
+            .bootstrap2/chunk03 \
+            .bootstrap2/chunk04-prefix \
+            .bootstrap/source.tar.gz.b64.part02 \
+            .bootstrap/source.tar.gz.b64.part03 \
+            .bootstrap/source.tar.gz.b64.part04 \
+            | base64 --decode > /tmp/file19-source.tar.gz
           echo '9b3e4396924e946c5f77bddc7f2b27805f364c9b5c036dfa1fd9143bb0fb0d36  /tmp/file19-source.tar.gz' | sha256sum --check --strict
 
       - name: Materialize complete source tree
@@ -34,7 +44,7 @@ jobs:
         run: |
           set -euo pipefail
           tar -xzf /tmp/file19-source.tar.gz -C .
-          rm -rf .bootstrap
+          rm -rf .bootstrap .bootstrap2
           rm -f .github/workflows/materialize-source.yml
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
