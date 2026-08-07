@@ -32,6 +32,7 @@ require_once SUN_PATH . 'includes/class-sun-producer-registry.php';
 require_once SUN_PATH . 'includes/class-sun-event-validator.php';
 require_once SUN_PATH . 'includes/class-sun-template-engine.php';
 require_once SUN_PATH . 'includes/class-sun-preferences.php';
+require_once SUN_PATH . 'includes/class-sun-four-plan-compliance.php';
 require_once SUN_PATH . 'includes/class-sun-policy-engine.php';
 require_once SUN_PATH . 'includes/class-sun-deep-link.php';
 require_once SUN_PATH . 'includes/adapters/interface-sun-delivery-adapter.php';
