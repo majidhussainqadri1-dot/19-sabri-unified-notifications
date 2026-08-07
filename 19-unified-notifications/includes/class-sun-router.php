@@ -8,8 +8,9 @@ if ( ! defined( 'ABSPATH' ) ) { exit; }
 final class SUN_Router {
 	/** @var SUN_Renderer */ private $renderer;
 	/** @var SUN_Notification_Service */ private $notifications;
-	/** @param SUN_Renderer $renderer Renderer. @param SUN_Notification_Service $notifications Notifications. */
-	public function __construct( SUN_Renderer $renderer, SUN_Notification_Service $notifications ) { $this->renderer=$renderer; $this->notifications=$notifications; }
+	/** @var SUN_Auth */ private $auth;
+	/** @param SUN_Renderer $renderer Renderer. @param SUN_Notification_Service $notifications Notifications. @param SUN_Auth $auth Auth. */
+	public function __construct( SUN_Renderer $renderer, SUN_Notification_Service $notifications, SUN_Auth $auth ) { $this->renderer=$renderer; $this->notifications=$notifications; $this->auth=$auth; }
 
 	/** @return void */
 	public function register() {
@@ -27,8 +28,9 @@ final class SUN_Router {
 	/** @return void */
 	public function template_redirect() {
 		$route=get_query_var('sun_notifications_route');
-		if('service-worker'===$route){nocache_headers();header('Content-Type: application/javascript; charset=UTF-8');header('Service-Worker-Allowed: /');readfile(SUN_PATH.'assets/js/push-service-worker.js');exit;}
-		if('open'===$route){auth_redirect();$target=$this->notifications->resolve_open_target((string)get_query_var('sun_notification_id'));if(is_wp_error($target)){wp_safe_redirect(home_url('/notifications/?notice=unavailable'));exit;}wp_safe_redirect($target);exit;}
+		if('service-worker'===$route){nocache_headers();header('Content-Type: application/javascript; charset=UTF-8');header('Service-Worker-Allowed: /');header('X-Content-Type-Options: nosniff');readfile(SUN_PATH.'assets/js/push-service-worker.js');exit;}
+		if(in_array($route,array('center','settings','open','unsubscribe'),true)){nocache_headers();header('X-Robots-Tag: noindex, nofollow, noarchive',true);header('Referrer-Policy: same-origin',true);}
+		if('open'===$route){auth_redirect();if(!$this->auth->is_recipient_eligible(get_current_user_id())){wp_safe_redirect(home_url('/notifications/?notice=restricted'));exit;}$target=$this->notifications->resolve_open_target((string)get_query_var('sun_notification_id'));if(is_wp_error($target)){wp_safe_redirect(home_url('/notifications/?notice=unavailable'));exit;}wp_safe_redirect($target);exit;}
 		if('unsubscribe'===$route){$claims=SUN_Crypto::verify_token(rawurldecode((string)get_query_var('sun_notification_token')),'unsubscribe');if(is_wp_error($claims)){wp_safe_redirect(home_url('/settings/notifications/?notice=invalid'));exit;}if(!empty($claims['user_id'])){sun_notifications()->preferences()->update((int)$claims['user_id'],array('category'=>$claims['category'],'channel'=>$claims['channel'],'enabled'=>false,'version'=>sun_notifications()->preferences()->get((int)$claims['user_id'],$claims['category'],$claims['channel'])['version'],'consent_source'=>'signed_unsubscribe'));}wp_safe_redirect(home_url('/settings/notifications/?notice=unsubscribed'));exit;}
 		if(in_array($route,array('center','settings'),true)&&!is_user_logged_in()){auth_redirect();}
 	}
