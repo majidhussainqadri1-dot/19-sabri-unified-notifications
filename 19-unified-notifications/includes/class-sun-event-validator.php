@@ -62,9 +62,20 @@ final class SUN_Event_Validator {
 		if ( is_wp_error( $recipients ) ) {
 			return $recipients;
 		}
-		$data = isset( $event['data'] ) && is_array( $event['data'] ) ? $this->sanitize_data( $event['data'] ) : array();
+		$data = isset( $event['data'] ) && is_array( $event['data'] ) ? $this->sanitize_data( $event['data'], 0 ) : array();
+		if ( is_wp_error( $data ) ) {
+			return $data;
+		}
 		if ( strlen( wp_json_encode( $data ) ) > (int) apply_filters( 'sun_event_data_max_bytes', 65536, $producer ) ) {
 			return new WP_Error( 'sun_event_data_too_large', __( 'The event data exceeds the allowed size.', 'sabri-unified-notifications' ), array( 'status' => 413 ) );
+		}
+		$scope = $this->normalize_subscription_scope( $event['subscription_scope'] ?? array() );
+		if ( is_wp_error( $scope ) ) {
+			return $scope;
+		}
+		$trace_id = sanitize_text_field( (string) ( $event['trace_id'] ?? SUN_Database::uuid() ) );
+		if ( '' === $trace_id || strlen( $trace_id ) > 100 ) {
+			return new WP_Error( 'sun_trace_id_invalid', __( 'The event trace identifier is invalid.', 'sabri-unified-notifications' ), array( 'status' => 400 ) );
 		}
 
 		$normalized = array(
@@ -77,7 +88,8 @@ final class SUN_Event_Validator {
 			'recipients'     => $recipients,
 			'actor'          => isset( $event['actor'] ) && is_array( $event['actor'] ) ? $this->sanitize_identity_ref( $event['actor'] ) : array(),
 			'subject'        => isset( $event['subject'] ) && is_array( $event['subject'] ) ? $this->sanitize_identity_ref( $event['subject'] ) : array(),
-			'trace_id'       => sanitize_text_field( (string) ( $event['trace_id'] ?? SUN_Database::uuid() ) ),
+			'subscription_scope' => $scope,
+			'trace_id'       => $trace_id,
 			'category'       => sanitize_key( (string) ( $event['category'] ?? '' ) ),
 			'priority'       => sanitize_key( (string) ( $event['priority'] ?? '' ) ),
 			'sensitivity'    => sanitize_key( (string) ( $event['sensitivity'] ?? 'standard' ) ),
@@ -129,24 +141,63 @@ final class SUN_Event_Validator {
 	private function sanitize_identity_ref( array $reference ) {
 		return array(
 			'type'      => sanitize_key( (string) ( $reference['type'] ?? 'object' ) ),
-			'id'        => sanitize_text_field( (string) ( $reference['id'] ?? '' ) ),
-			'public_id' => sanitize_text_field( (string) ( $reference['public_id'] ?? '' ) ),
+			'id'        => substr( sanitize_text_field( (string) ( $reference['id'] ?? '' ) ), 0, 191 ),
+			'public_id' => substr( sanitize_text_field( (string) ( $reference['public_id'] ?? '' ) ), 0, 191 ),
 		);
 	}
 
-	/** @param mixed $value Value. @return mixed */
-	private function sanitize_data( $value ) {
+	/**
+	 * @param mixed $scope Scope input.
+	 * @return array<string,string>|WP_Error
+	 */
+	private function normalize_subscription_scope( $scope ) {
+		if ( empty( $scope ) ) {
+			return array();
+		}
+		if ( ! is_array( $scope ) ) {
+			return new WP_Error( 'sun_subscription_scope_invalid', __( 'The event subscription scope is invalid.', 'sabri-unified-notifications' ), array( 'status' => 400 ) );
+		}
+		$type = sanitize_key( (string) ( $scope['type'] ?? '' ) );
+		$id   = sanitize_text_field( (string) ( $scope['id'] ?? '' ) );
+		if ( ! in_array( $type, SUN_Subscriptions::scope_types(), true ) || '' === $id || strlen( $id ) > 191 ) {
+			return new WP_Error( 'sun_subscription_scope_invalid', __( 'The event subscription scope is invalid.', 'sabri-unified-notifications' ), array( 'status' => 400 ) );
+		}
+		return array( 'type' => $type, 'id' => $id );
+	}
+
+	/**
+	 * Sanitize bounded notification presentation data and reject credential-like
+	 * fields. Notification payloads are not a transport for passwords, OTPs,
+	 * cookies, private keys or provider credentials.
+	 *
+	 * @param mixed $value Value.
+	 * @param int   $depth Current depth.
+	 * @return mixed|WP_Error
+	 */
+	private function sanitize_data( $value, $depth ) {
+		if ( $depth > 8 ) {
+			return new WP_Error( 'sun_event_data_too_deep', __( 'The event data is nested too deeply.', 'sabri-unified-notifications' ), array( 'status' => 400 ) );
+		}
 		if ( is_array( $value ) ) {
 			$out = array();
+			$forbidden = array( 'password', 'passwd', 'secret', 'otp', 'authorization', 'cookie', 'private_key', 'access_token', 'refresh_token', 'api_key', 'client_secret' );
 			foreach ( array_slice( $value, 0, 100, true ) as $key => $item ) {
-				$out[ sanitize_key( (string) $key ) ] = $this->sanitize_data( $item );
+				$safe_key = sanitize_key( (string) $key );
+				if ( in_array( $safe_key, $forbidden, true ) ) {
+					return new WP_Error( 'sun_event_secret_field_rejected', __( 'Credential or secret fields are not allowed in notification event data.', 'sabri-unified-notifications' ), array( 'status' => 400 ) );
+				}
+				$clean = $this->sanitize_data( $item, $depth + 1 );
+				if ( is_wp_error( $clean ) ) {
+					return $clean;
+				}
+				$out[ $safe_key ] = $clean;
 			}
 			return $out;
 		}
 		if ( is_bool( $value ) || is_int( $value ) || is_float( $value ) || null === $value ) {
 			return $value;
 		}
-		return sanitize_textarea_field( (string) $value );
+		return substr( sanitize_textarea_field( (string) $value ), 0, 4000 );
 	}
 
 	/** @param mixed $value Value. @return string|null */
