@@ -14,7 +14,7 @@ final class SUN_Health {
 	public function snapshot() {
 		global $wpdb, $wp_version;
 		$tables = array();
-		foreach ( array( 'events','notifications','preferences','deliveries','templates','policies','devices','dead_letters','audit','bulk_jobs' ) as $logical ) {
+		foreach ( array( 'events','notifications','preferences','subscriptions','deliveries','templates','policies','devices','dead_letters','audit','bulk_jobs' ) as $logical ) {
 			$table = SUN_Database::table( $logical );
 			$tables[ $logical ] = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $table ) ) === $table;
 		}
@@ -35,10 +35,11 @@ final class SUN_Health {
 			'encryption'   => ! is_wp_error( SUN_Crypto::encrypt( 'health-probe' ) ),
 			'queue_lag_ok' => $metrics['oldest_queue_seconds'] < (int) apply_filters( 'sun_queue_lag_alert_seconds', 3600 ),
 			'dead_letters_ok' => $metrics['dead_letter'] < (int) apply_filters( 'sun_dead_letter_alert_count', 10 ),
+			'project_baseline' => version_compare( PHP_VERSION, '8.3', '>=' ) && version_compare( (string) $wp_version, '7.0.1', '>=' ),
 		);
 		$status = in_array( false, $checks, true ) ? 'degraded' : 'healthy';
 		return array(
-			'contract'      => 'sun.health.v2',
+			'contract'      => 'sun.health.v3',
 			'status'        => $status,
 			'plugin_version'=> SUN_VERSION,
 			'db_version'    => get_option( 'sun_db_version', '' ),
