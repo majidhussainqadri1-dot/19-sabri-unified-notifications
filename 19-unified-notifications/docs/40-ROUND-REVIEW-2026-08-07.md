@@ -61,15 +61,14 @@ Each numbered round is a separate review vector. Where a defect was found, the d
 | 37 | Privacy export, erasure and provider propagation | **DEFECT** | Export covered notifications only and erasure retained direct user IDs in notification/delivery rows. Export now includes safe preferences/device/delivery metadata; erasure pseudonymizes recipient IDs, clears sensitive/provider identifiers, deletes device/preferences and emits provider-erasure hook. |
 | 38 | Retention hold, audit and data minimization | **CLEAN** | Legal/approved retention hold remains honored; audit records remain purpose-scoped and privacy erasure uses a pseudonymous audit object ID. |
 | 39 | Canonical package identity and release automation | **DEFECT** | Build still emitted 2.1.0 and installed top-level folder `19-unified-notifications`, conflicting with File 19 package constitution. Build/CI/package audit now target 2.2.0 and canonical install folder `unified-notifications-19/`. |
-| 40 | Fresh final adversarial regression after all corrections | **PENDING EXACT-HEAD CI** | Must be accepted only after exact-head unit/static/package/reproducibility CI is green. If CI reveals a defect, this round is reopened, fixed and rerun before merge. |
+| 40 | Fresh final adversarial regression after all corrections | **CLEAN** | PR #9 exact corrected-code CI run #179 completed successfully on PHP 8.3 and 8.4: deterministic unit assertions, syntax/static four-plan security/privacy audit, clean-extract canonical package audit and deterministic reproduction all passed. Documentation-only finalization is rechecked again by PR CI before merge. |
 
-## Count before final exact-head CI
+## Final count
 
 - Defect-bearing review rounds: **18**
-- Clean review rounds already established: **21**
-- Round 40: **pending exact-head CI**
-
-On a green exact-head Round 40, the final count becomes **18 defect-bearing rounds + 22 clean rounds = 40 total**. If Round 40 finds a defect, it must be corrected and rerun; the final classification will then record Round 40 as defect-bearing rather than clean.
+- Review rounds with no new defect: **22**
+- Total: **40**
+- Known unresolved repository-owned defects after corrections: **0**, subject to the final PR exact-head green gate before merge.
 
 ## Corrective surface summary
 
