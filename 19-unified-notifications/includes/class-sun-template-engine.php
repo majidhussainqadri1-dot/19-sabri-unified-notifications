@@ -26,8 +26,8 @@ final class SUN_Template_Engine {
 		if ( $requested_key ) {
 			$row = $wpdb->get_row(
 				$wpdb->prepare(
-					"SELECT * FROM {$table} WHERE template_key=%s AND channel=%s AND locale IN (%s,'en_US') AND status='active' AND (expires_at IS NULL OR expires_at>%s) ORDER BY (locale=%s) DESC, id DESC LIMIT 1",
-					sanitize_key( $requested_key ), $channel, $locale, SUN_Database::now(), $locale
+					"SELECT * FROM {$table} WHERE template_key=%s AND event_type IN (%s,'*') AND channel=%s AND locale IN (%s,'en_US') AND status='active' AND (expires_at IS NULL OR expires_at>%s) ORDER BY (event_type=%s) DESC,(locale=%s) DESC,id DESC LIMIT 1",
+					sanitize_key( $requested_key ), $event_type, $channel, $locale, SUN_Database::now(), $event_type, $locale
 				),
 				ARRAY_A
 			); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery
