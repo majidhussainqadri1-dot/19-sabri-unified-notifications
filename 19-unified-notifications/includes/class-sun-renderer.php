@@ -8,8 +8,9 @@ if ( ! defined( 'ABSPATH' ) ) { exit; }
 final class SUN_Renderer {
 	/** @var SUN_Notification_Service */ private $notifications;
 	/** @var SUN_Preferences */ private $preferences;
-	/** @param SUN_Notification_Service $notifications Notifications. @param SUN_Preferences $preferences Preferences. */
-	public function __construct( SUN_Notification_Service $notifications, SUN_Preferences $preferences ) { $this->notifications=$notifications; $this->preferences=$preferences; }
+	/** @var SUN_Subscriptions */ private $subscriptions;
+	/** @param SUN_Notification_Service $notifications Notifications. @param SUN_Preferences $preferences Preferences. @param SUN_Subscriptions $subscriptions Scoped subscriptions. */
+	public function __construct( SUN_Notification_Service $notifications, SUN_Preferences $preferences, SUN_Subscriptions $subscriptions ) { $this->notifications=$notifications; $this->preferences=$preferences; $this->subscriptions=$subscriptions; }
 
 	/** @return string */
 	public function render_bell() {
@@ -29,6 +30,8 @@ final class SUN_Renderer {
 	public function render_settings() {
 		if ( ! is_user_logged_in() ) { return '<div class="sun-notice">' . esc_html__( 'Please sign in to manage notification settings.', 'sabri-unified-notifications' ) . '</div>'; }
 		$items = $this->preferences->get_all( get_current_user_id() );
+		$subscription_items = $this->subscriptions->list_for_user( get_current_user_id() );
+		$scope_types = SUN_Subscriptions::scope_types();
 		ob_start(); include SUN_PATH . 'templates/settings.php'; return (string) ob_get_clean();
 	}
 
