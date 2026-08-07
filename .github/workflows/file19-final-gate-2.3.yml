@@ -1,0 +1,65 @@
+name: File 19 Final Gate 2.3
+
+on:
+  pull_request:
+    branches: [ main ]
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+jobs:
+  qa:
+    if: github.head_ref == 'file19-four-plan-top20-2.3.0'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.3', '8.4']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          coverage: none
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Unit assertions
+        run: php tests/unit.php
+      - name: Static four-plan and security audit
+        run: bash tests/static-audit.sh
+      - name: Canonical clean-extract package audit
+        run: bash tests/package-audit.sh
+      - name: Deterministic rebuild
+        run: |
+          ZIP=build/19-sabri-unified-notifications-2.3.0.zip
+          a="$(sha256sum "$ZIP" | awk '{print $1}')"
+          bash tools/build-release.sh >/tmp/file19-rebuild.log
+          b="$(sha256sum "$ZIP" | awk '{print $1}')"
+          test "$a" = "$b"
+
+  merge-after-green:
+    needs: qa
+    if: github.head_ref == 'file19-four-plan-top20-2.3.0' && github.event.pull_request.number == 8
+    runs-on: ubuntu-latest
+    steps:
+      - name: Merge exact tested head only
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const pr = context.payload.pull_request;
+            if (pr.head.ref !== 'file19-four-plan-top20-2.3.0') {
+              core.setFailed('Unexpected head branch');
+              return;
+            }
+            const result = await github.rest.pulls.merge({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: pr.number,
+              merge_method: 'squash',
+              sha: pr.head.sha,
+              commit_title: 'File 19: four-plan Top-20 completion 2.3.0'
+            });
+            if (!result.data.merged) core.setFailed(result.data.message || 'Merge was not completed');
