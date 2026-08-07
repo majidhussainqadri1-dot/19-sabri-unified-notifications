@@ -3,7 +3,7 @@
  * Plugin Name: Sabri Unified Notifications and Alerts
  * Plugin URI: https://sabrihomeopathy.com/
  * Description: Canonical notification entity, single in-app center and bell, preferences, quiet hours, digests, delivery adapters, retries, dead-letter handling, device registration, privacy lifecycle and operational diagnostics for the Sabri Social Homeopathy Platform.
- * Version: 2.0.0
+ * Version: 2.1.0
  * Requires at least: 6.6
  * Requires PHP: 8.1
  * Author: Dr. Allamah Majid Hussain Sabri Muhaddith Mursheed
@@ -15,7 +15,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'SUN_VERSION', '2.0.0' );
+define( 'SUN_VERSION', '2.1.0' );
 define( 'SUN_DB_VERSION', '2.0.0' );
 define( 'SUN_FILE', __FILE__ );
 define( 'SUN_PATH', plugin_dir_path( __FILE__ ) );
