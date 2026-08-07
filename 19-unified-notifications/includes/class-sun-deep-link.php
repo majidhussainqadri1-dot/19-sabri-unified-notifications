@@ -9,7 +9,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 final class SUN_Deep_Link {
 	/**
-	 * Validate and canonicalize a target.
+	 * Validate and canonicalize a target without granting object access.
 	 *
 	 * @param string $url URL.
 	 * @return string
@@ -37,6 +37,37 @@ final class SUN_Deep_Link {
 		}
 		$allowed = (bool) apply_filters( 'sun_deep_link_allowed', true, $url, $target );
 		return $allowed ? esc_url_raw( $url ) : '';
+	}
+
+	/**
+	 * Re-authorize a stored target at click time.
+	 *
+	 * File 19 can prove only the notification recipient and same-origin URL. It
+	 * cannot infer current appointment/message/deal/publication authorization.
+	 * Domain targets therefore fail closed unless the canonical owner explicitly
+	 * authorizes the target through sun_authorize_notification_deep_link.
+	 *
+	 * @param string              $url Stored target.
+	 * @param array<string,mixed> $notification Notification row.
+	 * @param int                 $user_id Current user.
+	 * @return string
+	 */
+	public static function authorize_for_notification( $url, array $notification, $user_id ) {
+		$url = self::sanitize( $url );
+		if ( '' === $url ) {
+			return '';
+		}
+		$target = wp_parse_url( $url );
+		$path   = is_array( $target ) ? (string) ( $target['path'] ?? '/' ) : '/';
+		$internal = in_array( untrailingslashit( $path ), array( '/notifications', '/settings/notifications' ), true );
+		$allowed = (bool) apply_filters(
+			'sun_authorize_notification_deep_link',
+			$internal,
+			$url,
+			$notification,
+			absint( $user_id )
+		);
+		return $allowed ? $url : '';
 	}
 
 	/**
