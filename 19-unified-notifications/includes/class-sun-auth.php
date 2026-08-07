@@ -58,7 +58,13 @@ final class SUN_Auth {
 			if ( ! empty( $claims['locale'] ) ) { $base['locale'] = sanitize_locale_name( (string) $claims['locale'] ); }
 			if ( ! empty( $claims['timezone'] ) ) { $base['timezone'] = sanitize_text_field( (string) $claims['timezone'] ); }
 		}
-		return (array) apply_filters( 'sun_identity_assertions', $base, $user_id );
+
+		/*
+		 * Security boundary: File 00 is the sole positive identity authority.
+		 * File 19 intentionally exposes no post-processing filter that can turn a
+		 * failed canonical assertion into active/verified/founder authority.
+		 */
+		return $base;
 	}
 
 	/** @param int $user_id User ID. @return bool */
@@ -131,7 +137,7 @@ final class SUN_Auth {
 
 	/** @param array<string,mixed> $claims Claims. @return bool */
 	private function claims_are_active_and_trusted( array $claims ) {
-		$ok = ! empty( $claims['owner_available'] )
+		return ! empty( $claims['owner_available'] )
 			&& ! empty( $claims['active'] )
 			&& ! empty( $claims['verified'] )
 			&& empty( $claims['suspended'] )
@@ -139,6 +145,5 @@ final class SUN_Auth {
 			&& empty( $claims['risk_blocked'] )
 			&& ! empty( $claims['guardian_ok'] )
 			&& ! empty( $claims['consent_ok'] );
-		return (bool) apply_filters( 'sun_recipient_eligible', $ok, $claims, absint( $claims['user_id'] ?? 0 ) );
 	}
 }
