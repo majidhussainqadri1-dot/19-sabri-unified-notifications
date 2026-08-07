@@ -71,9 +71,17 @@ Latest explicit Founder decision and later approved central plan prevail over co
 | 2 | 4 | 4 | 0 |
 | 3 | 6 | 6 | 0 |
 | 4 | 6 | 6 | 0 |
-| **Total** | **21** | **21** | **0 known** |
+| **Four-round total** | **21** | **21** | **0 known** |
 
-All four reviews found defects. No round was defect-free. This is evidence of iterative review, not a claim of absolute infallibility. Any later CI/staging defect reopens the ledger and must be corrected before promotion.
+All four mandated reviews found defects. No mandated review round was defect-free. This is evidence of iterative review, not a claim of absolute infallibility.
+
+## Release-preflight correction after the four mandated rounds
+
+The subsequent exact-release preflight found **1 additional defect group**: the scoped-subscription API accepted partial-segment wildcards such as `Publishing.Correction*`, while the runtime matcher intentionally supported only `*`, exact event facts, or namespace wildcards ending in `.*`. Such a value could therefore be stored but never match.
+
+This was corrected before promotion by introducing one shared `valid_event_pattern()` grammar, rejecting unsupported partial wildcards, and adding deterministic regression assertions for global wildcard, exact fact, namespace wildcard and rejected partial wildcard.
+
+**Total known defect groups across the four reviews plus release preflight: 22. Corrected: 22. Known unresolved at this point: 0.** Any later CI/staging defect reopens this ledger and must be corrected before promotion.
 
 ## Top-20 File 19 status after corrections
 
