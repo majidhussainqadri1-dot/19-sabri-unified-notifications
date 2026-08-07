@@ -11,13 +11,13 @@ final class SUN_Activator {
 	/** @return void */
 	public static function activate() {
 		global $wp_version;
-		if ( version_compare( (string) $wp_version, '6.6', '<' ) ) {
+		if ( version_compare( (string) $wp_version, '7.0.1', '<' ) ) {
 			deactivate_plugins( SUN_BASENAME );
-			wp_die( esc_html__( 'Sabri Unified Notifications requires WordPress 6.6 or newer.', 'sabri-unified-notifications' ) );
+			wp_die( esc_html__( 'Sabri Unified Notifications requires WordPress 7.0.1 or newer.', 'sabri-unified-notifications' ) );
 		}
-		if ( version_compare( PHP_VERSION, '8.1', '<' ) ) {
+		if ( version_compare( PHP_VERSION, '8.3', '<' ) ) {
 			deactivate_plugins( SUN_BASENAME );
-			wp_die( esc_html__( 'Sabri Unified Notifications requires PHP 8.1 or newer.', 'sabri-unified-notifications' ) );
+			wp_die( esc_html__( 'Sabri Unified Notifications requires PHP 8.3 or newer.', 'sabri-unified-notifications' ) );
 		}
 		self::install_schema();
 		self::install_capabilities();
@@ -64,6 +64,7 @@ final class SUN_Activator {
 		$events  = SUN_Database::table( 'events' );
 		$notes   = SUN_Database::table( 'notifications' );
 		$prefs   = SUN_Database::table( 'preferences' );
+		$subs    = SUN_Database::table( 'subscriptions' );
 		$deliv   = SUN_Database::table( 'deliveries' );
 		$temps   = SUN_Database::table( 'templates' );
 		$policy  = SUN_Database::table( 'policies' );
@@ -151,6 +152,23 @@ final class SUN_Activator {
 			PRIMARY KEY  (id),
 			UNIQUE KEY user_category_channel (user_id,category,channel),
 			KEY user_id (user_id)
+		) {$charset};";
+
+		$sql[] = "CREATE TABLE {$subs} (
+			id bigint unsigned NOT NULL AUTO_INCREMENT,
+			public_id char(36) NOT NULL,
+			user_id bigint unsigned NOT NULL,
+			scope_type varchar(32) NOT NULL,
+			scope_id varchar(191) NOT NULL,
+			enabled tinyint(1) NOT NULL DEFAULT 1,
+			frequency varchar(20) NOT NULL DEFAULT 'immediate',
+			version bigint unsigned NOT NULL DEFAULT 1,
+			created_at datetime NOT NULL,
+			updated_at datetime NOT NULL,
+			PRIMARY KEY  (id),
+			UNIQUE KEY public_id (public_id),
+			UNIQUE KEY user_scope (user_id,scope_type,scope_id),
+			KEY user_enabled (user_id,enabled)
 		) {$charset};";
 
 		$sql[] = "CREATE TABLE {$deliv} (
@@ -353,7 +371,7 @@ final class SUN_Activator {
 			); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
 		}
 
-		$allowed = wp_json_encode( array( 'actor_name', 'object_name', 'action_name', 'summary', 'site_name' ) );
+		$allowed  = wp_json_encode( array( 'actor_name', 'object_name', 'action_name', 'summary', 'site_name' ) );
 		$channels = array( 'in_app', 'email', 'push', 'sms' );
 		foreach ( $channels as $channel ) {
 			$wpdb->query(
