@@ -6,8 +6,8 @@ define( 'SECURE_AUTH_KEY', str_repeat( 'b', 64 ) );
 define( 'DAY_IN_SECONDS', 86400 );
 define( 'YEAR_IN_SECONDS', 31536000 );
 define( 'MINUTE_IN_SECONDS', 60 );
-define( 'SUN_VERSION', '2.2.0' );
-define( 'SUN_DB_VERSION', '2.2.0' );
+define( 'SUN_VERSION', '2.3.0' );
+define( 'SUN_DB_VERSION', '2.3.0' );
 define( 'SUN_MIN_WP_VERSION', '7.0' );
 define( 'SUN_MIN_PHP_VERSION', '8.3' );
 $GLOBALS['sun_test_filters'] = array();
@@ -60,3 +60,4 @@ require_once dirname(__DIR__).'/19-unified-notifications/includes/class-sun-auth
 require_once dirname(__DIR__).'/19-unified-notifications/includes/class-sun-producer-registry.php';
 require_once dirname(__DIR__).'/19-unified-notifications/includes/class-sun-event-validator.php';
 require_once dirname(__DIR__).'/19-unified-notifications/includes/class-sun-template-engine.php';
+require_once dirname(__DIR__).'/19-unified-notifications/includes/class-sun-subscriptions.php';
