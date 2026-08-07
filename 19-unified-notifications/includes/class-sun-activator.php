@@ -11,27 +11,45 @@ final class SUN_Activator {
 	/** @return void */
 	public static function activate() {
 		global $wp_version;
-		if ( version_compare( (string) $wp_version, '6.6', '<' ) ) {
-			deactivate_plugins( SUN_BASENAME );
-			wp_die( esc_html__( 'Sabri Unified Notifications requires WordPress 6.6 or newer.', 'sabri-unified-notifications' ) );
+		$lock_key = 'sun_activation_lock';
+		$locked   = add_option( $lock_key, time(), '', false );
+		if ( ! $locked ) {
+			$existing = (int) get_option( $lock_key, 0 );
+			if ( $existing > 0 && time() - $existing > 300 ) {
+				delete_option( $lock_key );
+				$locked = add_option( $lock_key, time(), '', false );
+			}
 		}
-		if ( version_compare( PHP_VERSION, '8.1', '<' ) ) {
+		if ( ! $locked ) {
 			deactivate_plugins( SUN_BASENAME );
-			wp_die( esc_html__( 'Sabri Unified Notifications requires PHP 8.1 or newer.', 'sabri-unified-notifications' ) );
+			wp_die( esc_html__( 'Sabri Unified Notifications activation is already in progress. Please retry shortly.', 'sabri-unified-notifications' ) );
 		}
-		self::install_schema();
-		self::install_capabilities();
-		self::seed_defaults();
-		self::schedule_events();
-		add_rewrite_rule( '^notifications/?$', 'index.php?sun_notifications_route=center', 'top' );
-		add_rewrite_rule( '^settings/notifications/?$', 'index.php?sun_notifications_route=settings', 'top' );
-		add_rewrite_rule( '^notifications/open/([a-f0-9\-]{36})/?$', 'index.php?sun_notifications_route=open&sun_notification_id=$matches[1]', 'top' );
-		add_rewrite_rule( '^notifications/unsubscribe/([^/]+)/?$', 'index.php?sun_notifications_route=unsubscribe&sun_notification_token=$matches[1]', 'top' );
-		add_rewrite_rule( '^sabri-notifications-service-worker\.js$', 'index.php?sun_notifications_route=service-worker', 'top' );
-		update_option( 'sun_plugin_version', SUN_VERSION, false );
-		update_option( 'sun_db_version', SUN_DB_VERSION, false );
-		update_option( 'sun_activation_snapshot', self::activation_snapshot(), false );
-		flush_rewrite_rules( false );
+
+		try {
+			if ( version_compare( (string) $wp_version, SUN_MIN_WP_VERSION, '<' ) ) {
+				deactivate_plugins( SUN_BASENAME );
+				wp_die( esc_html( sprintf( __( 'Sabri Unified Notifications requires WordPress %s or newer.', 'sabri-unified-notifications' ), SUN_MIN_WP_VERSION ) ) );
+			}
+			if ( version_compare( PHP_VERSION, SUN_MIN_PHP_VERSION, '<' ) ) {
+				deactivate_plugins( SUN_BASENAME );
+				wp_die( esc_html( sprintf( __( 'Sabri Unified Notifications requires PHP %s or newer.', 'sabri-unified-notifications' ), SUN_MIN_PHP_VERSION ) ) );
+			}
+			self::install_schema();
+			self::install_capabilities();
+			self::seed_defaults();
+			self::schedule_events();
+			add_rewrite_rule( '^notifications/?$', 'index.php?sun_notifications_route=center', 'top' );
+			add_rewrite_rule( '^settings/notifications/?$', 'index.php?sun_notifications_route=settings', 'top' );
+			add_rewrite_rule( '^notifications/open/([a-f0-9\-]{36})/?$', 'index.php?sun_notifications_route=open&sun_notification_id=$matches[1]', 'top' );
+			add_rewrite_rule( '^notifications/unsubscribe/([^/]+)/?$', 'index.php?sun_notifications_route=unsubscribe&sun_notification_token=$matches[1]', 'top' );
+			add_rewrite_rule( '^sabri-notifications-service-worker\.js$', 'index.php?sun_notifications_route=service-worker', 'top' );
+			update_option( 'sun_plugin_version', SUN_VERSION, false );
+			update_option( 'sun_db_version', SUN_DB_VERSION, false );
+			update_option( 'sun_activation_snapshot', self::activation_snapshot(), false );
+			flush_rewrite_rules( false );
+		} finally {
+			delete_option( $lock_key );
+		}
 	}
 
 	/** @return void */
@@ -373,6 +391,8 @@ final class SUN_Activator {
 			'db_version'     => SUN_DB_VERSION,
 			'php'            => PHP_VERSION,
 			'wordpress'      => $wp_version,
+			'min_php'        => SUN_MIN_PHP_VERSION,
+			'min_wordpress'  => SUN_MIN_WP_VERSION,
 			'activated_at'   => SUN_Database::now(),
 			'multisite'      => is_multisite(),
 		);
