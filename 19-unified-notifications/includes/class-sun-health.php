@@ -7,14 +7,15 @@ if ( ! defined( 'ABSPATH' ) ) { exit; }
 
 final class SUN_Health {
 	/** @var SUN_Delivery_Service */ private $delivery;
-	/** @param SUN_Delivery_Service $delivery Delivery. */
-	public function __construct( SUN_Delivery_Service $delivery ) { $this->delivery = $delivery; }
+	/** @var SUN_Value_Metrics */ private $value_metrics;
+	/** @param SUN_Delivery_Service $delivery Delivery. @param SUN_Value_Metrics $value_metrics Aggregate value metrics. */
+	public function __construct( SUN_Delivery_Service $delivery, SUN_Value_Metrics $value_metrics ) { $this->delivery = $delivery; $this->value_metrics = $value_metrics; }
 
 	/** @return array<string,mixed> */
 	public function snapshot() {
 		global $wpdb, $wp_version;
 		$tables = array();
-		foreach ( array( 'events','notifications','preferences','deliveries','templates','policies','devices','dead_letters','audit','bulk_jobs' ) as $logical ) {
+		foreach ( array( 'events','notifications','preferences','subscriptions','deliveries','templates','policies','devices','dead_letters','audit','bulk_jobs' ) as $logical ) {
 			$table = SUN_Database::table( $logical );
 			$tables[ $logical ] = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $table ) ) === $table;
 		}
@@ -35,18 +36,21 @@ final class SUN_Health {
 			'encryption'   => ! is_wp_error( SUN_Crypto::encrypt( 'health-probe' ) ),
 			'queue_lag_ok' => $metrics['oldest_queue_seconds'] < (int) apply_filters( 'sun_queue_lag_alert_seconds', 3600 ),
 			'dead_letters_ok' => $metrics['dead_letter'] < (int) apply_filters( 'sun_dead_letter_alert_count', 10 ),
+			'four_plan_contract' => 'sun.four-plan-compliance.v1' === (string) SUN_Four_Plan_Compliance::manifest()['contract'],
 		);
 		$status = in_array( false, $checks, true ) ? 'degraded' : 'healthy';
 		return array(
-			'contract'      => 'sun.health.v1',
+			'contract'      => 'sun.health.v2',
 			'status'        => $status,
 			'plugin_version'=> SUN_VERSION,
 			'db_version'    => get_option( 'sun_db_version', '' ),
+			'subscriptions_schema_version' => get_option( 'sun_subscriptions_schema_version', '' ),
 			'php'           => PHP_VERSION,
 			'wordpress'     => $wp_version,
 			'checks'        => $checks,
 			'tables'        => $tables,
 			'metrics'       => $metrics,
+			'value_metrics' => $this->value_metrics->snapshot(),
 			'adapters'      => $this->delivery->adapter_health(),
 			'last_reconciliation' => get_option( 'sun_last_reconciliation', array() ),
 			'generated_at'  => SUN_Database::now(),
