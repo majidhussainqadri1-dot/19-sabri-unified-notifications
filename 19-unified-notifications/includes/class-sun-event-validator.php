@@ -35,6 +35,9 @@ final class SUN_Event_Validator {
 		if ( '' === $canonical_owner || ! hash_equals( $canonical_owner, $declared_owner ) ) {
 			return new WP_Error( 'sun_event_owner_mismatch', __( 'The producer event owner does not match the registered canonical owner.', 'sabri-unified-notifications' ), array( 'status' => 403 ) );
 		}
+		if ( strlen( $producer ) > 100 || strlen( $canonical_owner ) > 100 || strlen( $event_type ) > 191 ) {
+			return new WP_Error( 'sun_event_identity_too_long', __( 'The producer, owner, or event type exceeds the supported length.', 'sabri-unified-notifications' ), array( 'status' => 400 ) );
+		}
 		if ( ! preg_match( '/^[A-Z][A-Za-z0-9]*(?:\.[A-Z][A-Za-z0-9]*)+$/', $event_type ) ) {
 			return new WP_Error( 'sun_event_type_invalid', __( 'The event type must use a versioned domain fact name.', 'sabri-unified-notifications' ), array( 'status' => 400 ) );
 		}
@@ -43,7 +46,7 @@ final class SUN_Event_Validator {
 			return new WP_Error( 'sun_event_id_invalid', __( 'The event identifier is invalid.', 'sabri-unified-notifications' ), array( 'status' => 400 ) );
 		}
 		$schema = sanitize_text_field( (string) $event['schema_version'] );
-		if ( ! preg_match( '/^v?[0-9]+(?:\.[0-9]+){0,2}$/', $schema ) ) {
+		if ( strlen( $schema ) > 32 || ! preg_match( '/^v?[0-9]+(?:\.[0-9]+){0,2}$/', $schema ) ) {
 			return new WP_Error( 'sun_schema_version_invalid', __( 'The event schema version is invalid.', 'sabri-unified-notifications' ), array( 'status' => 400 ) );
 		}
 		if ( ! empty( $config['schema_versions'] ) && is_array( $config['schema_versions'] ) ) {
@@ -74,6 +77,17 @@ final class SUN_Event_Validator {
 		}
 		$expires_at = $this->normalize_optional_datetime( $event['expires_at'] ?? null );
 		if ( is_wp_error( $expires_at ) ) { return $expires_at; }
+		$trace_id = sanitize_text_field( (string) ( $event['trace_id'] ?? SUN_Database::uuid() ) );
+		if ( '' === $trace_id || strlen( $trace_id ) > 100 || ! preg_match( '/^[A-Za-z0-9._:\-]+$/', $trace_id ) ) {
+			return new WP_Error( 'sun_trace_id_invalid', __( 'The event trace identifier is invalid.', 'sabri-unified-notifications' ), array( 'status' => 400 ) );
+		}
+		$template_key = sanitize_key( (string) ( $event['template_key'] ?? '' ) );
+		$deep_context = sanitize_text_field( (string) ( $event['deep_context'] ?? '' ) );
+		$source_version = sanitize_text_field( (string) ( $event['source_version'] ?? '' ) );
+		$idempotency_key = sanitize_text_field( (string) ( $event['idempotency_key'] ?? '' ) );
+		if ( strlen( $template_key ) > 191 || strlen( $deep_context ) > 191 || strlen( $source_version ) > 100 || strlen( $idempotency_key ) > 191 ) {
+			return new WP_Error( 'sun_event_metadata_too_long', __( 'Event metadata exceeds the supported length.', 'sabri-unified-notifications' ), array( 'status' => 400 ) );
+		}
 
 		$normalized = array(
 			'producer'=>$producer,
@@ -86,18 +100,18 @@ final class SUN_Event_Validator {
 			'subscription_scope'=>$scope,
 			'actor'=>isset($event['actor'])&&is_array($event['actor'])?$this->sanitize_identity_ref($event['actor']):array(),
 			'subject'=>isset($event['subject'])&&is_array($event['subject'])?$this->sanitize_identity_ref($event['subject']):array(),
-			'trace_id'=>sanitize_text_field((string)($event['trace_id']??SUN_Database::uuid())),
+			'trace_id'=>$trace_id,
 			'category'=>sanitize_key((string)($event['category']??'')),
 			'priority'=>sanitize_key((string)($event['priority']??'')),
 			'sensitivity'=>sanitize_key((string)($event['sensitivity']??'standard')),
-			'template_key'=>sanitize_key((string)($event['template_key']??'')),
+			'template_key'=>$template_key,
 			'deep_link'=>esc_url_raw((string)($event['deep_link']??'')),
-			'deep_context'=>sanitize_text_field((string)($event['deep_context']??'')),
+			'deep_context'=>$deep_context,
 			'expires_at'=>$expires_at,
 			'data'=>$data,
 			'meta'=>array(
-				'idempotency_key'=>sanitize_text_field((string)($event['idempotency_key']??'')),
-				'source_version'=>sanitize_text_field((string)($event['source_version']??'')),
+				'idempotency_key'=>$idempotency_key,
+				'source_version'=>$source_version,
 			),
 		);
 
@@ -121,7 +135,8 @@ final class SUN_Event_Validator {
 			if(is_numeric($recipient)){$recipient=array('user_id'=>absint($recipient));}
 			if(!is_array($recipient)||empty($recipient['user_id'])){return new WP_Error('sun_recipient_invalid',__('Every recipient must contain a canonical user identifier.','sabri-unified-notifications'),array('status'=>400));}
 			$user_id=absint($recipient['user_id']);if($user_id<1||isset($seen[$user_id])){continue;}$seen[$user_id]=true;
-			$out[]=array('user_id'=>$user_id,'locale'=>sanitize_text_field((string)($recipient['locale']??'')),'channels'=>isset($recipient['channels'])&&is_array($recipient['channels'])?array_values(array_unique(array_map('sanitize_key',$recipient['channels']))):array());
+			$locale=sanitize_locale_name((string)($recipient['locale']??''));
+			$out[]=array('user_id'=>$user_id,'locale'=>$locale,'channels'=>isset($recipient['channels'])&&is_array($recipient['channels'])?array_values(array_unique(array_map('sanitize_key',$recipient['channels']))):array());
 		}
 		return empty($out)?new WP_Error('sun_recipients_empty',__('The event has no valid recipients.','sabri-unified-notifications'),array('status'=>400)):$out;
 	}
@@ -138,7 +153,7 @@ final class SUN_Event_Validator {
 
 	/** @param array<string,mixed> $reference Reference. @return array<string,mixed> */
 	private function sanitize_identity_ref( array $reference ) {
-		return array('type'=>sanitize_key((string)($reference['type']??'object')),'id'=>sanitize_text_field((string)($reference['id']??'')),'public_id'=>sanitize_text_field((string)($reference['public_id']??'')));
+		return array('type'=>substr(sanitize_key((string)($reference['type']??'object')),0,50),'id'=>substr(sanitize_text_field((string)($reference['id']??'')),0,191),'public_id'=>substr(sanitize_text_field((string)($reference['public_id']??'')),0,191));
 	}
 
 	/** @param mixed $value Value. @param int $depth Depth. @return mixed|WP_Error */
