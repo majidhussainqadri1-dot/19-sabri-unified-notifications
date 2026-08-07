@@ -8,8 +8,15 @@ if ( ! defined( 'ABSPATH' ) ) { exit; }
 final class SUN_Renderer {
 	/** @var SUN_Notification_Service */ private $notifications;
 	/** @var SUN_Preferences */ private $preferences;
-	/** @param SUN_Notification_Service $notifications Notifications. @param SUN_Preferences $preferences Preferences. */
-	public function __construct( SUN_Notification_Service $notifications, SUN_Preferences $preferences ) { $this->notifications=$notifications; $this->preferences=$preferences; }
+	/** @var SUN_Subscriptions */ private $subscriptions;
+	/** @var SUN_Wellbeing */ private $wellbeing;
+	/** @param SUN_Notification_Service $notifications Notifications. @param SUN_Preferences $preferences Preferences. @param SUN_Subscriptions $subscriptions Subscriptions. @param SUN_Wellbeing $wellbeing Wellbeing. */
+	public function __construct( SUN_Notification_Service $notifications, SUN_Preferences $preferences, SUN_Subscriptions $subscriptions, SUN_Wellbeing $wellbeing ) {
+		$this->notifications=$notifications;
+		$this->preferences=$preferences;
+		$this->subscriptions=$subscriptions;
+		$this->wellbeing=$wellbeing;
+	}
 
 	/** @return string */
 	public function render_bell() {
@@ -28,7 +35,12 @@ final class SUN_Renderer {
 	/** @return string */
 	public function render_settings() {
 		if ( ! is_user_logged_in() ) { return '<div class="sun-notice">' . esc_html__( 'Please sign in to manage notification settings.', 'sabri-unified-notifications' ) . '</div>'; }
-		$items = $this->preferences->get_all( get_current_user_id() );
+		$user_id = get_current_user_id();
+		$items = $this->preferences->get_all( $user_id );
+		$subscriptions = $this->subscriptions->list_for_user( $user_id );
+		$scope_types = $this->subscriptions->scope_types();
+		$frequencies = $this->subscriptions->frequencies();
+		$wellbeing = $this->wellbeing->summary( $user_id, 30 );
 		ob_start(); include SUN_PATH . 'templates/settings.php'; return (string) ob_get_clean();
 	}
 
@@ -43,7 +55,7 @@ final class SUN_Renderer {
 			'pollMs'=>max(30000,(int)apply_filters('sun_unread_poll_ms',60000)),
 			'pushPublicKey'=>(string)apply_filters('sun_push_public_key',''),
 			'workerUrl'=>esc_url_raw(home_url('/sabri-notifications-service-worker.js')),
-			'i18n'=>array('error'=>__('The action could not be completed.','sabri-unified-notifications'),'saved'=>__('Saved.','sabri-unified-notifications')),
+			'i18n'=>array('error'=>__('The action could not be completed.','sabri-unified-notifications'),'saved'=>__('Saved.','sabri-unified-notifications'),'removed'=>__('Removed.','sabri-unified-notifications')),
 		) );
 	}
 }
