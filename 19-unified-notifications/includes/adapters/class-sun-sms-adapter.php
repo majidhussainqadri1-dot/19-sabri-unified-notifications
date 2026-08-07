@@ -27,6 +27,12 @@ final class SUN_SMS_Adapter implements SUN_Delivery_Adapter {
 	 * @return array<string,mixed>|WP_Error
 	 */
 	public function send( array $delivery, array $notification ) {
+		if ( ! SUN_Operational_Gate::allows( 'external_delivery' ) ) {
+			return new WP_Error( 'sun_external_delivery_contained', __( 'External notification delivery is temporarily contained.', 'sabri-unified-notifications' ) );
+		}
+		if ( SUN_Provider_Circuit::is_open( 'sms' ) ) {
+			return new WP_Error( 'sun_provider_circuit_open', __( 'SMS delivery is temporarily paused after repeated provider failures.', 'sabri-unified-notifications' ) );
+		}
 		$claims = $this->auth->assertions( (int) $delivery['recipient_id'] );
 		if ( empty( $claims['phone_verified'] ) ) {
 			return array( 'status' => 'suppressed', 'reason' => 'phone_unverified' );
@@ -39,13 +45,17 @@ final class SUN_SMS_Adapter implements SUN_Delivery_Adapter {
 		$body = mb_substr( trim( preg_replace( '/\s+/u', ' ', wp_strip_all_tags( $body ) ) ), 0, 320 );
 		$result = apply_filters( 'sun_send_sms', null, $phone, $body, $delivery, $notification );
 		if ( is_wp_error( $result ) ) {
+			SUN_Provider_Circuit::record_failure( 'sms' );
 			return $result;
 		}
 		if ( ! is_array( $result ) || empty( $result['accepted'] ) ) {
-			return (bool) apply_filters( 'sun_sms_adapter_configured', false )
-				? new WP_Error( 'sun_sms_rejected', __( 'The SMS provider did not accept the notification.', 'sabri-unified-notifications' ) )
-				: array( 'status' => 'suppressed', 'reason' => 'provider_unconfigured' );
+			if ( (bool) apply_filters( 'sun_sms_adapter_configured', false ) ) {
+				SUN_Provider_Circuit::record_failure( 'sms' );
+				return new WP_Error( 'sun_sms_rejected', __( 'The SMS provider did not accept the notification.', 'sabri-unified-notifications' ) );
+			}
+			return array( 'status' => 'suppressed', 'reason' => 'provider_unconfigured' );
 		}
+		SUN_Provider_Circuit::record_success( 'sms' );
 		return array(
 			'status'              => 'accepted',
 			'provider'            => sanitize_key( (string) ( $result['provider'] ?? 'filtered-sms-adapter' ) ),
@@ -55,10 +65,12 @@ final class SUN_SMS_Adapter implements SUN_Delivery_Adapter {
 
 	/** @return array<string,mixed> */
 	public function health() {
+		$circuit = SUN_Provider_Circuit::health();
 		return array(
-			'channel'    => 'sms',
-			'configured' => (bool) apply_filters( 'sun_sms_adapter_configured', false ),
-			'provider'   => (string) apply_filters( 'sun_sms_provider_name', 'not-configured' ),
+			'channel'       => 'sms',
+			'configured'    => (bool) apply_filters( 'sun_sms_adapter_configured', false ),
+			'provider'      => (string) apply_filters( 'sun_sms_provider_name', 'not-configured' ),
+			'circuit_open'  => ! empty( $circuit['sms']['open'] ),
 		);
 	}
 }
