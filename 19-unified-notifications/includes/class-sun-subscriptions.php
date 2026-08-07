@@ -52,6 +52,27 @@ final class SUN_Subscriptions {
 	}
 
 	/**
+	 * Validate the exact event-pattern grammar supported by the matcher.
+	 *
+	 * Allowed forms are `*`, an exact fact such as `Publishing.CorrectionIssued`,
+	 * or a namespace wildcard ending in `.*`, such as `Publishing.*`. Partial
+	 * segment wildcards are rejected rather than being stored but never matched.
+	 *
+	 * @param string $pattern Pattern.
+	 * @return bool
+	 */
+	public static function valid_event_pattern( $pattern ) {
+		$pattern = (string) $pattern;
+		if ( '*' === $pattern ) {
+			return true;
+		}
+		if ( preg_match( '/^[A-Z][A-Za-z0-9]*(?:\.[A-Z][A-Za-z0-9]*)+$/', $pattern ) ) {
+			return true;
+		}
+		return (bool) preg_match( '/^[A-Z][A-Za-z0-9]*(?:\.[A-Z][A-Za-z0-9]*)*\.\*$/', $pattern );
+	}
+
+	/**
 	 * List the user's scoped subscription choices.
 	 *
 	 * @param int $user_id User ID.
@@ -91,7 +112,7 @@ final class SUN_Subscriptions {
 		if ( ! in_array( $scope_type, self::scope_types(), true ) || '' === $scope_id || strlen( $scope_id ) > 191 ) {
 			return new WP_Error( 'sun_subscription_scope_invalid', __( 'The notification subscription scope is invalid.', 'sabri-unified-notifications' ), array( 'status' => 400 ) );
 		}
-		if ( '*' !== $event_pattern && ! preg_match( '/^[A-Z][A-Za-z0-9]*(?:\.[A-Za-z0-9*]+)+$/', $event_pattern ) ) {
+		if ( ! self::valid_event_pattern( $event_pattern ) ) {
 			return new WP_Error( 'sun_subscription_event_invalid', __( 'The notification subscription event pattern is invalid.', 'sabri-unified-notifications' ), array( 'status' => 400 ) );
 		}
 		if ( ! in_array( $frequency, array( 'immediate', 'daily', 'weekly' ), true ) ) {
