@@ -21,6 +21,8 @@ final class SUN_Policy_Engine {
 
 	/**
 	 * Resolve policy and lawful delivery channels for one recipient.
+	 * Producer envelope values are hints: they may raise priority/sensitivity,
+	 * but can never lower policy protection or impersonate another category.
 	 *
 	 * @param array<string,mixed> $event Event.
 	 * @param array<string,mixed> $recipient Recipient.
@@ -31,10 +33,12 @@ final class SUN_Policy_Engine {
 		if ( ! $policy ) {
 			return new WP_Error( 'sun_policy_missing', __( 'No active notification policy matches this event.', 'sabri-unified-notifications' ) );
 		}
-		$category    = $event['category'] && in_array( $event['category'], $this->preferences->categories(), true ) ? $event['category'] : $policy['category'];
-		$priority    = in_array( $event['priority'], array( 'low', 'normal', 'high', 'critical' ), true ) ? $event['priority'] : $policy['priority'];
+
+		/* Canonical policy owns category. Producers cannot relabel social/clinic facts as security/system. */
+		$category    = sanitize_key( (string) $policy['category'] );
+		$priority    = $this->stronger_value( (string) $policy['priority'], (string) $event['priority'], array( 'low', 'normal', 'high', 'critical' ), 'normal' );
+		$sensitivity = $this->stronger_value( (string) $policy['sensitivity'], (string) $event['sensitivity'], array( 'standard', 'sensitive', 'restricted', 'secret' ), 'standard' );
 		$mandatory   = (bool) $policy['mandatory'];
-		$sensitivity = in_array( $event['sensitivity'], array( 'standard', 'sensitive', 'restricted', 'secret' ), true ) ? $event['sensitivity'] : $policy['sensitivity'];
 
 		$subscription = $this->subscriptions->evaluate_event( (int) $recipient['user_id'], $event, $category );
 		if ( empty( $subscription['allowed'] ) ) {
@@ -108,7 +112,19 @@ final class SUN_Policy_Engine {
 			if ( $this->registry->matches_pattern( $event_type, $row['event_pattern'] ) ) {
 				return $row;
 			}
+		}
 		return null;
+	}
+
+	/** @param string $base Base. @param string $hint Hint. @param string[] $ordered Ordered weakest-to-strongest values. @param string $fallback Fallback. @return string */
+	private function stronger_value( $base, $hint, array $ordered, $fallback ) {
+		$base = sanitize_key( $base );
+		$hint = sanitize_key( $hint );
+		$base_index = array_search( $base, $ordered, true );
+		$hint_index = array_search( $hint, $ordered, true );
+		if ( false === $base_index ) { $base_index = array_search( $fallback, $ordered, true ); }
+		if ( false === $hint_index ) { return $ordered[ $base_index ]; }
+		return $ordered[ max( $base_index, $hint_index ) ];
 	}
 
 	/** @param string $frequency Frequency. @param DateTimeImmutable $base Base UTC. @param string $timezone Timezone. @return array{time:DateTimeImmutable,key:string|null} */
