@@ -52,6 +52,10 @@ check('critical'===SUN_Four_Plan_Compliance::strongest_priority('normal','critic
 check('restricted'===SUN_Four_Plan_Compliance::strongest_sensitivity('restricted','standard'),'sensitivity cannot be downgraded');
 
 $subscriptions=new SUN_Subscriptions();
+check(SUN_Subscriptions::valid_event_pattern('*'),'global subscription wildcard grammar');
+check(SUN_Subscriptions::valid_event_pattern('Publishing.CorrectionIssued'),'exact subscription event grammar');
+check(SUN_Subscriptions::valid_event_pattern('Publishing.*'),'namespace subscription wildcard grammar');
+check(!SUN_Subscriptions::valid_event_pattern('Publishing.Correction*'),'partial-segment wildcard rejected');
 $cap=$subscriptions->bulletin_cap_check(7,array('type'=>'person','id'=>'doctor-8'),1);check(!empty($cap['allowed']),'creator bulletin first delivery under cap');
 $subscriptions->mark_bulletin_sent($cap['key']);$capped=$subscriptions->bulletin_cap_check(7,array('type'=>'person','id'=>'doctor-8'),1);check(empty($capped['allowed']),'creator bulletin second delivery capped for 24h');
 $daily=$subscriptions->schedule('daily',new DateTimeImmutable('2026-08-07 10:00:00',new DateTimeZone('UTC')),'Asia/Karachi','abc123');check(str_starts_with((string)$daily['key'],'scope-daily:'),'scope-specific daily digest schedule');
