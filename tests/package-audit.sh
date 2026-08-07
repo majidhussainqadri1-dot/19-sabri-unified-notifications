@@ -2,7 +2,7 @@
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 "$ROOT/tools/build-release.sh" >/tmp/sun-build.log
-ZIP="$ROOT/build/19-sabri-unified-notifications-2.0.0.zip"
+ZIP="$ROOT/build/19-sabri-unified-notifications-2.1.0.zip"
 unzip -t "$ZIP" >/dev/null
 COUNT="$(unzip -Z1 "$ZIP" | grep -c '^19-unified-notifications/')"
 [[ "$COUNT" -gt 25 ]] || { echo "FAIL: package too small" >&2; exit 1; }
