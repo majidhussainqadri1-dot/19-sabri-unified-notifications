@@ -72,6 +72,8 @@ final class SUN_Event_Validator {
 		if ( strlen( wp_json_encode( $data ) ) > (int) apply_filters( 'sun_event_data_max_bytes', 65536, $producer ) ) {
 			return new WP_Error( 'sun_event_data_too_large', __( 'The event data exceeds the allowed size.', 'sabri-unified-notifications' ), array( 'status' => 413 ) );
 		}
+		$expires_at = $this->normalize_optional_datetime( $event['expires_at'] ?? null );
+		if ( is_wp_error( $expires_at ) ) { return $expires_at; }
 
 		$normalized = array(
 			'producer'=>$producer,
@@ -91,7 +93,7 @@ final class SUN_Event_Validator {
 			'template_key'=>sanitize_key((string)($event['template_key']??'')),
 			'deep_link'=>esc_url_raw((string)($event['deep_link']??'')),
 			'deep_context'=>sanitize_text_field((string)($event['deep_context']??'')),
-			'expires_at'=>$this->normalize_optional_datetime($event['expires_at']??null),
+			'expires_at'=>$expires_at,
 			'data'=>$data,
 			'meta'=>array(
 				'idempotency_key'=>sanitize_text_field((string)($event['idempotency_key']??'')),
@@ -160,8 +162,13 @@ final class SUN_Event_Validator {
 		return sanitize_textarea_field((string)$value);
 	}
 
-	/** @param mixed $value Value. @return string|null */
+	/** @param mixed $value Value. @return string|null|WP_Error */
 	private function normalize_optional_datetime( $value ) {
-		if(empty($value)){return null;}$timestamp=strtotime((string)$value);return false===$timestamp?null:gmdate('Y-m-d H:i:s',$timestamp);
+		if ( null === $value || '' === $value ) { return null; }
+		$timestamp = strtotime( (string) $value );
+		if ( false === $timestamp ) {
+			return new WP_Error( 'sun_event_expiry_invalid', __( 'The event expiry time is invalid.', 'sabri-unified-notifications' ), array( 'status' => 400 ) );
+		}
+		return gmdate( 'Y-m-d H:i:s', $timestamp );
 	}
 }
