@@ -2,16 +2,19 @@
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 "$ROOT/tools/build-release.sh" >/tmp/sun-build.log
-ZIP="$ROOT/build/19-sabri-unified-notifications-2.2.0.zip"
+ZIP="$ROOT/build/19-sabri-unified-notifications-2.3.0.zip"
 TOP="unified-notifications-19"
 unzip -t "$ZIP" >/dev/null
 COUNT="$(unzip -Z1 "$ZIP" | grep -c "^$TOP/")"
-[[ "$COUNT" -gt 25 ]] || { echo "FAIL: package too small" >&2; exit 1; }
+[[ "$COUNT" -gt 30 ]] || { echo "FAIL: package too small" >&2; exit 1; }
 [[ "$(unzip -Z1 "$ZIP" | head -n1)" == "$TOP/" ]] || { echo "FAIL: canonical package folder mismatch" >&2; exit 1; }
 TMP="$(mktemp -d)"; trap 'rm -rf "$TMP"' EXIT
 unzip -q "$ZIP" -d "$TMP"
 find "$TMP/$TOP" -name '*.php' -print0 | xargs -0 -n1 php -l >/dev/null
 (cd "$TMP" && sha256sum -c "$TOP/MANIFEST.sha256" >/dev/null)
-grep -q 'Version: 2.2.0' "$TMP/$TOP/19-unified-notifications.php"
+grep -q 'Version: 2.3.0' "$TMP/$TOP/19-unified-notifications.php"
 grep -q 'Requires PHP: 8.3' "$TMP/$TOP/19-unified-notifications.php"
-echo "PASS: canonical package integrity ($COUNT entries)"
+[[ -f "$TMP/$TOP/includes/class-sun-subscriptions.php" ]] || { echo "FAIL: subscription service missing from package" >&2; exit 1; }
+[[ -f "$TMP/$TOP/includes/class-sun-wellbeing.php" ]] || { echo "FAIL: wellbeing service missing from package" >&2; exit 1; }
+grep -q 'CV-106' "$TMP/$TOP/includes/class-sun-four-plan-compliance.php" || { echo "FAIL: Top-20 trace missing from package" >&2; exit 1; }
+echo "PASS: canonical 2.3.0 package integrity ($COUNT entries)"
