@@ -16,7 +16,7 @@ Precedence applied: latest explicit Founder/safety rule > recovered directives >
 ## Fresh review round 1 — Constitution, runtime baseline, packaging and ownership
 
 Defects found on the 2.1.0 main baseline:
-- Activation code still admitted WordPress 6.6 and PHP 8.1 even though the plugin header/governing project baseline had moved to WordPress 7.0.1 / PHP 8.3.
+- Activation code still admitted WordPress 6.6 and PHP 8.1 even though the governing project baseline had moved to WordPress 7.0.1 / PHP 8.3.
 - Deterministic ZIP still used `19-unified-notifications/` as its top folder instead of the File 19 plan's canonical package folder `unified-notifications-19/`.
 - Release tooling and CI still identified the old 2.1.0 artifact.
 
@@ -54,24 +54,29 @@ Defects found:
 
 Corrections:
 - Added canonical `subscriptions` table and `SUN_Subscriptions` with optimistic concurrency, explicit scope types, enable/disable and immediate/daily/weekly frequency.
-- Added producer-supplied `subscription_scope` validation; opt-in-required scoped events are suppressed unless subscribed. Security/safety/system notices cannot be suppressed by ordinary subscription records.
+- Added producer-supplied `subscription_scope` validation; opt-in-required scoped events are suppressed unless subscribed. `Social.CreatorBulletinPublished` is rejected unless it carries a required explicit subscription scope. Security/safety/system notices cannot be suppressed by ordinary subscription records.
 - Subscription frequency now governs external digest scheduling when present, while the in-app center remains the unified eligible-update history.
-- Added Top-20 capability registry CV-097 through CV-106 and semantic event catalog for appointment, correction/retraction, security and creator-bulletin facts. Native domain owners remain the source of truth.
+- Added Top-20 capability registry CV-097 through CV-106 and semantic factual event catalog for appointment, correction/retraction, security and creator-bulletin events. Native domain owners remain the source of truth.
 - Added privacy-minimized `SUN_Wellbeing` 30-day aggregates and `/wellbeing` endpoint; the guardrail explicitly states that more notifications are not a KPI.
 - Added REST/PHP integration for granular subscriptions and an accessible central settings UI for viewing, updating, adding and removing them.
 
 Round result: defects found and corrected.
 
-## Fresh review round 4 — Adversarial privacy, regression, UI and release evidence
+## Fresh review round 4 — Adversarial privacy, producer privilege, regression and release evidence
 
 Defects found:
 - The new subscription records initially required explicit privacy export/erasure and guarded-uninstall coverage.
 - Delivery ledger erasure retained direct recipient IDs after notification content deletion.
-- Regression tests did not yet prove canonical Founder/email/phone claims, producer-owner binding, Top-20 capability inventory, scope validation, canonical package folder or healthy-use marker.
+- A registered producer could supply another valid File 19 category such as `security`, causing ordinary events to be treated as essential for subscription behavior.
+- A producer could lower a policy's sensitivity (for example a clinically sensitive policy to `standard`) because event sensitivity previously replaced policy sensitivity.
+- An opt-in creator bulletin could omit the subscription scope unless the semantic contract itself enforced it.
+- Regression tests did not yet prove canonical Founder/email/phone claims, producer-owner binding, policy-owned category, Top-20 capability inventory, required subscription scope, canonical package folder or healthy-use marker.
 
 Corrections:
 - Privacy exporter now includes safe preference, subscription, device metadata and bounded delivery history; raw device tokens and notification ciphertext are not exported.
-- Erasure removes devices/preferences/subscriptions, deletes notification content/deep links and pseudonymizes direct recipient IDs/provider IDs in retained delivery tombstones, subject to an approved retention hold.
+- Erasure removes devices/preferences/subscriptions, deletes notification content/deep links and pseudonymizes direct recipient/provider identifiers in retained delivery tombstones, subject to an approved retention hold.
+- Policy now owns category absolutely. Producer priority/sensitivity are treated only as upward hints: they can raise severity/protection but never lower policy protection or impersonate `security`/`system`.
+- `Social.CreatorBulletinPublished` requires a validated opt-in scope at envelope-validation time.
 - Guarded destructive uninstall includes the subscription table; default uninstall remains non-destructive.
 - Accessible responsive subscription and wellbeing surfaces were added without creating a second shell or visual-system owner.
 - Deterministic unit/static/package suites were expanded to cover the fresh defects and Top-20 requirements.
