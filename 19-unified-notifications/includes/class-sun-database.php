@@ -20,7 +20,7 @@ final class SUN_Database {
 	public static function table( $logical ) {
 		global $wpdb;
 		$allowed = array(
-			'events', 'notifications', 'preferences', 'deliveries', 'templates',
+			'events', 'notifications', 'preferences', 'subscriptions', 'deliveries', 'templates',
 			'policies', 'devices', 'dead_letters', 'audit', 'bulk_jobs',
 		);
 		if ( ! in_array( $logical, $allowed, true ) ) {
