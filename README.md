@@ -2,24 +2,29 @@
 
 Canonical notification infrastructure for the **Sabri Social Homeopathy Platform**.
 
-## Corrective release
+## Forty-round corrective release
 
 - File number: **19**
-- Runtime / schema: **2.1.0 / 2.1.0**
-- Plugin folder: `19-unified-notifications`
+- Runtime / schema: **2.2.0 / 2.2.0**
+- Repository source folder: `19-unified-notifications`
+- Canonical installable package folder: `unified-notifications-19`
 - Text domain: `sabri-unified-notifications`
 - REST namespace: `sabri-notifications/v1`
 - PHP minimum: **8.3**
 - WordPress minimum: **7.0**
-- Deterministic plugin ZIP SHA-256: `d50203e62d409c12bc609e2dfac01d0dc233a15e06bb0883378eec5730e7629a`
+- Review basis: three central governing plans + File 19 dedicated master plan
+- Review cycles: **40 sequential review → fix/retest rounds**
+- Defect-bearing rounds: **18**
+- Clean rounds: **22**
+- Deterministic plugin ZIP SHA-256: `3e6c87a4a45d4064f19e1166323e0a5d1b13307845534fe3711dc0792ef9d4df`
 
-This repository implements the File 19 master plan and the later governing amendments: one in-app center and File 20 bell, versioned domain-event intake, explicit lawful recipients, current File 00 verified-account revalidation, idempotent fan-out, preferences, quiet hours, digests, email/push/SMS adapters, retry/dead-letter handling, devices, privacy lifecycle, health diagnostics, reconciliation and Founder-approved bounded bulk notices.
+This repository implements the File 19 master plan and later governing amendments: one in-app center and File 20 bell, versioned domain-event intake, explicit lawful recipients, current File 00 verified-account revalidation, idempotent fan-out, preferences, quiet hours, digests, email/push/SMS adapters, retry/dead-letter handling, provider circuit breakers, coordinated safe mode, devices, privacy lifecycle, health diagnostics, reconciliation and Founder-approved bounded bulk notices.
 
-Four-plan governance is machine-readable in `SUN_Four_Plan_Compliance`: central green, RTL/right-priority, one complete free tier, no donor/payment advantage, File 20 shell ownership, File 25 visual ownership, File 26 search/discovery ownership and no duplicate domain backend.
+Four-plan governance is machine-readable in `SUN_Four_Plan_Compliance`: the later Top-20 central plan precedes the earlier recovered directives and Definitive Master Plan where they conflict; central green, RTL/right-priority, one complete free tier, no donor/payment advantage, File 20 shell ownership, File 25 visual ownership, File 26 search/discovery ownership and no duplicate domain backend remain enforced.
 
 ## Truth of status
 
-Specified, coded, deterministically packaged and automated-QA green are evidenced in GitHub. This does **not** claim Hostinger staging acceptance, live provider delivery, live deployment or operational acceptance. Those gates require the real platform, provider credentials, companion modules, backup/restore, rollback rehearsal and Founder acceptance.
+Specified, coded, deterministically packaged and automated-QA-green status are repository evidence. PR #9 exact-head CI validates PHP 8.3/8.4, deterministic unit assertions, syntax/static four-plan security/privacy audit, clean-extract canonical package integrity and deterministic reproduction. This does **not** claim Hostinger staging acceptance, live provider delivery, live deployment or operational acceptance. Those gates require the real platform, provider credentials, companion modules, backup/restore, rollback rehearsal and Founder acceptance.
 
 ## Commands
 
@@ -29,7 +34,7 @@ bash tests/static-audit.sh
 bash tests/package-audit.sh
 ```
 
-The release artifact is built as `build/19-sabri-unified-notifications-2.1.0.zip`.
+The release artifact is built as `build/19-sabri-unified-notifications-2.2.0.zip` with canonical top-level folder `unified-notifications-19/`. The exact expected checksum is also recorded in root `RELEASE-SHA256.txt` and verified in CI.
 
 ## Public integration
 
@@ -37,15 +42,16 @@ The release artifact is built as `build/19-sabri-unified-notifications-2.1.0.zip
 sun_register_notification_producer(
     'file17',
     [
-        'owner'       => 'File 17',
-        'event_types' => [ 'Communication.*' ],
+        'owner'           => 'File 17',
+        'event_types'     => [ 'Communication.*' ],
+        'schema_versions' => [ '1.0' ],
         'secret_callback' => static fn () => getenv( 'FILE17_NOTIFICATION_SECRET' ),
     ]
 );
 ```
 
-Domain producers retain their own state/decision truth. File 19 stores only notification projections and delivery evidence. Protected user actions consume current `sabri_membership_claims_v2` identity assertions from File 00 and fail closed if that canonical owner is unavailable.
+Domain producers retain their own state/decision truth. File 19 stores only notification projections and delivery evidence. Protected user and governance actions consume current `sabri_membership_claims_v2` identity assertions from File 00 and fail closed if that canonical owner is unavailable.
 
 ## Documentation
 
-See [`19-unified-notifications/docs`](19-unified-notifications/docs/) for architecture, four-plan audit, contracts, data dictionary, security, privacy, migration, rollback, operations, staging and traceability.
+See [`19-unified-notifications/docs`](19-unified-notifications/docs/) for architecture, the forty-round audit, contracts, data dictionary, security, privacy, migration, rollback, operations, staging and traceability.

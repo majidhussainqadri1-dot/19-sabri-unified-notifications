@@ -21,6 +21,17 @@
     });
   };
   document.addEventListener('click', async (event) => {
+    const back = event.target.closest('[data-sun-safe-back]');
+    if (back) {
+      const fallback = back.dataset.sunFallback || cfg.homeUrl || '/';
+      let sameOriginReferrer = false;
+      try {
+        sameOriginReferrer = Boolean(document.referrer) && new URL(document.referrer, window.location.href).origin === window.location.origin;
+      } catch (_) { sameOriginReferrer = false; }
+      if (sameOriginReferrer && window.history.length > 1) window.history.back();
+      else window.location.assign(fallback);
+      return;
+    }
     const action = event.target.closest('[data-sun-action]');
     if (action) {
       const card = action.closest('[data-sun-id]');

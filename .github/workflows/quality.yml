@@ -31,19 +31,22 @@ jobs:
         run: bash tests/static-audit.sh
       - name: Clean-extract deterministic package audit
         run: bash tests/package-audit.sh
-      - name: Verify deterministic release reproduction
+      - name: Verify deterministic release reproduction and frozen checksum
         run: |
-          first="$(sha256sum build/19-sabri-unified-notifications-2.1.0.zip | awk '{print $1}')"
+          first="$(sha256sum build/19-sabri-unified-notifications-2.2.0.zip | awk '{print $1}')"
           bash tools/build-release.sh >/tmp/sun-rebuild.log
-          second="$(sha256sum build/19-sabri-unified-notifications-2.1.0.zip | awk '{print $1}')"
+          second="$(sha256sum build/19-sabri-unified-notifications-2.2.0.zip | awk '{print $1}')"
+          expected="$(awk '{print $1}' RELEASE-SHA256.txt)"
           test "$first" = "$second"
-          cat build/19-sabri-unified-notifications-2.1.0.zip.sha256
+          test "$second" = "$expected"
+          grep -q '19-sabri-unified-notifications-2.2.0.zip' RELEASE-SHA256.txt
+          cat build/19-sabri-unified-notifications-2.2.0.zip.sha256
       - name: Upload release candidate
         if: matrix.php == '8.3'
         uses: actions/upload-artifact@v4
         with:
-          name: file-19-notifications-2.1.0
+          name: file-19-notifications-2.2.0
           path: |
-            build/19-sabri-unified-notifications-2.1.0.zip
-            build/19-sabri-unified-notifications-2.1.0.zip.sha256
+            build/19-sabri-unified-notifications-2.2.0.zip
+            build/19-sabri-unified-notifications-2.2.0.zip.sha256
           if-no-files-found: error

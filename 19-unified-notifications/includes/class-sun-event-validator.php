@@ -30,11 +30,20 @@ final class SUN_Event_Validator {
 			}
 		}
 
-		$producer       = sanitize_key( (string) $event['producer'] );
-		$event_type     = sanitize_text_field( (string) $event['event_type'] );
-		$authorization  = $this->registry->authorize_type( $producer, $event_type );
+		$producer      = sanitize_key( (string) $event['producer'] );
+		$event_type    = sanitize_text_field( (string) $event['event_type'] );
+		$authorization = $this->registry->authorize_type( $producer, $event_type );
 		if ( is_wp_error( $authorization ) ) {
 			return $authorization;
+		}
+		$config = $this->registry->get( $producer );
+		if ( ! is_array( $config ) ) {
+			return new WP_Error( 'sun_unknown_producer', __( 'The notification producer is not registered.', 'sabri-unified-notifications' ), array( 'status' => 403 ) );
+		}
+		$declared_owner = sanitize_text_field( (string) $event['owner'] );
+		$canonical_owner = sanitize_text_field( (string) ( $config['owner'] ?? '' ) );
+		if ( '' === $canonical_owner || ! hash_equals( $canonical_owner, $declared_owner ) ) {
+			return new WP_Error( 'sun_event_owner_mismatch', __( 'The producer event owner does not match the registered canonical owner.', 'sabri-unified-notifications' ), array( 'status' => 403 ) );
 		}
 		if ( ! preg_match( '/^[A-Z][A-Za-z0-9]*(?:\.[A-Z][A-Za-z0-9]*)+$/', $event_type ) ) {
 			return new WP_Error( 'sun_event_type_invalid', __( 'The event type must use a versioned domain fact name.', 'sabri-unified-notifications' ), array( 'status' => 400 ) );
@@ -46,6 +55,12 @@ final class SUN_Event_Validator {
 		$schema = sanitize_text_field( (string) $event['schema_version'] );
 		if ( ! preg_match( '/^v?[0-9]+(?:\.[0-9]+){0,2}$/', $schema ) ) {
 			return new WP_Error( 'sun_schema_version_invalid', __( 'The event schema version is invalid.', 'sabri-unified-notifications' ), array( 'status' => 400 ) );
+		}
+		if ( ! empty( $config['schema_versions'] ) && is_array( $config['schema_versions'] ) ) {
+			$allowed_schemas = array_map( 'strval', $config['schema_versions'] );
+			if ( ! in_array( $schema, $allowed_schemas, true ) ) {
+				return new WP_Error( 'sun_schema_version_unsupported', __( 'This producer schema version is not supported.', 'sabri-unified-notifications' ), array( 'status' => 409 ) );
+			}
 		}
 		$occurred = strtotime( (string) $event['occurred_at'] );
 		if ( false === $occurred || $occurred > time() + 300 || $occurred < time() - YEAR_IN_SECONDS ) {
@@ -63,7 +78,7 @@ final class SUN_Event_Validator {
 
 		$normalized = array(
 			'producer'       => $producer,
-			'owner'          => sanitize_text_field( (string) $event['owner'] ),
+			'owner'          => $canonical_owner,
 			'event_id'       => $event_id,
 			'event_type'     => $event_type,
 			'schema_version' => $schema,

@@ -30,6 +30,12 @@ final class SUN_Email_Adapter implements SUN_Delivery_Adapter {
 	 * @return array<string,mixed>|WP_Error
 	 */
 	public function send( array $delivery, array $notification ) {
+		if ( ! SUN_Operational_Gate::allows( 'external_delivery' ) ) {
+			return new WP_Error( 'sun_external_delivery_contained', __( 'External notification delivery is temporarily contained.', 'sabri-unified-notifications' ) );
+		}
+		if ( SUN_Provider_Circuit::is_open( 'email' ) ) {
+			return new WP_Error( 'sun_provider_circuit_open', __( 'Email delivery is temporarily paused after repeated provider failures.', 'sabri-unified-notifications' ) );
+		}
 		$user   = get_userdata( (int) $delivery['recipient_id'] );
 		$claims = $this->auth->assertions( (int) $delivery['recipient_id'] );
 		if ( ! $user || empty( $claims['email_verified'] ) || ! is_email( $user->user_email ) ) {
@@ -54,8 +60,10 @@ final class SUN_Email_Adapter implements SUN_Delivery_Adapter {
 		$headers[]   = 'List-Unsubscribe: <' . esc_url_raw( $unsubscribe ) . '>';
 		$result      = wp_mail( $user->user_email, $subject, $message, $headers );
 		if ( ! $result ) {
+			SUN_Provider_Circuit::record_failure( 'email' );
 			return new WP_Error( 'sun_email_rejected', __( 'The email provider did not accept the message.', 'sabri-unified-notifications' ) );
 		}
+		SUN_Provider_Circuit::record_success( 'email' );
 		return array(
 			'status'              => 'accepted',
 			'provider'            => 'wp_mail',
@@ -65,10 +73,12 @@ final class SUN_Email_Adapter implements SUN_Delivery_Adapter {
 
 	/** @return array<string,mixed> */
 	public function health() {
+		$circuit = SUN_Provider_Circuit::health();
 		return array(
-			'channel'    => 'email',
-			'configured' => (bool) apply_filters( 'sun_email_adapter_configured', true ),
-			'provider'   => 'wp_mail',
+			'channel'       => 'email',
+			'configured'    => (bool) apply_filters( 'sun_email_adapter_configured', true ),
+			'provider'      => 'wp_mail',
+			'circuit_open'  => ! empty( $circuit['email']['open'] ),
 		);
 	}
 }
