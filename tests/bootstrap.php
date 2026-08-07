@@ -7,6 +7,7 @@ define( 'DAY_IN_SECONDS', 86400 );
 define( 'YEAR_IN_SECONDS', 31536000 );
 define( 'MINUTE_IN_SECONDS', 60 );
 $GLOBALS['sun_test_filters'] = array();
+$GLOBALS['sun_test_users'] = array( 5 => (object) array( 'ID' => 5 ), 7 => (object) array( 'ID' => 7 ) );
 class WP_Error {
 	private $code; private $message; private $data;
 	public function __construct( $code='', $message='', $data=null ){ $this->code=$code; $this->message=$message; $this->data=$data; }
@@ -25,6 +26,8 @@ function absint($v){return abs((int)$v);}
 function wp_json_encode($v,$flags=0){return json_encode($v,$flags);}
 function wp_strip_all_tags($s){return strip_tags((string)$s);}
 function get_bloginfo($k=''){return 'Sabri Test';}
+function get_userdata($id){return $GLOBALS['sun_test_users'][(int)$id]??false;}
+function get_user_locale($id=0){return 'en_US';}
 function home_url($path='/'){return 'https://sabrihomeopathy.com'.('/'===substr($path,0,1)?$path:'/'.$path);}
 function wp_parse_url($url,$component=-1){return parse_url($url,$component);}
 function wp_salt($scheme='auth'){return hash('sha256','test-'.$scheme);}
@@ -36,6 +39,8 @@ function wp_timezone_string(){return 'UTC';}
 require_once dirname(__DIR__).'/19-unified-notifications/includes/class-sun-database.php';
 require_once dirname(__DIR__).'/19-unified-notifications/includes/class-sun-crypto.php';
 require_once dirname(__DIR__).'/19-unified-notifications/includes/class-sun-deep-link.php';
+require_once dirname(__DIR__).'/19-unified-notifications/includes/class-sun-four-plan-compliance.php';
+require_once dirname(__DIR__).'/19-unified-notifications/includes/class-sun-auth.php';
 require_once dirname(__DIR__).'/19-unified-notifications/includes/class-sun-producer-registry.php';
 require_once dirname(__DIR__).'/19-unified-notifications/includes/class-sun-event-validator.php';
 require_once dirname(__DIR__).'/19-unified-notifications/includes/class-sun-template-engine.php';
