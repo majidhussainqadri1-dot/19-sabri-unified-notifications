@@ -30,13 +30,17 @@ final class SUN_Producer_Registry {
 	/**
 	 * Return the registry after companion-module filters.
 	 *
+	 * File 19 owns only its notification/system facts. Account Security.*, clinical
+	 * Safety.*, appointment, publication, marketplace and communication facts must
+	 * be explicitly registered by their canonical owners.
+	 *
 	 * @return array<string,array<string,mixed>>
 	 */
 	public function all() {
 		$registry = self::$runtime;
 		$registry['sabri-system'] = $registry['sabri-system'] ?? array(
 			'owner'       => 'File 19',
-			'event_types' => array( 'System.*', 'Security.*', 'Safety.*' ),
+			'event_types' => array( 'System.*' ),
 			'internal'    => true,
 		);
 		return (array) apply_filters( 'sun_registered_producers', $registry );
@@ -89,8 +93,11 @@ final class SUN_Producer_Registry {
 			$result = call_user_func( $config['verify_callback'], $timestamp, $signature, $raw_body, $producer );
 			return true === $result ? true : new WP_Error( 'sun_signature_invalid', __( 'The producer signature is invalid.', 'sabri-unified-notifications' ), array( 'status' => 403 ) );
 		}
-		if ( empty( $timestamp ) || abs( time() - (int) $timestamp ) > (int) apply_filters( 'sun_producer_replay_window', 300, $producer ) ) {
+		if ( ! is_numeric( $timestamp ) || ! preg_match( '/^[0-9]{9,12}$/', (string) $timestamp ) || abs( time() - (int) $timestamp ) > (int) apply_filters( 'sun_producer_replay_window', 300, $producer ) ) {
 			return new WP_Error( 'sun_signature_expired', __( 'The producer request is outside the allowed replay window.', 'sabri-unified-notifications' ), array( 'status' => 403 ) );
+		}
+		if ( ! preg_match( '/^[a-f0-9]{64}$/', strtolower( (string) $signature ) ) ) {
+			return new WP_Error( 'sun_signature_invalid', __( 'The producer signature is invalid.', 'sabri-unified-notifications' ), array( 'status' => 403 ) );
 		}
 		$secret = $this->resolve_secret( $producer, $config );
 		if ( '' === $secret ) {
