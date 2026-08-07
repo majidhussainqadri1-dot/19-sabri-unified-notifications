@@ -1,1 +1,1 @@
-3e6c87a4a45d4064f19e1166323e0a5d1b13307845534fe3711dc0792ef9d4df  19-sabri-unified-notifications-2.2.0.zip
+79e3f095c8db1157a614639e04bd9e1c7a93a1bb68bc4007e8ea29a8f1bec976  19-sabri-unified-notifications-2.4.0.zip
