@@ -54,15 +54,16 @@ function sun_register_notification_producer( $producer, array $config ) {
 }
 
 /**
- * Get scoped notification subscriptions for the current user.
+ * Get scoped notification subscriptions for the current eligible user.
  *
  * @return array<int,array<string,mixed>>
  */
 function sun_get_notification_subscriptions() {
-	if ( ! is_user_logged_in() ) {
+	$user_id = get_current_user_id();
+	if ( ! is_user_logged_in() || ! sun_notifications()->auth()->is_recipient_eligible( $user_id ) ) {
 		return array();
 	}
-	return sun_notifications()->subscriptions()->list_for_user( get_current_user_id() );
+	return sun_notifications()->subscriptions()->list_for_user( $user_id );
 }
 
 /**
@@ -74,8 +75,9 @@ function sun_get_notification_subscriptions() {
  * @return array<string,mixed>|WP_Error
  */
 function sun_update_notification_subscription( array $input ) {
-	if ( ! is_user_logged_in() ) {
-		return new WP_Error( 'sun_auth_required', __( 'Authentication is required.', 'sabri-unified-notifications' ) );
+	$user_id = get_current_user_id();
+	if ( ! is_user_logged_in() || ! sun_notifications()->auth()->is_recipient_eligible( $user_id ) ) {
+		return new WP_Error( 'sun_auth_required', __( 'Authentication and current account eligibility are required.', 'sabri-unified-notifications' ) );
 	}
-	return sun_notifications()->subscriptions()->update( get_current_user_id(), $input );
+	return sun_notifications()->subscriptions()->update( $user_id, $input );
 }
