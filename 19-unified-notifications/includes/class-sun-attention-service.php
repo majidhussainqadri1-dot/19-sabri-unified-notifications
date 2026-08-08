@@ -48,15 +48,17 @@ final class SUN_Attention_Service {
         $mode = sanitize_key( (string) ( $input['focus_mode'] ?? $current['focus_mode'] ) );
         if ( ! in_array( $mode, $this->focus_modes(), true ) ) { $mode = 'balanced'; }
         $best_time = $this->valid_time( (string) ( $input['best_time_local'] ?? $current['best_time_local'] ) );
-        $muted_until = $this->valid_future_datetime( $input['muted_until'] ?? null );
+        $muted_until = array_key_exists( 'muted_until', $input ) ? $this->valid_future_datetime( $input['muted_until'] ) : $current['muted_until'];
+        $essential_only = array_key_exists( 'essential_only', $input ) ? ( ! empty( $input['essential_only'] ) ? 1 : 0 ) : ( ! empty( $current['essential_only'] ) ? 1 : 0 );
+        $best_time_enabled = array_key_exists( 'best_time_enabled', $input ) ? ( ! empty( $input['best_time_enabled'] ) ? 1 : 0 ) : ( ! empty( $current['best_time_enabled'] ) ? 1 : 0 );
         $now = SUN_Database::now();
         $data = array(
             'user_id' => $user_id,
             'focus_mode' => $mode,
-            'essential_only' => ! empty( $input['essential_only'] ) ? 1 : 0,
+            'essential_only' => $essential_only,
             'hourly_budget' => max( 1, min( 200, absint( $input['hourly_budget'] ?? $current['hourly_budget'] ) ) ),
             'daily_budget' => max( 1, min( 2000, absint( $input['daily_budget'] ?? $current['daily_budget'] ) ) ),
-            'best_time_enabled' => ! empty( $input['best_time_enabled'] ) ? 1 : 0,
+            'best_time_enabled' => $best_time_enabled,
             'best_time_local' => $best_time ?: null,
             'ai_summary_enabled' => array_key_exists( 'ai_summary_enabled', $input ) ? ( ! empty( $input['ai_summary_enabled'] ) ? 1 : 0 ) : ( $current['ai_summary_enabled'] ? 1 : 0 ),
             'history_days' => max( 7, min( 365, absint( $input['history_days'] ?? $current['history_days'] ) ) ),
@@ -221,16 +223,36 @@ final class SUN_Attention_Service {
 
     /** @param int $user_id User ID. @param string $device_public_id Device ID. @param array<string,mixed> $input Input. @return array<string,mixed>|WP_Error */
     public function update_device_profile( $user_id, $device_public_id, array $input ) {
-        global $wpdb; $user_id = absint( $user_id ); $device_public_id = sanitize_text_field( $device_public_id );
+        global $wpdb;
+        $user_id = absint( $user_id );
+        $device_public_id = sanitize_text_field( $device_public_id );
         $owned = (int) $wpdb->get_var( $wpdb->prepare( 'SELECT COUNT(*) FROM ' . SUN_Database::table( 'devices' ) . ' WHERE public_id=%s AND user_id=%d AND status<>%s', $device_public_id, $user_id, 'revoked' ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
         if ( ! $owned ) { return new WP_Error( 'sun_device_profile_not_found', __( 'Notification device not found.', 'sabri-unified-notifications' ), array( 'status' => 404 ) ); }
-        $categories = array_values( array_intersect( array( 'security','safety','clinic','publishing','learning','social','marketplace','messages','media','system','marketing' ), array_map( 'sanitize_key', (array) ( $input['categories'] ?? array() ) ) ) );
-        $channels = array_values( array_intersect( array( 'push','email','sms','whatsapp','rcs' ), array_map( 'sanitize_key', (array) ( $input['channels'] ?? array() ) ) ) );
-        $mode = sanitize_key( (string) ( $input['focus_mode'] ?? 'inherit' ) ); if ( 'inherit' !== $mode && ! in_array( $mode, $this->focus_modes(), true ) ) { $mode = 'inherit'; }
-        $handoff = array_key_exists( 'handoff', $input ) ? SUN_Crypto::encrypt( SUN_Database::canonical_json( $input['handoff'] ) ) : null; if ( is_wp_error( $handoff ) ) { return $handoff; }
-        $table = SUN_Database::table( 'device_profiles' ); $now = SUN_Database::now(); $existing = $wpdb->get_row( $wpdb->prepare( "SELECT id,version FROM {$table} WHERE device_public_id=%s AND user_id=%d LIMIT 1", $device_public_id, $user_id ), ARRAY_A );
+        $table = SUN_Database::table( 'device_profiles' );
+        $now = SUN_Database::now();
+        $existing = $wpdb->get_row( $wpdb->prepare( "SELECT id,focus_mode,categories_json,channels_json,handoff_ciphertext,version FROM {$table} WHERE device_public_id=%s AND user_id=%d LIMIT 1", $device_public_id, $user_id ), ARRAY_A );
+        $expected = absint( $input['version'] ?? ( $existing['version'] ?? 0 ) );
+        if ( $existing && $expected !== (int) $existing['version'] ) { return new WP_Error( 'sun_device_profile_conflict', __( 'This device notification profile changed in another session.', 'sabri-unified-notifications' ), array( 'status' => 409 ) ); }
+        $current_categories = $existing ? ( json_decode( (string) $existing['categories_json'], true ) ?: array() ) : array();
+        $current_channels = $existing ? ( json_decode( (string) $existing['channels_json'], true ) ?: array() ) : array();
+        $categories = array_key_exists( 'categories', $input ) ? array_values( array_intersect( array( 'security','safety','clinic','publishing','learning','social','marketplace','messages','media','system','marketing' ), array_map( 'sanitize_key', (array) $input['categories'] ) ) ) : $current_categories;
+        $channels = array_key_exists( 'channels', $input ) ? array_values( array_intersect( array( 'push','email','sms','whatsapp','rcs' ), array_map( 'sanitize_key', (array) $input['channels'] ) ) ) : $current_channels;
+        $mode = sanitize_key( (string) ( $input['focus_mode'] ?? ( $existing['focus_mode'] ?? 'inherit' ) ) );
+        if ( 'inherit' !== $mode && ! in_array( $mode, $this->focus_modes(), true ) ) { return new WP_Error( 'sun_device_focus_mode_invalid', __( 'The device focus mode is invalid.', 'sabri-unified-notifications' ), array( 'status' => 400 ) ); }
+        $handoff = $existing['handoff_ciphertext'] ?? null;
+        if ( array_key_exists( 'handoff', $input ) ) {
+            if ( null === $input['handoff'] || '' === $input['handoff'] || array() === $input['handoff'] ) { $handoff = null; }
+            elseif ( ! is_array( $input['handoff'] ) ) { return new WP_Error( 'sun_device_handoff_invalid', __( 'Device handoff metadata is invalid.', 'sabri-unified-notifications' ), array( 'status' => 400 ) ); }
+            else { $handoff = SUN_Crypto::encrypt( SUN_Database::canonical_json( $input['handoff'] ) ); if ( is_wp_error( $handoff ) ) { return $handoff; } }
+        }
         $data = array( 'device_public_id' => $device_public_id, 'user_id' => $user_id, 'focus_mode' => $mode, 'categories_json' => wp_json_encode( $categories ), 'channels_json' => wp_json_encode( $channels ), 'handoff_ciphertext' => $handoff, 'version' => (int) ( $existing['version'] ?? 0 ) + 1, 'updated_at' => $now );
-        if ( $existing ) { $wpdb->update( $table, $data, array( 'id' => (int) $existing['id'] ) ); } else { $data['created_at'] = $now; $wpdb->insert( $table, $data ); }
+        if ( $existing ) {
+            $updated = $wpdb->update( $table, $data, array( 'id' => (int) $existing['id'], 'version' => $expected ) );
+            if ( 1 !== (int) $updated ) { return new WP_Error( 'sun_device_profile_conflict', __( 'This device notification profile changed in another session.', 'sabri-unified-notifications' ), array( 'status' => 409 ) ); }
+        } else {
+            $data['created_at'] = $now;
+            if ( false === $wpdb->insert( $table, $data ) ) { return new WP_Error( 'sun_device_profile_write_failed', __( 'The device notification profile could not be saved.', 'sabri-unified-notifications' ), array( 'status' => 500 ) ); }
+        }
         return array( 'device_id' => $device_public_id, 'focus_mode' => $mode, 'categories' => $categories, 'channels' => $channels, 'version' => $data['version'] );
     }
 
@@ -240,7 +262,7 @@ final class SUN_Attention_Service {
     /** @param int $user_id User ID. @param string $object_type Type. @param string $object_id ID. @param string $engagement Engagement. @return void */
     public function record_engagement( $user_id, $object_type, $object_id, $engagement = 'read' ) { global $wpdb; $user_id = absint( $user_id ); $object_type = substr( sanitize_key( $object_type ), 0, 50 ); $object_id = substr( sanitize_text_field( $object_id ), 0, 191 ); $engagement = substr( sanitize_key( $engagement ), 0, 32 ); if ( $user_id < 1 || '' === $object_type || '' === $object_id ) { return; } $table = SUN_Database::table( 'watch_history' ); $now = SUN_Database::now(); $wpdb->query( $wpdb->prepare( "INSERT INTO {$table} (user_id,object_type,object_id,engagement_type,first_seen_at,last_seen_at) VALUES (%d,%s,%s,%s,%s,%s) ON DUPLICATE KEY UPDATE engagement_type=VALUES(engagement_type),last_seen_at=VALUES(last_seen_at)", $user_id, $object_type, $object_id, $engagement, $now, $now ) ); }
 
-    /** @param string $object_type Type. @param string $object_id ID. @return int[] */
+    /** @param string $object_type Type. @param string $object_id Object ID. @return int[] */
     public function correction_audience( $object_type, $object_id ) { global $wpdb; $ids = $wpdb->get_col( $wpdb->prepare( 'SELECT user_id FROM ' . SUN_Database::table( 'watch_history' ) . ' WHERE object_type=%s AND object_id=%s ORDER BY last_seen_at DESC LIMIT 5000', substr( sanitize_key( $object_type ), 0, 50 ), substr( sanitize_text_field( $object_id ), 0, 191 ) ) ); return array_values( array_unique( array_map( 'absint', (array) $ids ) ) ); }
 
     /** @param int $user_id User ID. @return array<string,mixed> */
