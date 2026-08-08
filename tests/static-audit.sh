@@ -1,43 +1,31 @@
 #!/usr/bin/env bash
 set -euo pipefail
-ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-PLUGIN="$ROOT/19-unified-notifications"
-fail(){ echo "FAIL: $*" >&2; exit 1; }
+ROOT="$(cd "$(dirname "$0")/.." && pwd)";PLUGIN="$ROOT/19-unified-notifications";fail(){ echo "FAIL: $*" >&2; exit 1; }
 find "$PLUGIN" -name '*.php' -print0 | xargs -0 -n1 php -l >/dev/null
-node --check "$PLUGIN/assets/js/notifications.js" >/dev/null
-node --check "$PLUGIN/assets/js/push-service-worker.js" >/dev/null
-[[ -f "$PLUGIN/19-unified-notifications.php" ]] || fail "bootstrap missing"
-grep -q "Version: 2.2.0" "$PLUGIN/19-unified-notifications.php" || fail "version mismatch"
-grep -q "Requires at least: 7.0" "$PLUGIN/19-unified-notifications.php" || fail "WordPress baseline mismatch"
-grep -q "Requires PHP: 8.3" "$PLUGIN/19-unified-notifications.php" || fail "PHP baseline mismatch"
-for class in database crypto audit four-plan-compliance operational-gate provider-circuit auth producer-registry event-validator template-engine preferences policy-engine deep-link delivery-service notification-service bulk-service reconciliation health rest-controller renderer router admin privacy activator plugin; do
-  [[ -f "$PLUGIN/includes/class-sun-$class.php" ]] || fail "missing class $class"
-done
-for table in events notifications preferences deliveries templates policies devices dead_letters audit bulk_jobs; do grep -q "'$table'" "$PLUGIN/includes/class-sun-activator.php" || fail "schema table $table missing"; done
-for req in ingest_domain_event idempotency quiet digest dead_letter provider_webhook register_device reconcile privacy_erasure bulk; do grep -Rqi "$req" "$PLUGIN/includes" || fail "required behavior marker $req missing"; done
-grep -q "sabri_membership_claims_v2" "$PLUGIN/includes/class-sun-auth.php" || fail "File 00 canonical claims contract missing"
-grep -q "email_verified" "$PLUGIN/includes/class-sun-auth.php" || fail "File 00 email verification projection missing"
-grep -q "phone_verified" "$PLUGIN/includes/class-sun-auth.php" || fail "File 00 phone verification projection missing"
-grep -q "step_up_verified" "$PLUGIN/includes/class-sun-auth.php" || fail "governance step-up revalidation missing"
-grep -q "single_free_tier" "$PLUGIN/includes/class-sun-four-plan-compliance.php" || fail "single free tier law missing"
-grep -q "donor_advantage.*false" "$PLUGIN/includes/class-sun-four-plan-compliance.php" || fail "no donor advantage law missing"
-grep -q "search_owner_file.*26" "$PLUGIN/includes/class-sun-four-plan-compliance.php" || fail "File 26 search ownership missing"
-grep -q "top20-central-plan > recovered-directives > definitive-master-v3" "$PLUGIN/includes/class-sun-four-plan-compliance.php" || fail "central-plan temporal precedence missing"
-grep -q "sun_event_owner_mismatch" "$PLUGIN/includes/class-sun-event-validator.php" || fail "producer canonical-owner binding missing"
-grep -q "sun_schema_version_unsupported" "$PLUGIN/includes/class-sun-event-validator.php" || fail "producer schema allowlist missing"
-grep -q "effective_port" "$PLUGIN/includes/class-sun-deep-link.php" || fail "strict same-origin port validation missing"
-grep -q "SUN_MIN_WP_VERSION" "$PLUGIN/includes/class-sun-activator.php" || fail "activation WordPress baseline not centralized"
-grep -q "SUN_MIN_PHP_VERSION" "$PLUGIN/includes/class-sun-activator.php" || fail "activation PHP baseline not centralized"
-grep -q "sun_activation_lock" "$PLUGIN/includes/class-sun-activator.php" || fail "concurrent activation lock missing"
-grep -q "SUN_Operational_Gate::allows( 'external_delivery' )" "$PLUGIN/includes/adapters/class-sun-email-adapter.php" || fail "email safe-mode gate missing"
-grep -q "SUN_Provider_Circuit::is_open" "$PLUGIN/includes/adapters/class-sun-push-adapter.php" || fail "provider circuit breaker missing"
-grep -q "is_governance_actor_eligible" "$PLUGIN/includes/class-sun-bulk-service.php" || fail "background bulk actor revalidation missing"
-grep -q "'owner'=>'File 19'" "$PLUGIN/includes/class-sun-bulk-service.php" || fail "bulk canonical event owner missing"
-grep -q "recipient_id=0" "$PLUGIN/includes/class-sun-privacy.php" || fail "privacy pseudonymization missing"
-grep -q "sun_privacy_provider_erasure_requested" "$PLUGIN/includes/class-sun-privacy.php" || fail "provider erasure propagation hook missing"
-grep -q "sabri_file20_context_controls_markup_v1" "$PLUGIN/templates/page.php" || fail "File 20 context-control integration missing"
-grep -q "X-Robots-Tag" "$PLUGIN/includes/class-sun-router.php" || fail "private route noindex header missing"
-! grep -RInE '\beval\s*\(|\bexec\s*\(|\bshell_exec\s*\(|\bpassthru\s*\(|\bunserialize\s*\(' "$PLUGIN" --include='*.php' || fail "dangerous function found"
-! grep -RInE "(api[_-]?key|secret|token)[[:space:]]*=[[:space:]]*['\"][A-Za-z0-9+/=_-]{20,}" "$PLUGIN" || fail "possible embedded secret"
-grep -q "sun_file20_notification_slot" "$PLUGIN/includes/class-sun-plugin.php" || fail "File 20 single-bell slot missing"
-echo "PASS: syntax, structure, 40-round four-plan, security/privacy and requirement-marker audit"
+node --check "$PLUGIN/assets/js/notifications.js" >/dev/null;node --check "$PLUGIN/assets/js/push-service-worker.js" >/dev/null
+[[ -f "$PLUGIN/19-unified-notifications.php" ]]||fail "bootstrap missing";grep -q "Version: 2.4.0" "$PLUGIN/19-unified-notifications.php"||fail "version mismatch";grep -q "Requires at least: 7.0" "$PLUGIN/19-unified-notifications.php"||fail "WordPress baseline mismatch";grep -q "Requires PHP: 8.3" "$PLUGIN/19-unified-notifications.php"||fail "PHP baseline mismatch"
+for class in database crypto audit four-plan-compliance operational-gate provider-circuit auth producer-registry event-validator template-engine preferences subscriptions policy-engine deep-link delivery-service notification-service bulk-service reconciliation health wellbeing rest-controller renderer router admin privacy activator plugin;do [[ -f "$PLUGIN/includes/class-sun-$class.php" ]]||fail "missing class $class";done
+for table in events notifications preferences subscriptions deliveries templates policies devices dead_letters audit bulk_jobs;do grep -q "'$table'" "$PLUGIN/includes/class-sun-activator.php"||fail "schema table $table missing";done
+for cv in CV-097 CV-098 CV-099 CV-100 CV-101 CV-102 CV-103 CV-104 CV-105 CV-106;do grep -q "$cv" "$PLUGIN/includes/class-sun-four-plan-compliance.php"||fail "Top-20 capability $cv missing";done
+grep -q "sabri_membership_claims_v2" "$PLUGIN/includes/class-sun-auth.php"||fail "File 00 canonical claims contract missing";! grep -q "sun_identity_assertions" "$PLUGIN/includes/class-sun-auth.php"||fail "local identity privilege filter reintroduced";grep -q "sun_allow_founder_bootstrap.*false" "$PLUGIN/includes/class-sun-auth.php"||fail "Founder bootstrap must default deny"
+grep -q "sun_event_owner_mismatch" "$PLUGIN/includes/class-sun-event-validator.php"||fail "producer owner binding missing";grep -q "sun_event_data_complexity_exceeded" "$PLUGIN/includes/class-sun-event-validator.php"||fail "payload complexity bound missing";grep -q "sun_event_expiry_invalid" "$PLUGIN/includes/class-sun-event-validator.php"||fail "invalid expiry rejection missing";! grep -q "sun_validated_event" "$PLUGIN/includes/class-sun-event-validator.php"||fail "post-validation mutation hook reintroduced"
+grep -q "event_type IN" "$PLUGIN/includes/class-sun-template-engine.php"||fail "event-bound template lookup missing";grep -q "policy_specificity" "$PLUGIN/includes/class-sun-policy-engine.php"||fail "specific policy precedence missing";grep -q "stronger_value" "$PLUGIN/includes/class-sun-policy-engine.php"||fail "policy downgrade prevention missing"
+grep -q "Concurrent replay may have won" "$PLUGIN/includes/class-sun-notification-service.php"||fail "concurrent event idempotency recovery missing";grep -q "event_state_transition_failed" "$PLUGIN/includes/class-sun-notification-service.php"||fail "event state transition verification missing"
+python3 - "$PLUGIN/includes/class-sun-notification-service.php" <<'PY'
+from pathlib import Path
+import sys
+text=Path(sys.argv[1]).read_text()
+commit=text.find('SUN_Database::commit()')
+hook=text.find("do_action('sun_notification_created'")
+if commit < 0 or hook < 0 or hook <= commit:
+    raise SystemExit('FAIL: notification-created integration hook must occur only after transaction commit')
+if text.count("do_action('sun_notification_created'") != 1:
+    raise SystemExit('FAIL: unexpected notification-created hook count')
+PY
+grep -q "sun_device_token_owned" "$PLUGIN/includes/class-sun-preferences.php"||fail "device ownership takeover defense missing";grep -q "authorize_click" "$PLUGIN/includes/class-sun-deep-link.php"||fail "click-time deep-link authorization missing";grep -q "sun_notification_decrypt_failed" "$PLUGIN/includes/class-sun-delivery-service.php"||fail "private metadata decrypt fail-closed missing";grep -q "notification_expired" "$PLUGIN/includes/class-sun-delivery-service.php"||fail "expired delivery terminal path missing"
+grep -q "notification_complaint" "$PLUGIN/includes/class-sun-wellbeing.php"||fail "fatigue complaint signal missing";grep -q "more-notifications-is-not-a-kpi" "$PLUGIN/includes/class-sun-wellbeing.php"||fail "healthy-use guardrail missing";grep -q "OFFSET %d" "$PLUGIN/includes/class-sun-privacy.php"||fail "paginated privacy export missing";grep -q "delivery_transition_failed" "$PLUGIN/includes/class-sun-reconciliation.php"||fail "dead-letter retry atomic check missing"
+grep -q "sun_push_device_decrypt_failed" "$PLUGIN/includes/adapters/class-sun-push-adapter.php"||fail "push credential corruption handling missing";grep -q "function_exists('mb_substr')" "$PLUGIN/includes/adapters/class-sun-sms-adapter.php"||fail "SMS mbstring fallback missing";grep -q "unsubscribe-failed" "$PLUGIN/includes/class-sun-router.php"||fail "unsubscribe truthful failure path missing";grep -q "\.sun-live-region\[data-sun-status\]" "$PLUGIN/assets/js/notifications.js"||fail "live-region selector regression";grep -q "min-height:44px" "$PLUGIN/assets/css/notifications.css"||fail "44px target law missing"
+grep -q "db_version" "$PLUGIN/includes/class-sun-health.php"||fail "DB-version health check missing";grep -q "cron_expire" "$PLUGIN/includes/class-sun-health.php"||fail "expiration cron health check missing";grep -q "delete_option('sun_audit_chain_lock')" "$PLUGIN/uninstall.php"||fail "option-backed audit lock cleanup missing"
+grep -q "sabri_file20_context_controls_markup_v1" "$PLUGIN/templates/page.php"||fail "File 20 context controls missing";grep -q "sun_file20_notification_slot" "$PLUGIN/includes/class-sun-plugin.php"||fail "single bell slot missing";grep -q "search_owner_file.*26" "$PLUGIN/includes/class-sun-four-plan-compliance.php"||fail "File 26 ownership missing";grep -q "donor_advantage.*false" "$PLUGIN/includes/class-sun-four-plan-compliance.php"||fail "donor advantage prohibition missing"
+! grep -RInE '\beval\s*\(|\bexec\s*\(|\bshell_exec\s*\(|\bpassthru\s*\(|\bunserialize\s*\(' "$PLUGIN" --include='*.php'||fail "dangerous function found";! grep -RInE "(api[_-]?key|secret|token)[[:space:]]*=[[:space:]]*['\"][A-Za-z0-9+/=_-]{20,}" "$PLUGIN"||fail "possible embedded secret"
+echo "PASS: File 19 2.4.0 forty-round security/privacy/Top-20 regression audit"

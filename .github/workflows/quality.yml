@@ -27,26 +27,27 @@ jobs:
           node-version: '22'
       - name: Deterministic unit assertions
         run: php tests/unit.php
-      - name: Static, syntax and security-pattern audit
+      - name: File 19 forty-round static and security regression audit
         run: bash tests/static-audit.sh
       - name: Clean-extract deterministic package audit
         run: bash tests/package-audit.sh
-      - name: Verify deterministic release reproduction and frozen checksum
+      - name: Verify deterministic and frozen 2.4.0 release checksum
         run: |
-          first="$(sha256sum build/19-sabri-unified-notifications-2.2.0.zip | awk '{print $1}')"
+          first="$(sha256sum build/19-sabri-unified-notifications-2.4.0.zip | awk '{print $1}')"
           bash tools/build-release.sh >/tmp/sun-rebuild.log
-          second="$(sha256sum build/19-sabri-unified-notifications-2.2.0.zip | awk '{print $1}')"
+          second="$(sha256sum build/19-sabri-unified-notifications-2.4.0.zip | awk '{print $1}')"
           expected="$(awk '{print $1}' RELEASE-SHA256.txt)"
           test "$first" = "$second"
           test "$second" = "$expected"
-          grep -q '19-sabri-unified-notifications-2.2.0.zip' RELEASE-SHA256.txt
-          cat build/19-sabri-unified-notifications-2.2.0.zip.sha256
+          grep -q '19-sabri-unified-notifications-2.4.0.zip' RELEASE-SHA256.txt
+          echo "FILE19_2_4_0_SHA256=$second"
+          cat build/19-sabri-unified-notifications-2.4.0.zip.sha256
       - name: Upload release candidate
         if: matrix.php == '8.3'
         uses: actions/upload-artifact@v4
         with:
-          name: file-19-notifications-2.2.0
+          name: file-19-notifications-2.4.0
           path: |
-            build/19-sabri-unified-notifications-2.2.0.zip
-            build/19-sabri-unified-notifications-2.2.0.zip.sha256
+            build/19-sabri-unified-notifications-2.4.0.zip
+            build/19-sabri-unified-notifications-2.4.0.zip.sha256
           if-no-files-found: error
