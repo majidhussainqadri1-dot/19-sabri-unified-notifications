@@ -21,7 +21,7 @@ final class SUN_Advanced_REST {
         register_rest_route( SUN_REST_NAMESPACE, '/rules/(?P<id>[a-f0-9\-]{36})', array( array( 'methods'=>WP_REST_Server::DELETABLE,'callback'=>array($this,'delete_rule'),'permission_callback'=>array($this,'logged_in') ) ) );
         register_rest_route( SUN_REST_NAMESPACE, '/devices/profiles', array( array( 'methods'=>WP_REST_Server::READABLE,'callback'=>array($this,'device_profiles'),'permission_callback'=>array($this,'logged_in') ) ) );
         register_rest_route( SUN_REST_NAMESPACE, '/devices/(?P<id>[a-f0-9\-]{36})/attention', array( array( 'methods'=>WP_REST_Server::EDITABLE,'callback'=>array($this,'update_device_profile'),'permission_callback'=>array($this,'logged_in') ) ) );
-        register_rest_route( SUN_REST_NAMESPACE, '/routing/cost', array( array( 'methods'=>WP_REST_Server::READABLE,'callback'=>array($this,'routing_cost'),'permission_callback'=>array($this,'logged_in') ) ) );
+        register_rest_route( SUN_REST_NAMESPACE, '/routing/cost', array( array( 'methods'=>WP_REST_Server::READABLE,'callback'=>array($this,'routing_cost'),'permission_callback'=>array($this,'can_view_routing_cost') ) ) );
         register_rest_route( SUN_REST_NAMESPACE, '/experiments/simulate', array( array( 'methods'=>WP_REST_Server::CREATABLE,'callback'=>array($this,'simulate'),'permission_callback'=>array($this,'can_manage_experiments') ) ) );
         register_rest_route( SUN_REST_NAMESPACE, '/experiments', array( array( 'methods'=>WP_REST_Server::CREATABLE,'callback'=>array($this,'create_experiment'),'permission_callback'=>array($this,'can_manage_experiments') ) ) );
         register_rest_route( SUN_REST_NAMESPACE, '/experiments/(?P<id>[a-f0-9\-]{36})/status', array( array( 'methods'=>WP_REST_Server::EDITABLE,'callback'=>array($this,'experiment_status'),'permission_callback'=>array($this,'can_manage_experiments') ) ) );
@@ -52,8 +52,9 @@ final class SUN_Advanced_REST {
     public function synthetic($r){$input=$r->get_json_params()?:$r->get_params();return rest_ensure_response($this->trace->synthetic_test((array)($input['channels']??array('in_app','email','push','sms','whatsapp','rcs'))));}
 
     /** @return bool|WP_Error */ public function logged_in(){return is_user_logged_in()&&$this->auth->is_recipient_eligible(get_current_user_id())?true:new WP_Error('sun_auth_required',__('Authentication and account eligibility are required.','sabri-unified-notifications'),array('status'=>401));}
-    /** @return bool */ public function can_manage_experiments(){return is_user_logged_in()&&current_user_can('manage_sabri_notification_experiments');}
-    /** @return bool */ public function can_view_trace(){return is_user_logged_in()&&current_user_can('view_sabri_notification_trace');}
-    /** @return bool */ public function can_synthetic(){return is_user_logged_in()&&current_user_can('run_sabri_notification_synthetic_tests');}
+    /** @return bool */ public function can_manage_experiments(){return is_user_logged_in()&&$this->auth->is_recipient_eligible(get_current_user_id())&&current_user_can('manage_sabri_notification_experiments');}
+    /** @return bool */ public function can_view_trace(){return is_user_logged_in()&&$this->auth->is_recipient_eligible(get_current_user_id())&&current_user_can('view_sabri_notification_trace');}
+    /** @return bool */ public function can_synthetic(){return is_user_logged_in()&&$this->auth->is_recipient_eligible(get_current_user_id())&&current_user_can('run_sabri_notification_synthetic_tests');}
+    /** @return bool */ public function can_view_routing_cost(){return is_user_logged_in()&&$this->auth->can_view_health();}
     /** @param string $bucket Bucket. @param int $limit Limit. @param int $window Window. @return true|WP_Error */ private function rate_limit($bucket,$limit,$window){$key='sun_adv_rl_'.substr(hash('sha256',$bucket),0,32);$state=get_transient($key);$state=is_array($state)?$state:array('count'=>0,'started'=>time());if(time()-(int)$state['started']>=$window){$state=array('count'=>0,'started'=>time());}++$state['count'];set_transient($key,$state,max(1,$window));return $state['count']>max(1,$limit)?new WP_Error('sun_rate_limited',__('Too many requests. Please wait and try again.','sabri-unified-notifications'),array('status'=>429)):true;}
 }
