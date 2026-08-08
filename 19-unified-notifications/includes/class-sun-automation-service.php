@@ -1,57 +1,299 @@
 <?php
 /** User-owned notification rules, saved-search watchlists and cross-file automation contracts. */
-if ( ! defined( 'ABSPATH' ) ) { exit; }
+if ( ! defined( 'ABSPATH' ) ) {
+    exit;
+}
 
 final class SUN_Automation_Service {
-    /** @var SUN_Attention_Service */ private $attention;
-    /** @param SUN_Attention_Service $attention Attention. */ public function __construct( SUN_Attention_Service $attention ) { $this->attention = $attention; }
-    /** @return string[] */ public function trigger_types() { return array( 'event_type', 'category', 'source', 'saved_search', 'correction', 'learning', 'clinic', 'research' ); }
-    /** @return string[] */ public function action_types() { return array( 'notify', 'digest', 'mark_needs_action', 'save_reference', 'calendar_handoff', 'owner_action' ); }
+    /** @var SUN_Attention_Service */
+    private $attention;
+
+    /** @param SUN_Attention_Service $attention Attention service. */
+    public function __construct( SUN_Attention_Service $attention ) {
+        $this->attention = $attention;
+    }
+
+    /** @return string[] */
+    public function trigger_types() {
+        return array( 'event_type', 'category', 'source', 'saved_search', 'correction', 'learning', 'clinic', 'research' );
+    }
+
+    /** @return string[] */
+    public function action_types() {
+        return array( 'notify', 'digest', 'mark_needs_action', 'save_reference', 'calendar_handoff', 'owner_action' );
+    }
 
     /** @param int $user_id User ID. @return array<int,array<string,mixed>> */
     public function list_rules( $user_id ) {
-        global $wpdb; $rows = $wpdb->get_results( $wpdb->prepare( 'SELECT public_id,name,trigger_type,trigger_json,action_json,enabled,version,last_matched_at,created_at,updated_at FROM ' . SUN_Database::table( 'notification_rules' ) . ' WHERE user_id=%d ORDER BY id DESC LIMIT 200', absint( $user_id ) ), ARRAY_A );
-        foreach ( (array) $rows as &$row ) { $row['trigger'] = json_decode( (string) $row['trigger_json'], true ) ?: array(); $row['action'] = json_decode( (string) $row['action_json'], true ) ?: array(); $row['enabled'] = (bool) $row['enabled']; unset( $row['trigger_json'], $row['action_json'] ); } unset( $row ); return (array) $rows;
+        global $wpdb;
+        $rows = $wpdb->get_results(
+            $wpdb->prepare(
+                'SELECT public_id,name,trigger_type,trigger_json,action_json,enabled,version,last_matched_at,created_at,updated_at FROM ' . SUN_Database::table( 'notification_rules' ) . ' WHERE user_id=%d ORDER BY id DESC LIMIT 200',
+                absint( $user_id )
+            ),
+            ARRAY_A
+        );
+        foreach ( (array) $rows as &$row ) {
+            $row['trigger'] = json_decode( (string) $row['trigger_json'], true ) ?: array();
+            $row['action']  = json_decode( (string) $row['action_json'], true ) ?: array();
+            $row['enabled'] = (bool) $row['enabled'];
+            unset( $row['trigger_json'], $row['action_json'] );
+        }
+        unset( $row );
+        return (array) $rows;
     }
 
     /** @param int $user_id User ID. @param array<string,mixed> $input Input. @return array<string,mixed>|WP_Error */
     public function upsert_rule( $user_id, array $input ) {
-        global $wpdb; $user_id = absint( $user_id ); $public_id = sanitize_text_field( (string) ( $input['public_id'] ?? '' ) ); $type = sanitize_key( (string) ( $input['trigger_type'] ?? '' ) );
-        if ( ! in_array( $type, $this->trigger_types(), true ) ) { return new WP_Error( 'sun_rule_trigger_invalid', __( 'The notification rule trigger is invalid.', 'sabri-unified-notifications' ), array( 'status' => 400 ) ); }
-        $trigger = $this->sanitize_trigger( $type, (array) ( $input['trigger'] ?? array() ) ); if ( is_wp_error( $trigger ) ) { return $trigger; }
-        $action = $this->sanitize_action( (array) ( $input['action'] ?? array() ) ); if ( is_wp_error( $action ) ) { return $action; }
-        $name = substr( sanitize_text_field( (string) ( $input['name'] ?? ucfirst( str_replace( '_', ' ', $type ) ) ) ), 0, 191 ); if ( '' === $name ) { $name = 'Notification rule'; }
-        $table = SUN_Database::table( 'notification_rules' ); $now = SUN_Database::now(); $existing = $public_id ? $wpdb->get_row( $wpdb->prepare( "SELECT id,version,enabled FROM {$table} WHERE public_id=%s AND user_id=%d LIMIT 1", $public_id, $user_id ), ARRAY_A ) : null;
-        $expected = absint( $input['version'] ?? ( $existing['version'] ?? 0 ) ); if ( $existing && $expected !== (int) $existing['version'] ) { return new WP_Error( 'sun_rule_conflict', __( 'This notification rule changed in another session.', 'sabri-unified-notifications' ), array( 'status' => 409 ) ); }
-        $enabled = array_key_exists( 'enabled', $input ) ? ( ! empty( $input['enabled'] ) ? 1 : 0 ) : ( $existing ? (int) $existing['enabled'] : 1 );
-        $data = array( 'user_id' => $user_id, 'name' => $name, 'trigger_type' => $type, 'trigger_json' => wp_json_encode( $trigger ), 'action_json' => wp_json_encode( $action ), 'enabled' => $enabled, 'version' => (int) ( $existing['version'] ?? 0 ) + 1, 'updated_at' => $now );
-        if ( $existing ) { $updated = $wpdb->update( $table, $data, array( 'id' => (int) $existing['id'], 'version' => (int) $existing['version'] ) ); if ( 1 !== (int) $updated ) { return new WP_Error( 'sun_rule_conflict', __( 'This notification rule changed in another session.', 'sabri-unified-notifications' ), array( 'status' => 409 ) ); } }
-        else { $public_id = SUN_Database::uuid(); $data['public_id'] = $public_id; $data['created_at'] = $now; if ( false === $wpdb->insert( $table, $data ) ) { return new WP_Error( 'sun_rule_write_failed', __( 'The notification rule could not be saved.', 'sabri-unified-notifications' ), array( 'status' => 500 ) ); } }
-        SUN_Audit::record( 'notification_rule_saved', 'notification_rule', $public_id, array( 'trigger_type' => $type, 'action_type' => $action['type'], 'purpose' => 'user_automation' ), $user_id );
-        foreach ( $this->list_rules( $user_id ) as $rule ) { if ( $rule['public_id'] === $public_id ) { return $rule; } } return new WP_Error( 'sun_rule_reload_failed', __( 'The rule was saved but could not be reloaded.', 'sabri-unified-notifications' ) );
+        global $wpdb;
+        $user_id   = absint( $user_id );
+        $public_id = sanitize_text_field( (string) ( $input['public_id'] ?? '' ) );
+        $type      = sanitize_key( (string) ( $input['trigger_type'] ?? '' ) );
+
+        if ( ! in_array( $type, $this->trigger_types(), true ) ) {
+            return new WP_Error( 'sun_rule_trigger_invalid', __( 'The notification rule trigger is invalid.', 'sabri-unified-notifications' ), array( 'status' => 400 ) );
+        }
+
+        $trigger = $this->sanitize_trigger( $type, (array) ( $input['trigger'] ?? array() ) );
+        if ( is_wp_error( $trigger ) ) {
+            return $trigger;
+        }
+        $action = $this->sanitize_action( (array) ( $input['action'] ?? array() ) );
+        if ( is_wp_error( $action ) ) {
+            return $action;
+        }
+
+        $name = substr( sanitize_text_field( (string) ( $input['name'] ?? ucfirst( str_replace( '_', ' ', $type ) ) ) ), 0, 191 );
+        if ( '' === $name ) {
+            $name = 'Notification rule';
+        }
+
+        $table    = SUN_Database::table( 'notification_rules' );
+        $now      = SUN_Database::now();
+        $existing = $public_id
+            ? $wpdb->get_row(
+                $wpdb->prepare( "SELECT id,version,enabled FROM {$table} WHERE public_id=%s AND user_id=%d LIMIT 1", $public_id, $user_id ),
+                ARRAY_A
+            )
+            : null;
+
+        $expected = absint( $input['version'] ?? ( $existing['version'] ?? 0 ) );
+        if ( $existing && $expected !== (int) $existing['version'] ) {
+            return new WP_Error( 'sun_rule_conflict', __( 'This notification rule changed in another session.', 'sabri-unified-notifications' ), array( 'status' => 409 ) );
+        }
+
+        $enabled = array_key_exists( 'enabled', $input )
+            ? ( ! empty( $input['enabled'] ) ? 1 : 0 )
+            : ( $existing ? (int) $existing['enabled'] : 1 );
+
+        $data = array(
+            'user_id'      => $user_id,
+            'name'         => $name,
+            'trigger_type' => $type,
+            'trigger_json' => wp_json_encode( $trigger ),
+            'action_json'  => wp_json_encode( $action ),
+            'enabled'      => $enabled,
+            'version'      => (int) ( $existing['version'] ?? 0 ) + 1,
+            'updated_at'   => $now,
+        );
+
+        if ( $existing ) {
+            $updated = $wpdb->update(
+                $table,
+                $data,
+                array( 'id' => (int) $existing['id'], 'version' => (int) $existing['version'] )
+            );
+            if ( 1 !== (int) $updated ) {
+                return new WP_Error( 'sun_rule_conflict', __( 'This notification rule changed in another session.', 'sabri-unified-notifications' ), array( 'status' => 409 ) );
+            }
+        } else {
+            $public_id          = SUN_Database::uuid();
+            $data['public_id']  = $public_id;
+            $data['created_at'] = $now;
+            if ( false === $wpdb->insert( $table, $data ) ) {
+                return new WP_Error( 'sun_rule_write_failed', __( 'The notification rule could not be saved.', 'sabri-unified-notifications' ), array( 'status' => 500 ) );
+            }
+        }
+
+        SUN_Audit::record(
+            'notification_rule_saved',
+            'notification_rule',
+            $public_id,
+            array( 'trigger_type' => $type, 'action_type' => $action['type'], 'purpose' => 'user_automation' ),
+            $user_id
+        );
+
+        foreach ( $this->list_rules( $user_id ) as $rule ) {
+            if ( $rule['public_id'] === $public_id ) {
+                return $rule;
+            }
+        }
+        return new WP_Error( 'sun_rule_reload_failed', __( 'The rule was saved but could not be reloaded.', 'sabri-unified-notifications' ) );
     }
 
     /** @param int $user_id User ID. @param string $public_id ID. @return true|WP_Error */
-    public function remove_rule( $user_id, $public_id ) { global $wpdb; $deleted = $wpdb->delete( SUN_Database::table( 'notification_rules' ), array( 'user_id' => absint( $user_id ), 'public_id' => sanitize_text_field( $public_id ) ); if ( ! $deleted ) { return new WP_Error( 'sun_rule_not_found', __( 'Notification rule not found.', 'sabri-unified-notifications' ), array( 'status' => 404 ) ); } SUN_Audit::record( 'notification_rule_removed', 'notification_rule', $public_id, array( 'purpose' => 'user_automation' ), $user_id ); return true; }
+    public function remove_rule( $user_id, $public_id ) {
+        global $wpdb;
+        $deleted = $wpdb->delete(
+            SUN_Database::table( 'notification_rules' ),
+            array( 'user_id' => absint( $user_id ), 'public_id' => sanitize_text_field( $public_id ) )
+        );
+        if ( ! $deleted ) {
+            return new WP_Error( 'sun_rule_not_found', __( 'Notification rule not found.', 'sabri-unified-notifications' ), array( 'status' => 404 ) );
+        }
+        SUN_Audit::record( 'notification_rule_removed', 'notification_rule', $public_id, array( 'purpose' => 'user_automation' ), $user_id );
+        return true;
+    }
 
     /** @param array<string,mixed> $event Event. @param int $created Created. @param int $suppressed Suppressed. @return void */
     public function on_event_processed( array $event, $created = 0, $suppressed = 0 ) {
-        global $wpdb; foreach ( (array) ( $event['recipients'] ?? array() ) as $recipient ) { $user_id = absint( $recipient['user_id'] ?? 0 ); if ( $user_id < 1 ) { continue; }
-            $rules = $wpdb->get_results( $wpdb->prepare( 'SELECT id,public_id,trigger_type,trigger_json,action_json FROM ' . SUN_Database::table( 'notification_rules' ) . ' WHERE user_id=%d AND enabled=1 ORDER BY id ASC LIMIT 200', $user_id ), ARRAY_A );
-            foreach ( (array) $rules as $rule ) { $trigger = json_decode( (string) $rule['trigger_json'], true ) ?: array(); if ( ! $this->matches( (string) $rule['trigger_type'], $trigger, $event ) ) { continue; } $action = json_decode( (string) $rule['action_json'], true ) ?: array(); $wpdb->update( SUN_Database::table( 'notification_rules' ), array( 'last_matched_at' => SUN_Database::now(), 'updated_at' => SUN_Database::now() ), array( 'id' => (int) $rule['id'] ) ); do_action( 'sun_notification_rule_matched', $user_id, $rule['public_id'], $action, $event ); SUN_Audit::record( 'notification_rule_matched', 'notification_rule', $rule['public_id'], array( 'event_type' => $event['event_type'], 'action_type' => sanitize_key( (string) ( $action['type'] ?? '' ) ), 'purpose' => 'user_automation' ), $user_id ); }
+        global $wpdb;
+        foreach ( (array) ( $event['recipients'] ?? array() ) as $recipient ) {
+            $user_id = absint( $recipient['user_id'] ?? 0 );
+            if ( $user_id < 1 ) {
+                continue;
+            }
+            $rules = $wpdb->get_results(
+                $wpdb->prepare(
+                    'SELECT id,public_id,trigger_type,trigger_json,action_json FROM ' . SUN_Database::table( 'notification_rules' ) . ' WHERE user_id=%d AND enabled=1 ORDER BY id ASC LIMIT 200',
+                    $user_id
+                ),
+                ARRAY_A
+            );
+            foreach ( (array) $rules as $rule ) {
+                $trigger = json_decode( (string) $rule['trigger_json'], true ) ?: array();
+                if ( ! $this->matches( (string) $rule['trigger_type'], $trigger, $event ) ) {
+                    continue;
+                }
+                $action = json_decode( (string) $rule['action_json'], true ) ?: array();
+                $wpdb->update(
+                    SUN_Database::table( 'notification_rules' ),
+                    array( 'last_matched_at' => SUN_Database::now(), 'updated_at' => SUN_Database::now() ),
+                    array( 'id' => (int) $rule['id'] )
+                );
+                do_action( 'sun_notification_rule_matched', $user_id, $rule['public_id'], $action, $event );
+                SUN_Audit::record(
+                    'notification_rule_matched',
+                    'notification_rule',
+                    $rule['public_id'],
+                    array( 'event_type' => $event['event_type'], 'action_type' => sanitize_key( (string) ( $action['type'] ?? '' ) ), 'purpose' => 'user_automation' ),
+                    $user_id
+                );
+            }
         }
     }
 
     /** @param int $user_id User ID. @param string $search_owner Owner. @param string $search_id Search ID. @param string $label Label. @param string $frequency Frequency. @return array<string,mixed>|WP_Error */
-    public function register_saved_search( $user_id, $search_owner, $search_id, $label, $frequency = 'daily' ) { $frequency = sanitize_key( $frequency ); if ( ! in_array( $frequency, array( 'immediate', 'daily', 'weekly' ), true ) ) { $frequency = 'daily'; } $owner = substr( sanitize_key( $search_owner ), 0, 100 ); if ( '' === $owner ) { $owner = 'file26'; } return $this->upsert_rule( $user_id, array( 'name' => sprintf( __( 'Saved search: %s', 'sabri-unified-notifications' ), substr( sanitize_text_field( $label ), 0, 120 ) ), 'trigger_type' => 'saved_search', 'enabled' => true, 'trigger' => array( 'owner' => $owner, 'search_id' => substr( sanitize_text_field( $search_id ), 0, 191 ) ), 'action' => array( 'type' => 'digest', 'frequency' => $frequency ) ) ); }
-    /** @param string $object_type Object type. @param string $object_id Object ID. @return int[] */ public function correction_audience( $object_type, $object_id ) { return $this->attention->correction_audience( $object_type, $object_id ); }
+    public function register_saved_search( $user_id, $search_owner, $search_id, $label, $frequency = 'daily' ) {
+        $frequency = sanitize_key( $frequency );
+        if ( ! in_array( $frequency, array( 'immediate', 'daily', 'weekly' ), true ) ) {
+            $frequency = 'daily';
+        }
+        $owner = substr( sanitize_key( $search_owner ), 0, 100 );
+        if ( '' === $owner ) {
+            $owner = 'file26';
+        }
+        return $this->upsert_rule(
+            $user_id,
+            array(
+                'name'         => sprintf( __( 'Saved search: %s', 'sabri-unified-notifications' ), substr( sanitize_text_field( $label ), 0, 120 ) ),
+                'trigger_type' => 'saved_search',
+                'enabled'      => true,
+                'trigger'      => array( 'owner' => $owner, 'search_id' => substr( sanitize_text_field( $search_id ), 0, 191 ) ),
+                'action'       => array( 'type' => 'digest', 'frequency' => $frequency ),
+            )
+        );
+    }
+
+    /** @param string $object_type Object type. @param string $object_id Object ID. @return int[] */
+    public function correction_audience( $object_type, $object_id ) {
+        return $this->attention->correction_audience( $object_type, $object_id );
+    }
 
     /** @param string $type Trigger type. @param array<string,mixed> $trigger Trigger. @param array<string,mixed> $event Event. @return bool */
-    private function matches( $type, array $trigger, array $event ) { $event_type = (string) ( $event['event_type'] ?? '' ); $category = sanitize_key( (string) ( $event['category'] ?? '' ) ); $producer = sanitize_key( (string) ( $event['producer'] ?? '' ) ); $owner = sanitize_key( (string) ( $event['owner'] ?? '' ) ); switch ( $type ) { case 'event_type': $pattern = (string) ( $trigger['pattern'] ?? '' ); return $pattern && ( $event_type === $pattern || ( substr( $pattern, -2 ) === '.*' && 0 === strpos( $event_type, substr( $pattern, 0, -1 ) ) ) ); case 'category': $wanted = sanitize_key( (string) ( $trigger['category'] ?? '' ) ); return '' !== $wanted && $wanted === $category; case 'source': $wanted = sanitize_key( (string) ( $trigger['producer'] ?? '' ) ); return '' !== $wanted && $wanted === $producer; case 'saved_search': $trigger_owner = sanitize_key( (string) ( $trigger['owner'] ?? 'file26' ) ); return 'Search.SavedSearchMatched' === $event_type && (string) ( $event['subject']['id'] ?? '' ) === (string) ( $trigger['search_id'] ?? '' ) && in_array( $trigger_owner, array( $producer, $owner ), true ); case 'correction': return false !== stripos( $event_type, 'Correction' ) || false !== stripos( $event_type, 'Retraction' ); case 'learning': return 0 === strpos( $event_type, 'Learning.' ); case 'clinic': return 0 === strpos( $event_type, 'Clinic.' ); case 'research': return 0 === strpos( $event_type, 'Research.' ) || 0 === strpos( $event_type, 'Knowledge.' ); } return false; }
+    private function matches( $type, array $trigger, array $event ) {
+        $event_type = (string) ( $event['event_type'] ?? '' );
+        $category   = sanitize_key( (string) ( $event['category'] ?? '' ) );
+        $producer   = sanitize_key( (string) ( $event['producer'] ?? '' ) );
+        $owner      = sanitize_key( (string) ( $event['owner'] ?? '' ) );
+
+        switch ( $type ) {
+            case 'event_type':
+                $pattern = (string) ( $trigger['pattern'] ?? '' );
+                return $pattern && ( $event_type === $pattern || ( substr( $pattern, -2 ) === '.*' && 0 === strpos( $event_type, substr( $pattern, 0, -1 ) ) ) );
+            case 'category':
+                $wanted = sanitize_key( (string) ( $trigger['category'] ?? '' ) );
+                return '' !== $wanted && $wanted === $category;
+            case 'source':
+                $wanted = sanitize_key( (string) ( $trigger['producer'] ?? '' ) );
+                return '' !== $wanted && $wanted === $producer;
+            case 'saved_search':
+                $trigger_owner = sanitize_key( (string) ( $trigger['owner'] ?? 'file26' ) );
+                return 'Search.SavedSearchMatched' === $event_type
+                    && (string) ( $event['subject']['id'] ?? '' ) === (string) ( $trigger['search_id'] ?? '' )
+                    && in_array( $trigger_owner, array( $producer, $owner ), true );
+            case 'correction':
+                return false !== stripos( $event_type, 'Correction' ) || false !== stripos( $event_type, 'Retraction' );
+            case 'learning':
+                return 0 === strpos( $event_type, 'Learning.' );
+            case 'clinic':
+                return 0 === strpos( $event_type, 'Clinic.' );
+            case 'research':
+                return 0 === strpos( $event_type, 'Research.' ) || 0 === strpos( $event_type, 'Knowledge.' );
+        }
+        return false;
+    }
 
     /** @param string $type Trigger type. @param array<string,mixed> $trigger Trigger. @return array<string,mixed>|WP_Error */
-    private function sanitize_trigger( $type, array $trigger ) { switch ( $type ) { case 'event_type': $pattern = substr( sanitize_text_field( (string) ( $trigger['pattern'] ?? '' ) ), 0, 191 ); if ( ! preg_match( '/^[A-Z][A-Za-z0-9]*(?:\.[A-Z*][A-Za-z0-9*]*)+$/', $pattern ) ) { return new WP_Error( 'sun_rule_pattern_invalid', __( 'The event rule pattern is invalid.', 'sabri-unified-notifications' ), array( 'status' => 400 ) ); } return array( 'pattern' => $pattern ); case 'category': $category = sanitize_key( (string) ( $trigger['category'] ?? '' ) ); if ( '' === $category ) { return new WP_Error( 'sun_rule_category_invalid', __( 'A notification category is required.', 'sabri-unified-notifications' ), array( 'status' => 400 ) ); } return array( 'category' => $category ); case 'source': $producer = sanitize_key( (string) ( $trigger['producer'] ?? '' ) ); if ( '' === $producer ) { return new WP_Error( 'sun_rule_source_invalid', __( 'A notification source is required.', 'sabri-unified-notifications' ), array( 'status' => 400 ) ); } return array( 'producer' => $producer ); case 'saved_search': $owner = substr( sanitize_key( (string) ( $trigger['owner'] ?? 'file26' ) ), 0, 100 ); if ( '' === $owner ) { $owner = 'file26'; } $id = substr( sanitize_text_field( (string) ( $trigger['search_id'] ?? '' ) ), 0, 191 ); if ( '' === $id ) { return new WP_Error( 'sun_saved_search_invalid', __( 'A saved-search identifier is required.', 'sabri-unified-notifications' ), array( 'status' => 400 ) ); } return array( 'owner' => $owner, 'search_id' => $id ); default: return array(); } }
+    private function sanitize_trigger( $type, array $trigger ) {
+        switch ( $type ) {
+            case 'event_type':
+                $pattern = substr( sanitize_text_field( (string) ( $trigger['pattern'] ?? '' ) ), 0, 191 );
+                if ( ! preg_match( '/^[A-Z][A-Za-z0-9]*(?:\.[A-Z*][A-Za-z0-9*]*)+$/', $pattern ) ) {
+                    return new WP_Error( 'sun_rule_pattern_invalid', __( 'The event rule pattern is invalid.', 'sabri-unified-notifications' ), array( 'status' => 400 ) );
+                }
+                return array( 'pattern' => $pattern );
+            case 'category':
+                $category = sanitize_key( (string) ( $trigger['category'] ?? '' ) );
+                if ( '' === $category ) {
+                    return new WP_Error( 'sun_rule_category_invalid', __( 'A notification category is required.', 'sabri-unified-notifications' ), array( 'status' => 400 ) );
+                }
+                return array( 'category' => $category );
+            case 'source':
+                $producer = sanitize_key( (string) ( $trigger['producer'] ?? '' ) );
+                if ( '' === $producer ) {
+                    return new WP_Error( 'sun_rule_source_invalid', __( 'A notification source is required.', 'sabri-unified-notifications' ), array( 'status' => 400 ) );
+                }
+                return array( 'producer' => $producer );
+            case 'saved_search':
+                $owner = substr( sanitize_key( (string) ( $trigger['owner'] ?? 'file26' ) ), 0, 100 );
+                if ( '' === $owner ) {
+                    $owner = 'file26';
+                }
+                $id = substr( sanitize_text_field( (string) ( $trigger['search_id'] ?? '' ) ), 0, 191 );
+                if ( '' === $id ) {
+                    return new WP_Error( 'sun_saved_search_invalid', __( 'A saved-search identifier is required.', 'sabri-unified-notifications' ), array( 'status' => 400 ) );
+                }
+                return array( 'owner' => $owner, 'search_id' => $id );
+            default:
+                return array();
+        }
+    }
 
     /** @param array<string,mixed> $action Action. @return array<string,mixed>|WP_Error */
-    private function sanitize_action( array $action ) { $type = sanitize_key( (string) ( $action['type'] ?? 'notify' ) ); if ( ! in_array( $type, $this->action_types(), true ) ) { return new WP_Error( 'sun_rule_action_invalid', __( 'The notification rule action is invalid.', 'sabri-unified-notifications' ), array( 'status' => 400 ) ); } $out = array( 'type' => $type ); if ( 'digest' === $type ) { $frequency = sanitize_key( (string) ( $action['frequency'] ?? 'daily' ) ); $out['frequency'] = in_array( $frequency, array( 'immediate','daily','weekly' ), true ) ? $frequency : 'daily'; } if ( in_array( $type, array( 'save_reference','calendar_handoff','owner_action' ), true ) ) { $out['owner_action'] = substr( sanitize_key( (string) ( $action['owner_action'] ?? $type ) ), 0, 80 ); } return $out; }
+    private function sanitize_action( array $action ) {
+        $type = sanitize_key( (string) ( $action['type'] ?? 'notify' ) );
+        if ( ! in_array( $type, $this->action_types(), true ) ) {
+            return new WP_Error( 'sun_rule_action_invalid', __( 'The notification rule action is invalid.', 'sabri-unified-notifications' ), array( 'status' => 400 ) );
+        }
+        $out = array( 'type' => $type );
+        if ( 'digest' === $type ) {
+            $frequency       = sanitize_key( (string) ( $action['frequency'] ?? 'daily' ) );
+            $out['frequency'] = in_array( $frequency, array( 'immediate', 'daily', 'weekly' ), true ) ? $frequency : 'daily';
+        }
+        if ( in_array( $type, array( 'save_reference', 'calendar_handoff', 'owner_action' ), true ) ) {
+            $out['owner_action'] = substr( sanitize_key( (string) ( $action['owner_action'] ?? $type ) ), 0, 80 );
+        }
+        return $out;
+    }
 }
