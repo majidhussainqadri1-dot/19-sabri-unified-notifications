@@ -2,7 +2,7 @@
 
 Canonical notification infrastructure for the **Sabri Social Homeopathy Platform**.
 
-## Current corrective candidate
+## Current 2.4.0 release baseline
 
 - File number: **19**
 - Runtime / schema: **2.4.0 / 2.4.0**
@@ -14,7 +14,7 @@ Canonical notification infrastructure for the **Sabri Social Homeopathy Platform
 - WordPress minimum: **7.0**
 - Review basis: governing central corpus + File 19 dedicated master plan
 - Fresh review method: **40 sequential review → immediate fix → retest rounds**
-- Branch: `file19-forty-review-2.4.0`
+- Deterministic plugin ZIP SHA-256: `f452b54775f7a75707093b550de4bbc618f7dc27c0eb8947c96ea43e53997051`
 
 File 19 implements one in-app notification center and the File 20 single-bell contract, versioned factual-event intake, explicit lawful recipients, current File 00 verified-account revalidation, idempotent notification projection, channel/category preferences, quiet hours, digests, granular subscriptions, external delivery adapters, retries/dead letters, provider circuit breakers, coordinated Safe Mode, device lifecycle, privacy export/erasure, healthy-use metrics, System Check diagnostics, reconciliation and bounded Founder-governed bulk notices.
 
@@ -26,7 +26,7 @@ The fresh corrective cycle found and repaired defects in post-validation mutatio
 
 ## Truth of status
 
-Repository source and automated tests can establish **Specified / Coded / Packaged / Automated-QA Green** only. They do **not** establish Hostinger **Staging-Accepted**, **Live-Deployed** or **Operational** status. Those later gates require the real WordPress/Hostinger environment, companion modules, provider credentials, browser/device/accessibility testing, backup/restore, rollback rehearsal, security/privacy acceptance and Founder approval.
+Repository source, deterministic packaging and automated tests establish **Specified / Coded / Packaged / Automated-QA Green** for the 2.4.0 release baseline. They do **not** establish Hostinger **Staging-Accepted**, **Live-Deployed** or **Operational** status. Those later gates require the real WordPress/Hostinger environment, companion modules, provider credentials, browser/device/accessibility testing, backup/restore, rollback rehearsal, security/privacy acceptance and Founder approval.
 
 ## Commands
 
@@ -36,7 +36,7 @@ bash tests/static-audit.sh
 bash tests/package-audit.sh
 ```
 
-The deterministic release artifact is built as `build/19-sabri-unified-notifications-2.4.0.zip` with canonical top-level folder `unified-notifications-19/`. Root `RELEASE-SHA256.txt` records the exact frozen plugin-ZIP checksum once verified from exact-head CI.
+The deterministic release artifact is built as `build/19-sabri-unified-notifications-2.4.0.zip` with canonical top-level folder `unified-notifications-19/`. Root `RELEASE-SHA256.txt` records the frozen plugin-ZIP checksum and CI verifies deterministic reproduction against it.
 
 ## Public integration
 
