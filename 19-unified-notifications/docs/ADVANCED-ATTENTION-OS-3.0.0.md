@@ -1,6 +1,6 @@
 # File 19 — Intelligent Attention & Notification Operating System 3.0.0
 
-This is the later Founder-approved cumulative extension to File 19. It sits beneath the governing central corpus and above older conflicting File 19 details only where this document is explicit. It does not transfer domain source-of-truth ownership into File 19.
+This is the later Founder-approved cumulative extension to File 19. It sits beneath the governing central corpus and above older conflicting File 19 details only where this document is explicit. It does not transfer domain source-of-truth ownership into File 19. Runtime **3.0.1** is the post-review corrective implementation of this unchanged 3.0 requirement catalogue; database schema remains **3.0.0**.
 
 ## Constitutional boundary
 
@@ -16,20 +16,20 @@ File 19 owns notification projections, user notification preferences/subscriptio
 | F19-AF-004 | Snooze / remind later | optimistic-concurrency attention state `snoozed_until` |
 | F19-AF-005 | Pin / star | `pinned_at` state and Priority Inbox ordering |
 | F19-AF-006 | Global Notification Search | own-user bounded search across title/summary/type/category/source |
-| F19-AF-007 | Focus Modes | balanced/study/clinic/work/sleep/travel/essential/custom |
+| F19-AF-007 | Focus Modes | balanced/study/clinic/work/sleep/travel/essential/custom; partial updates preserve omitted state |
 | F19-AF-008 | Cross-device state sync | canonical server-side notification and attention-state rows |
 | F19-AF-009 | Actionable Notifications | bounded signed-in action catalogue routed through native-owner filter |
 | F19-AF-010 | Why did I get this? | policy/event/source/subscription explanation endpoint |
 | F19-AF-011 | Notification History Vault | bounded own-user history view with user-configured view horizon |
 | F19-AF-012 | Adaptive frequency cap | per-source hourly caps plus attention-budget digest deferral |
 | F19-AF-013 | Best-time delivery | user opt-in local preferred time for non-essential external delivery |
-| F19-AF-014 | Smart channel routing | routed adapter and ordered provider candidates |
+| F19-AF-014 | Smart channel routing | routed adapter and health-aware ordered provider candidates |
 | F19-AF-015 | Extended attention states | pinned, snoozed, needs_action, done, revoked, live revision |
 | F19-AF-016 | Live/updating notifications | optimistic in-place projection update and revision counter |
-| F19-AF-017 | User Rules Builder | own-user versioned trigger/action rules |
-| F19-AF-018 | Saved Search Alerts / Watchlists | File 26 owner/search-id watch rule contract |
+| F19-AF-017 | User Rules Builder | own-user versioned trigger/action rules; partial updates preserve enabled state |
+| F19-AF-018 | Saved Search Alerts / Watchlists | File 26 owner + search-id bound watch rule contract |
 | F19-AF-019 | AI Notification Assistant | read-only own-user assistant with bounded source set |
-| F19-AF-020 | Citation-bound AI | configured AI citations intersect authorized notification public IDs only |
+| F19-AF-020 | Citation-bound AI | configured AI output is accepted only when citations are authorized current-result IDs; out-of-scope or citationless non-empty output is rejected to deterministic fallback |
 | F19-AF-021 | Priority Inbox | pinned then attention-score then recency ordering |
 | F19-AF-022 | Confidential Notification Mode | preserves existing sensitivity/redaction; no raw sensitive lock-screen payload |
 | F19-AF-023 | Remote revocation | source-event withdrawal expires/redacts projections and suppresses pending deliveries |
@@ -39,10 +39,10 @@ File 19 owns notification projections, user notification preferences/subscriptio
 | F19-AF-027 | Research & knowledge watch | `Research.*`/`Knowledge.*` trigger families and saved search integration |
 | F19-AF-028 | Native mobile push architecture | Web Push base plus FCM/APNs provider-route readiness |
 | F19-AF-029 | WhatsApp Business / RCS | explicit opt-in preference channels, disabled provider routes by default |
-| F19-AF-030 | Per-device notification control | per-device focus/category/channel profiles |
-| F19-AF-031 | Device-aware handoff | encrypted per-device handoff metadata contract |
+| F19-AF-030 | Per-device notification control | per-device focus/category/channel profiles with optimistic concurrency and omitted-field preservation |
+| F19-AF-031 | Device-aware handoff | encrypted per-device handoff metadata contract; omitted handoff state is preserved |
 | F19-AF-032 | Automatic expiry | inherited expiry enforcement plus live-update expiry contract |
-| F19-AF-033 | Notification automation triggers | event/category/source/saved-search/correction/learning/clinic/research triggers |
+| F19-AF-033 | Notification automation triggers | event/category/source/saved-search/correction/learning/clinic/research triggers; invalid empty category/source triggers rejected |
 | F19-AF-034 | Verified Source Badge | bounded provenance label/kind/verified flag |
 | F19-AF-035 | Why Important? | deterministic attention reason plus policy/source evidence |
 | F19-AF-036 | Digital Wellbeing Dashboard | existing wellbeing plus advanced useful-action/suppression metrics contract |
@@ -54,9 +54,9 @@ File 19 owns notification projections, user notification preferences/subscriptio
 | F19-AF-042 | Canary Policies | deterministic per-user rollout buckets and explicit rollout percentage |
 | F19-AF-043 | End-to-End Trace Explorer | privacy-minimized trace spans by trace ID |
 | F19-AF-044 | Synthetic Test Notifications | non-delivery readiness diagnostics; no false delivery claim |
-| F19-AF-045 | Multi-provider Failover | ordered routed provider attempts with failure health recording |
-| F19-AF-046 | Cost-aware Routing | known-cost prioritization and truthful unknown-cost state |
-| F19-AF-047 | Privacy-preserving analytics | minimization, export/erasure, bounded aggregates, no content copying |
+| F19-AF-045 | Multi-provider Failover | health-aware ordered routed provider attempts with failure health recording |
+| F19-AF-046 | Cost-aware Routing | known-cost prioritization and truthful unknown-cost state; provider/cost evidence route is privileged |
+| F19-AF-047 | Privacy-preserving analytics | minimization, complete paginated export/erasure, bounded aggregates, no content copying |
 | F19-AF-048 | No-dark-pattern wellbeing guardrail | `more-notifications-is-not-a-kpi`; critical success/useful action/fatigue/reliability preferred |
 
 ## New data domains
@@ -75,20 +75,20 @@ File 19 owns notification projections, user notification preferences/subscriptio
 1. File 00 remains the positive identity authority; protected advanced endpoints fail closed when current eligibility cannot be established.
 2. Essential security/safety/system policy cannot be downgraded by AI, focus modes, attention budgets, temporary mute or ordinary user automation.
 3. AI is an optional summarization/ranking assistance adapter, never domain authority. No provider configured means deterministic behavior, not fabricated AI output.
-4. AI summaries may cite only notification IDs already returned from the current authorized own-user result set.
+4. AI summaries may cite only notification IDs already returned from the current authorized own-user result set; a configured model response containing a hallucinated ID is rejected rather than silently trusted.
 5. User automation does not directly mutate another file’s domain state. `owner_action`, calendar handoff and similar actions require the native owner integration to re-authorize.
 6. WhatsApp/RCS provider routes are disabled by default and require explicit user opt-in plus approved provider credentials/policies.
 7. FCM/APNs are provider-adapter readiness, not claims of configured delivery.
 8. Trace detail is minimized/redacted; secrets, message bodies, clinical facts, emails, phones and raw payloads are not trace data.
-9. Privacy export/erasure covers advanced user-owned attention, rules, device profiles and correction-watch history.
+9. Privacy export/erasure covers advanced user-owned attention, rules, device profiles and correction-watch history without fixed first-page truncation.
 10. Normal uninstall remains non-destructive. Destructive uninstall remains an explicit guarded operation.
 
 ## Release gates
 
 - **Specified:** this advanced register + Word master-plan addendum.
-- **Coded:** reviewable 3.0.0 source implements the listed contracts.
-- **Packaged:** deterministic `19-sabri-unified-notifications-3.0.0.zip` with canonical `unified-notifications-19/` folder and frozen checksum.
-- **Automated-QA Green:** PHP 8.3/8.4 unit/static/security/privacy/package/reproducibility gates pass on exact head.
+- **Coded:** reviewable runtime **3.0.1** implements the listed 3.0 contracts plus the ten-round corrective findings.
+- **Packaged:** deterministic `19-sabri-unified-notifications-3.0.1.zip` with canonical `unified-notifications-19/` folder; checksum is frozen only after exact-head reproducibility QA.
+- **Automated-QA Green:** PHP 8.3/8.4 unit/regression/static/security/privacy/package/reproducibility gates must pass on the exact candidate head.
 - **Staging-Accepted:** real WordPress/Hostinger upgrade/fresh install, real File 00/File 20/producer contracts, provider credentials, browser/mobile/RTL/accessibility, security/load, backup/restore and rollback rehearsal pass.
 - **Live-Deployed / Operational:** separate Founder-approved production and monitoring/support evidence.
 
