@@ -2,7 +2,7 @@
 
 Canonical intelligent notification and attention infrastructure for the **Sabri Social Homeopathy Platform**.
 
-## Current 3.0.0 candidate
+## Current 3.0.0 release candidate
 
 - File number: **19**
 - Runtime / schema: **3.0.0 / 3.0.0**
@@ -12,6 +12,9 @@ Canonical intelligent notification and attention infrastructure for the **Sabri 
 - REST namespace: `sabri-notifications/v1`
 - PHP minimum: **8.3**
 - WordPress minimum: **7.0**
+- Deterministic package: `19-sabri-unified-notifications-3.0.0.zip`
+- Frozen SHA-256: `b5c2996892d24513e9212bd213e3bc63a89d9b9f3318d978bda3fb915d89b4a6`
+- Exact-head QA evidence: run `31240918089` — success on PHP 8.3 and 8.4
 - Governing basis: consolidated central governing corpus + File 19 dedicated master plan + later Founder-approved Intelligent Attention extension
 
 File 19 remains the sole notification projection, preferences, orchestration, delivery, history and notification-intelligence owner. Domain truth remains with the native owner files; File 19 never becomes the source of truth for appointments, messages, publishing, marketplace, identity, search or other domain objects.
@@ -24,7 +27,7 @@ Existing 2.4 controls remain: one in-app center/File 20 single bell, versioned f
 
 ## Truth of status
 
-This branch is the **3.0.0 coding candidate**. Repository code and deterministic test/package evidence must pass fresh exact-head CI before it can be called Automated-QA Green or merged to `main`. Hostinger **Staging-Accepted**, **Live-Deployed** and **Operational** remain separate real-environment gates requiring companion contracts, configured providers, browser/device/accessibility tests, backup/restore, rollback rehearsal, security/privacy acceptance and Founder approval.
+Repository evidence establishes **Specified / Coded / Packaged / Automated-QA Green** for the 3.0.0 candidate. Hostinger **Staging-Accepted**, **Live-Deployed** and **Operational** remain separate real-environment gates requiring companion contracts, configured providers, browser/device/accessibility tests, backup/restore, rollback rehearsal, security/privacy acceptance and Founder approval.
 
 ## Public integration examples
 
