@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
-ROOT="$(cd "$(dirname "$0")/.." && pwd)";PLUGIN="$ROOT/19-unified-notifications";BUILD="$ROOT/build";STAGE="$BUILD/stage";NAME="19-sabri-unified-notifications-3.0.0.zip";CANONICAL="unified-notifications-19"
+ROOT="$(cd "$(dirname "$0")/.." && pwd)";PLUGIN="$ROOT/19-unified-notifications";BUILD="$ROOT/build";STAGE="$BUILD/stage";NAME="19-sabri-unified-notifications-3.0.1.zip";CANONICAL="unified-notifications-19"
 rm -rf "$STAGE" "$BUILD/$NAME" "$BUILD/$NAME.sha256";mkdir -p "$STAGE";cp -a "$PLUGIN" "$STAGE/$CANONICAL"
 (cd "$STAGE";find "$CANONICAL" -type f ! -name MANIFEST.sha256 -print0|LC_ALL=C sort -z|xargs -0 sha256sum > "$CANONICAL/MANIFEST.sha256")
 python3 - "$STAGE/$CANONICAL" "$BUILD/$NAME" <<'PY'
