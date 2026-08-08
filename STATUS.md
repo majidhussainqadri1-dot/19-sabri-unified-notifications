@@ -2,13 +2,17 @@
 
 | Status layer | Current evidence |
 |---|---|
-| Specified | Complete master plan available and mapped |
-| Coded | 2.0.0 source candidate in this repository |
-| Packaged | Deterministic build tooling and checksum evidence |
-| Automated QA | PHP lint, deterministic unit assertions, static/security audit and clean-extract package audit |
+| Specified | Complete File 19 master plan mapped beneath the governing central corpus, including Top-20 CV-097 through CV-106 notification requirements |
+| Coded | **2.4.0** source implementation reviewed through 40 sequential review → fix → retest rounds; all repository-owned defects found in that cycle were corrected |
+| Packaged | Deterministic `19-sabri-unified-notifications-2.4.0.zip` with canonical top-level folder `unified-notifications-19/` and frozen SHA-256 evidence |
+| Automated-QA Green | Exact-head PHP 8.3/8.4 quality workflow passes unit assertions, syntax/static/security/privacy regression checks, clean-extract package audit, deterministic rebuild and frozen-checksum verification |
 | Staging-Accepted | Pending real WordPress/Hostinger and companion/provider testing |
 | Live-Deployed | Not claimed |
 | Operational | Not claimed |
+
+## Repository completion boundary
+
+The repository establishes **Specified / Coded / Packaged / Automated-QA Green** for runtime/schema **2.4.0 / 2.4.0**. These statuses do not imply Hostinger staging acceptance, production deployment or operational acceptance. Those later gates require real-environment evidence under the governing plans and File 19 Definition of Done.
 
 ## External acceptance blockers
 
