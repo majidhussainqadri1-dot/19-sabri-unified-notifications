@@ -55,7 +55,15 @@ final class SUN_Intelligence_Service {
         );
         $ai = apply_filters( 'sun_notification_ai_generate', null, $payload, $user_id );
         if ( is_array( $ai ) && ! empty( $ai['summary'] ) ) {
-            $citations = array_values( array_intersect( $source_ids, array_map( 'sanitize_text_field', (array) ( $ai['citations'] ?? array() ) ) ) );
+            $raw_citations = array_values( array_unique( array_filter( array_map( 'sanitize_text_field', (array) ( $ai['citations'] ?? array() ) ) ) ) );
+            $citations = array_values( array_intersect( $source_ids, $raw_citations ) );
+            $invalid_citations = array_values( array_diff( $raw_citations, $source_ids ) );
+            if ( ! empty( $invalid_citations ) || ( ! empty( $items ) && empty( $citations ) ) ) {
+                SUN_Audit::record( 'notification_ai_output_rejected', 'notification_summary', sanitize_key( $purpose ), array( 'reason' => 'citation_boundary', 'invalid_count' => count( $invalid_citations ), 'purpose' => 'ai_safety' ), $user_id );
+                $fallback = $this->deterministic_summary( $items );
+                $fallback['ai_rejected'] = 'citation_boundary';
+                return $fallback;
+            }
             return array( 'enabled' => true, 'mode' => 'configured-ai', 'summary' => substr( sanitize_textarea_field( (string) $ai['summary'] ), 0, 6000 ), 'citations' => $citations, 'items' => $items );
         }
         return $this->deterministic_summary( $items );
