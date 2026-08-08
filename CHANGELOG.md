@@ -1,5 +1,18 @@
 # Changelog
 
+## 3.0.1 — 2026-08-08 — ten-round corrective candidate
+
+- Completed ten distinct post-3.0 review rounds against the governing plan corpus, File 19 v3.0 specification and current `main` source.
+- Strengthened the advanced QA register so automated structural assertions are not confused with live WordPress/provider/staging acceptance.
+- Fixed partial attention-profile updates so omitted `essential_only`, `best_time_enabled` and `muted_until` state is preserved instead of being silently reset.
+- Fixed per-device attention profiles to preserve omitted category/channel/focus/handoff state, validate handoff shape, enforce optimistic concurrency and report write failure.
+- Made known provider health affect failover ordering and restricted provider/cost routing evidence to authorized notification-health operators.
+- Rejected configured-AI summaries that provide hallucinated/out-of-scope citation IDs or no authorized citation for non-empty source material; deterministic fallback is used instead.
+- Bound File 26 saved-search automation to its declared owner as well as search ID, rejected empty category/source triggers, and preserved rule enablement on partial updates.
+- Made advanced attention-state and correction-watch privacy exports fully paginated rather than truncating after fixed first-page limits.
+- Restored read/unread and archive/unarchive actions after dynamic priority/search/history rendering in the notification center.
+- Superseded the corrected-source-incompatible 3.0.0 package identity with runtime **3.0.1** while retaining schema **3.0.0**; deterministic package/checksum evidence is regenerated for the corrected source.
+
 ## 3.0.0 — 2026-08-08 — candidate
 
 - Promoted File 19 from a notification-delivery subsystem to an **Intelligent Attention & Notification Operating System**, while preserving native domain ownership.
