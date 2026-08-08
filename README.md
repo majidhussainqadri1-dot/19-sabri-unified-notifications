@@ -1,59 +1,46 @@
 # File 19 — Sabri Unified Notifications and Alerts
 
-Canonical notification infrastructure for the **Sabri Social Homeopathy Platform**.
+Canonical intelligent notification and attention infrastructure for the **Sabri Social Homeopathy Platform**.
 
-## Current 2.4.0 release baseline
+## Current 3.0.0 candidate
 
 - File number: **19**
-- Runtime / schema: **2.4.0 / 2.4.0**
+- Runtime / schema: **3.0.0 / 3.0.0**
 - Repository source folder: `19-unified-notifications`
 - Canonical installable package folder: `unified-notifications-19`
 - Text domain: `sabri-unified-notifications`
 - REST namespace: `sabri-notifications/v1`
 - PHP minimum: **8.3**
 - WordPress minimum: **7.0**
-- Review basis: governing central corpus + File 19 dedicated master plan
-- Fresh review method: **40 sequential review → immediate fix → retest rounds**
-- Deterministic plugin ZIP SHA-256: `f452b54775f7a75707093b550de4bbc618f7dc27c0eb8947c96ea43e53997051`
+- Governing basis: consolidated central governing corpus + File 19 dedicated master plan + later Founder-approved Intelligent Attention extension
 
-File 19 implements one in-app notification center and the File 20 single-bell contract, versioned factual-event intake, explicit lawful recipients, current File 00 verified-account revalidation, idempotent notification projection, channel/category preferences, quiet hours, digests, granular subscriptions, external delivery adapters, retries/dead letters, provider circuit breakers, coordinated Safe Mode, device lifecycle, privacy export/erasure, healthy-use metrics, System Check diagnostics, reconciliation and bounded Founder-governed bulk notices.
+File 19 remains the sole notification projection, preferences, orchestration, delivery, history and notification-intelligence owner. Domain truth remains with the native owner files; File 19 never becomes the source of truth for appointments, messages, publishing, marketplace, identity, search or other domain objects.
 
-Top-20 requirements **CV-097 through CV-106** are represented in machine-readable governance and implementation contracts: unified inbox, channel preferences, granular subscriptions, digests, appointment reminders, correction alerts, security alerts, creator bulletins, delivery ledger and notification-fatigue metrics. File 20 remains shell/bell owner, File 25 visual-system owner and File 26 search/discovery owner; notification projections never become domain source of truth.
+## Intelligent Attention & Notification OS 3.0
 
-## 2.4.0 hardening highlights
+3.0 adds, in one coherent architecture: explainable smart priority, priority inbox, citation-bound AI catch-up summaries and notification assistant, semantic grouping keys, snooze, pin, needs-action/done state, global notification search/history, focus modes, attention budgets, essential-only mode, temporary mute, best-time delivery, adaptive source frequency capping, live/updateable and remotely revocable projections, native-owner actionable notifications, verified-source provenance, correction/retraction watch audiences, user automation rules, File 26 saved-search watches, learning/clinic/research trigger families, per-device controls and encrypted handoff state, FCM/APNs-ready native push contracts, opt-in WhatsApp Business/RCS routing, multi-provider failover, cost-aware routing, policy simulator, shadow/canary framework, privacy-minimized trace explorer, synthetic diagnostics and wellbeing metrics whose guardrail is `more-notifications-is-not-a-kpi`.
 
-The fresh corrective cycle found and repaired defects in post-validation mutation, recursive payload complexity, expiry validation, envelope field bounds, template/event binding, policy precedence, cross-user device-token ownership, multi-device behavior, File 00 authority isolation, REST abuse isolation, elapsed-notification delivery, encrypted metadata fail-closed behavior, provider-webhook scoping, click-time deep-link authorization, audit-chain concurrency/minimization, privacy-export pagination, subscription concurrency, CV-106 feedback signals, dead-letter retry atomicity, provider credential corruption, SMS runtime portability, unsubscribe truthfulness, live-region targeting, 44px accessibility targets, locale-direction inheritance, uninstall lock cleanup, System Check completeness and release/CI evidence alignment.
+Existing 2.4 controls remain: one in-app center/File 20 single bell, versioned factual-event intake, File 00 fail-closed identity revalidation, idempotency, preferences, quiet hours, digests, subscriptions, external delivery adapters, retries/dead letters, provider circuits, Safe Mode, privacy export/erasure, reconciliation and bounded Founder-governed bulk notices.
 
 ## Truth of status
 
-Repository source, deterministic packaging and automated tests establish **Specified / Coded / Packaged / Automated-QA Green** for the 2.4.0 release baseline. They do **not** establish Hostinger **Staging-Accepted**, **Live-Deployed** or **Operational** status. Those later gates require the real WordPress/Hostinger environment, companion modules, provider credentials, browser/device/accessibility testing, backup/restore, rollback rehearsal, security/privacy acceptance and Founder approval.
+This branch is the **3.0.0 coding candidate**. Repository code and deterministic test/package evidence must pass fresh exact-head CI before it can be called Automated-QA Green or merged to `main`. Hostinger **Staging-Accepted**, **Live-Deployed** and **Operational** remain separate real-environment gates requiring companion contracts, configured providers, browser/device/accessibility tests, backup/restore, rollback rehearsal, security/privacy acceptance and Founder approval.
 
-## Commands
-
-```bash
-php tests/unit.php
-bash tests/static-audit.sh
-bash tests/package-audit.sh
-```
-
-The deterministic release artifact is built as `build/19-sabri-unified-notifications-2.4.0.zip` with canonical top-level folder `unified-notifications-19/`. Root `RELEASE-SHA256.txt` records the frozen plugin-ZIP checksum and CI verifies deterministic reproduction against it.
-
-## Public integration
+## Public integration examples
 
 ```php
-sun_register_notification_producer(
-    'file17',
-    [
-        'owner'           => 'File 17',
-        'event_types'     => [ 'Communication.*' ],
-        'schema_versions' => [ '1.0' ],
-        'secret_callback' => static fn () => getenv( 'FILE17_NOTIFICATION_SECRET' ),
-    ]
-);
+sun_register_notification_producer('file17', [
+    'owner' => 'File 17',
+    'event_types' => [ 'Communication.*' ],
+    'schema_versions' => [ '1.0' ],
+    'secret_callback' => static fn () => getenv('FILE17_NOTIFICATION_SECRET'),
+]);
+
+sun_register_notification_saved_search($user_id, 'file26', $search_id, 'Diabetes research', 'daily');
+sun_update_live_notification($notification_public_id, ['summary' => 'Processing 70%']);
+sun_revoke_notifications_by_source('file21', $event_id, 'source_retracted');
 ```
 
-Domain producers retain their own state/decision truth. File 19 stores notification projections and delivery evidence only. Protected user and governance actions consume current `sabri_membership_claims_v2` assertions from File 00 and fail closed if the canonical identity owner is unavailable.
+AI is optional and adapter-based. If no approved AI provider is configured, catch-up uses a deterministic summary. Any configured AI summary may cite only notification IDs already authorized for the current user. Domain actions are always re-authorized by their native owner at action time.
 
-## Documentation
-
-See [`19-unified-notifications/docs`](19-unified-notifications/docs/) for architecture, contracts, data dictionary, security, privacy, migration, rollback, operations, staging and traceability.
+See `19-unified-notifications/docs/ADVANCED-ATTENTION-OS-3.0.0.md` for the complete advanced requirement catalogue and implementation map.
