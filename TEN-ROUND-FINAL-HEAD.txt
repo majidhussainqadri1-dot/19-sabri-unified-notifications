@@ -1,0 +1,1 @@
+Branch source frozen after ten review rounds; exact-head CI determines merge readiness.
