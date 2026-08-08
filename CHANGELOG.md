@@ -1,5 +1,23 @@
 # Changelog
 
+## 3.0.0 — 2026-08-08 — candidate
+
+- Promoted File 19 from a notification-delivery subsystem to an **Intelligent Attention & Notification Operating System**, while preserving native domain ownership.
+- Added explainable attention scoring, Priority Inbox, Focus Modes, Essential-only mode, temporary mute, best-time scheduling, hourly/daily attention budgets and adaptive source frequency capping.
+- Added pin/unpin, snooze, Needs Action/Done states, global notification search, history vault and cross-device state-backed attention metadata.
+- Added citation-bound AI catch-up summaries and a read-only notification assistant with deterministic non-AI fallback.
+- Added semantic grouping keys for smart bundling, verified-source provenance and “Why did I get this / Why important?” evidence.
+- Added live/updateable notification projections, automatic expiry continuity and source-event revocation/redaction.
+- Added native-owner actionable-notification contracts; File 19 never grants domain authority.
+- Added user automation rules, File 26 saved-search/watch contracts, correction/retraction audiences, and learning/clinic/research trigger families.
+- Added per-device category/channel/focus preferences and encrypted handoff data.
+- Added provider-routing tables and adapters for Web Push/FCM/APNs readiness plus explicit opt-in WhatsApp Business and RCS channels.
+- Added multi-provider failover, rate caps, cost-aware routing and truthful unknown-cost handling.
+- Added policy simulator, shadow and deterministic canary framework.
+- Added privacy-minimized end-to-end trace spans and synthetic non-delivery diagnostics.
+- Extended privacy export/erasure, System Check and guarded destructive uninstall to all advanced attention tables.
+- Preserved the wellbeing law: **more notifications is not a KPI**; useful action completion, critical-alert success, suppression, complaint/fatigue and delivery reliability are preferred signals.
+
 ## 2.4.0 — 2026-08-07
 
 - Ran a new sequential forty-round review/fix cycle against the governing central corpus and the File 19 dedicated master plan.
@@ -20,21 +38,13 @@
 - Promoted runtime/schema, deterministic packaging and PHP 8.3/8.4 CI to 2.4.0.
 
 ## 2.3.0 — 2026-08-07
-
-- Added explicit Top-20 CV-097–CV-106 notification contracts.
-- Added granular person/topic/community/course/event/doctor/channel subscriptions with immediate/daily/weekly frequencies.
-- Added appointment/correction/security/creator-bulletin event catalog and wellbeing metrics.
-- Hardened policy-owned category, sensitivity/priority floors and current File 00 governance claims.
+- Added explicit Top-20 CV-097–CV-106 notification contracts, granular subscriptions, semantic event catalog and wellbeing metrics.
 
 ## 2.2.0 — 2026-08-07
-
-- Earlier forty-round baseline for central-plan precedence, activation locking, canonical File 00 claims, producer owner/schema binding, exact-origin links, Safe Mode, provider circuits, bulk governance, privacy lifecycle and canonical packaging.
+- Earlier forty-round baseline for central-plan precedence, activation locking, canonical File 00 claims, producer binding, exact-origin links, Safe Mode, provider circuits, bulk governance, privacy lifecycle and canonical packaging.
 
 ## 2.0.0 — 2026-08-07
-
-- Replaced the README-only preservation repository with a complete coding candidate.
-- Added canonical event intake, one notification center/File 20 bell, preferences, digests, delivery adapters, retries/dead letters, devices, privacy lifecycle, health diagnostics and deterministic QA.
+- Replaced the README-only preservation repository with a complete coding candidate and canonical notification runtime.
 
 ## 1.0.0 — historical baseline
-
-The former repository preserved only metadata about an original package. Its package source was not present in the Git tree and is not treated as verified implementation evidence for current releases.
+- Historical preservation baseline only.
