@@ -1,62 +1,20 @@
 <?php
-/**
- * Public integration functions.
- */
+/** Public integration functions. */
+if ( ! defined( 'ABSPATH' ) ) { exit; }
 
-if ( ! defined( 'ABSPATH' ) ) {
-	exit;
-}
+/** @param array<string,mixed> $event Event envelope. @return array<string,mixed>|WP_Error */ function sun_ingest_domain_event( array $event ) { return sun_notifications()->notifications()->ingest_event( $event, 'php' ); }
+/** @return string */ function sun_render_notification_bell() { return sun_notifications()->renderer()->render_bell(); }
+/** @param int|null $user_id User ID. @return int */ function sun_get_unread_count( $user_id = null ) { $user_id = null === $user_id ? get_current_user_id() : absint( $user_id ); return sun_notifications()->notifications()->get_unread_count( $user_id ); }
+/** @param string $producer Producer identifier. @param array<string,mixed> $config Producer contract. @return bool */ function sun_register_notification_producer( $producer, array $config ) { return SUN_Producer_Registry::register_runtime( $producer, $config ); }
 
-/** @param array<string,mixed> $event Event envelope. @return array<string,mixed>|WP_Error */
-function sun_ingest_domain_event( array $event ) {
-	return sun_notifications()->notifications()->ingest_event( $event, 'php' );
-}
+/** @param int $user_id User ID. @param string $scope_type Scope. @param string $scope_id Native owner ID. @param bool $enabled Enabled. @param string $frequency Frequency. @param int|null $version Version. @return array<string,mixed>|WP_Error */
+function sun_set_notification_subscription( $user_id, $scope_type, $scope_id, $enabled = true, $frequency = 'immediate', $version = null ) { $user_id=absint($user_id);$allowed=is_user_logged_in()&&get_current_user_id()===$user_id&&sun_notifications()->notifications()&&sun_notifications()->subscriptions();$allowed=(bool)apply_filters('sun_can_manage_subscription_for_user',$allowed,$user_id,$scope_type,$scope_id);if(!$allowed){return new WP_Error('sun_subscription_forbidden',__('You cannot change this notification subscription.','sabri-unified-notifications'),array('status'=>403));}$input=array('scope_type'=>$scope_type,'scope_id'=>$scope_id,'enabled'=>(bool)$enabled,'frequency'=>$frequency);if(null!==$version){$input['version']=absint($version);}return sun_notifications()->subscriptions()->upsert($user_id,$input);}
 
-/** @return string */
-function sun_render_notification_bell() {
-	return sun_notifications()->renderer()->render_bell();
-}
-
-/** @param int|null $user_id User ID, current user when omitted. @return int */
-function sun_get_unread_count( $user_id = null ) {
-	$user_id = null === $user_id ? get_current_user_id() : absint( $user_id );
-	return sun_notifications()->notifications()->get_unread_count( $user_id );
-}
-
-/** @param string $producer Producer identifier. @param array<string,mixed> $config Producer contract. @return bool */
-function sun_register_notification_producer( $producer, array $config ) {
-	return SUN_Producer_Registry::register_runtime( $producer, $config );
-}
-
-/**
- * Save an own-user granular subscription from a contextual Follow/Subscribe UI.
- * Cross-user writes require an explicit host authorization filter.
- *
- * @param int $user_id User ID.
- * @param string $scope_type person|topic|community|course|event|doctor|channel.
- * @param string $scope_id Native owner stable identifier.
- * @param bool $enabled Enabled.
- * @param string $frequency immediate|daily|weekly.
- * @param int|null $version Optional optimistic-concurrency version.
- * @return array<string,mixed>|WP_Error
- */
-function sun_set_notification_subscription( $user_id, $scope_type, $scope_id, $enabled = true, $frequency = 'immediate', $version = null ) {
-	$user_id = absint( $user_id );
-	$allowed = is_user_logged_in() && get_current_user_id() === $user_id && sun_notifications()->notifications() && sun_notifications()->subscriptions();
-	$allowed = (bool) apply_filters( 'sun_can_manage_subscription_for_user', $allowed, $user_id, $scope_type, $scope_id );
-	if ( ! $allowed ) {
-		return new WP_Error( 'sun_subscription_forbidden', __( 'You cannot change this notification subscription.', 'sabri-unified-notifications' ), array( 'status' => 403 ) );
-	}
-	$input = array( 'scope_type'=>$scope_type, 'scope_id'=>$scope_id, 'enabled'=>(bool)$enabled, 'frequency'=>$frequency );
-	if ( null !== $version ) { $input['version'] = absint( $version ); }
-	return sun_notifications()->subscriptions()->upsert( $user_id, $input );
-}
-
-/**
- * Machine-readable capability/ownership contract for companion modules and diagnostics.
- *
- * @return array<string,mixed>
- */
-function sun_notification_capability_contract() {
-	return SUN_Four_Plan_Compliance::snapshot();
-}
+/** Live/update an existing notification projection without taking ownership of the domain object. @param string $public_id ID. @param array<string,mixed> $patch Patch. @return true|WP_Error */ function sun_update_live_notification( $public_id, array $patch ) { return sun_notifications()->attention()->live_update( $public_id, $patch ); }
+/** Revoke/redact all projections of a withdrawn source event. @param string $producer Producer. @param string $event_id Event ID. @param string $reason Reason. @return int */ function sun_revoke_notifications_by_source( $producer, $event_id, $reason = 'source_withdrawn' ) { return sun_notifications()->attention()->revoke_source( $producer, $event_id, $reason ); }
+/** Record that a user read/saved/shared an owner object so later material corrections can reach the affected audience. @param int $user_id User ID. @param string $object_type Type. @param string $object_id ID. @param string $engagement Engagement. @return void */ function sun_record_notification_engagement( $user_id, $object_type, $object_id, $engagement = 'read' ) { sun_notifications()->attention()->record_engagement( $user_id, $object_type, $object_id, $engagement ); }
+/** @param string $object_type Type. @param string $object_id ID. @return int[] */ function sun_notification_correction_audience( $object_type, $object_id ) { return sun_notifications()->automation()->correction_audience( $object_type, $object_id ); }
+/** Register a File 26 or other owner-provided saved search as a notification watch. @param int $user_id User ID. @param string $owner Owner. @param string $search_id Search ID. @param string $label Label. @param string $frequency Frequency. @return array<string,mixed>|WP_Error */ function sun_register_notification_saved_search( $user_id, $owner, $search_id, $label, $frequency = 'daily' ) { return sun_notifications()->automation()->register_saved_search( $user_id, $owner, $search_id, $label, $frequency ); }
+/** @param int $user_id User ID. @param string $public_id Notification ID. @return array<string,mixed>|WP_Error */ function sun_explain_notification( $user_id, $public_id ) { return sun_notifications()->intelligence()->explain( absint( $user_id ), $public_id ); }
+/** @param int $user_id User ID. @param int $hours Hours. @return array<string,mixed> */ function sun_notification_catchup( $user_id, $hours = 24 ) { return sun_notifications()->intelligence()->catchup_summary( absint( $user_id ), $hours ); }
+/** @return array<string,mixed> */ function sun_notification_capability_contract() { $contract=SUN_Four_Plan_Compliance::snapshot();$contract['intelligent_attention_os']=array('version'=>'3.0.0','focus_modes'=>array('balanced','study','clinic','work','sleep','travel','essential','custom'),'external_channels'=>array('email','push','sms','whatsapp','rcs'),'native_push_providers'=>array('webpush','fcm','apns'),'experiments'=>array('simulator','shadow','canary'),'domain_truth_owner_preserved'=>true);return$contract; }
