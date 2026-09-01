@@ -1,5 +1,16 @@
 # Changelog
 
+## 3.0.1 — 2026-09-02 — TextBee SMS provider candidate
+
+- Added a first-party TextBee bridge to the existing provider-neutral `sun_send_sms` contract.
+- Added truthful `sun_sms_adapter_configured` readiness and `sun_sms_provider_name = textbee` when the API key is defined.
+- Kept TextBee credentials out of WordPress options, logs and repository source; production credentials are read only from `wp-config.php` constants.
+- Added optional TextBee device and SIM pinning while defaulting to TextBee's account-level device selection.
+- Added fail-closed E.164 validation, TLS-only account-level API transport, normalized provider/network errors and non-leaking error data.
+- Preserved TextBee `smsBatchId` receipts and added a clearly prefixed local acceptance receipt only for immediate-dispatch responses that contain success counts but no batch id; this does not claim carrier delivery.
+- Added deterministic provider tests, package/static regression gates, secure operator documentation and a deterministic 3.0.1 package target.
+- Runtime is 3.0.1; database schema remains 3.0.0 because this integration adds no tables or columns.
+
 ## 3.0.0 — 2026-08-08 — candidate
 
 - Promoted File 19 from a notification-delivery subsystem to an **Intelligent Attention & Notification Operating System**, while preserving native domain ownership.

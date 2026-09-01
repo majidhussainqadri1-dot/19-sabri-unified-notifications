@@ -29,27 +29,29 @@ jobs:
         run: php tests/unit.php
       - name: Intelligent Attention 3.0 assertions
         run: php tests/advanced-unit.php
-      - name: File 19 3.0 static and security regression audit
+      - name: TextBee SMS provider assertions
+        run: php tests/textbee-provider.php
+      - name: File 19 3.0.1 static and security regression audit
         run: bash tests/static-audit.sh
       - name: Clean-extract deterministic package audit
         run: bash tests/package-audit.sh
       - name: Verify deterministic rebuild and capture/freeze checksum
         run: |
-          first="$(sha256sum build/19-sabri-unified-notifications-3.0.0.zip | awk '{print $1}')"
+          first="$(sha256sum build/19-sabri-unified-notifications-3.0.1.zip | awk '{print $1}')"
           bash tools/build-release.sh >/tmp/sun-rebuild.log
-          second="$(sha256sum build/19-sabri-unified-notifications-3.0.0.zip | awk '{print $1}')"
+          second="$(sha256sum build/19-sabri-unified-notifications-3.0.1.zip | awk '{print $1}')"
           test "$first" = "$second"
           expected="$(awk '{print $1}' RELEASE-SHA256.txt)"
           if [ "$expected" != "PENDING" ]; then test "$second" = "$expected"; fi
-          grep -q '19-sabri-unified-notifications-3.0.0.zip' RELEASE-SHA256.txt
-          echo "FILE19_3_0_0_SHA256=$second"
-          cat build/19-sabri-unified-notifications-3.0.0.zip.sha256
+          grep -q '19-sabri-unified-notifications-3.0.1.zip' RELEASE-SHA256.txt
+          echo "FILE19_3_0_1_SHA256=$second"
+          cat build/19-sabri-unified-notifications-3.0.1.zip.sha256
       - name: Upload release candidate
         if: matrix.php == '8.3'
         uses: actions/upload-artifact@v4
         with:
-          name: file-19-notifications-3.0.0
+          name: file-19-notifications-3.0.1
           path: |
-            build/19-sabri-unified-notifications-3.0.0.zip
-            build/19-sabri-unified-notifications-3.0.0.zip.sha256
+            build/19-sabri-unified-notifications-3.0.1.zip
+            build/19-sabri-unified-notifications-3.0.1.zip.sha256
           if-no-files-found: error

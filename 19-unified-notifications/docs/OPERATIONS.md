@@ -11,6 +11,12 @@
 
 Queue depth, oldest queue age, accepted/failed/suppressed/dead-letter counts, provider configuration, cron availability, schema health, encryption probe and reconciliation result. No raw message, patient, deal or identity payload is exposed in metrics.
 
+## SMS / TextBee operations
+
+Runtime 3.0.1 can satisfy the File 19 SMS provider contract through the first-party TextBee bridge. `SUN_TEXTBEE_API_KEY` must be defined in `wp-config.php`; optional `SUN_TEXTBEE_DEVICE_ID` and `SUN_TEXTBEE_SIM_SUBSCRIPTION_ID` constants pin a device/SIM. No TextBee secret is stored in WordPress options or repository source. See `TEXTBEE-SMS.md` for the exact configuration and Live verification sequence.
+
+TextBee HTTP acceptance is evidence that the provider accepted or immediately dispatched the request; it is not carrier-delivery proof. Provider receipts are stored only as bounded identifiers. Never place the API key, full provider response body or SMS content in health/audit output.
+
 ## Incident controls
 
 - Pause external adapters with provider configuration filters/kill switches.
