@@ -3,14 +3,71 @@
  * Plugin Name: Sabri Unified Notifications and Alerts
  * Plugin URI: https://sabrihomeopathy.com/
  * Description: Canonical intelligent attention and notification operating system: unified inbox/bell, priority, search/history, snooze/pin/action states, AI catch-up, automation rules, focus modes, wellbeing budgets, live/revocable notifications, multi-device controls, routed external delivery, experiments, tracing and privacy-safe diagnostics for the Sabri Social Homeopathy Platform.
- * Version: 3.0.0
+ * Version: 3.0.1
  * Requires at least: 7.0
  * Requires PHP: 8.3
  * Author: Dr. Allamah Majid Hussain Sabri Muhaddith Mursheed
  * Text Domain: sabri-unified-notifications
  * Domain Path: /languages
  */
-if(!defined('ABSPATH')){exit;}
-define('SUN_VERSION','3.0.0');define('SUN_DB_VERSION','3.0.0');define('SUN_FILE',__FILE__);define('SUN_PATH',plugin_dir_path(__FILE__));define('SUN_URL',plugin_dir_url(__FILE__));define('SUN_BASENAME',plugin_basename(__FILE__));define('SUN_TEXT_DOMAIN','sabri-unified-notifications');define('SUN_REST_NAMESPACE','sabri-notifications/v1');define('SUN_MIN_WP_VERSION','7.0');define('SUN_MIN_PHP_VERSION','8.3');
-require_once SUN_PATH.'includes/class-sun-database.php';require_once SUN_PATH.'includes/class-sun-crypto.php';require_once SUN_PATH.'includes/class-sun-audit.php';require_once SUN_PATH.'includes/class-sun-four-plan-compliance.php';require_once SUN_PATH.'includes/class-sun-operational-gate.php';require_once SUN_PATH.'includes/class-sun-provider-circuit.php';require_once SUN_PATH.'includes/class-sun-auth.php';require_once SUN_PATH.'includes/class-sun-producer-registry.php';require_once SUN_PATH.'includes/class-sun-event-validator.php';require_once SUN_PATH.'includes/class-sun-template-engine.php';require_once SUN_PATH.'includes/class-sun-preferences.php';require_once SUN_PATH.'includes/class-sun-subscriptions.php';require_once SUN_PATH.'includes/class-sun-trace-service.php';require_once SUN_PATH.'includes/class-sun-attention-service.php';require_once SUN_PATH.'includes/class-sun-intelligence-service.php';require_once SUN_PATH.'includes/class-sun-automation-service.php';require_once SUN_PATH.'includes/class-sun-routing-service.php';require_once SUN_PATH.'includes/class-sun-experiments-service.php';require_once SUN_PATH.'includes/class-sun-policy-engine.php';require_once SUN_PATH.'includes/class-sun-deep-link.php';require_once SUN_PATH.'includes/adapters/interface-sun-delivery-adapter.php';require_once SUN_PATH.'includes/adapters/class-sun-email-adapter.php';require_once SUN_PATH.'includes/adapters/class-sun-push-adapter.php';require_once SUN_PATH.'includes/adapters/class-sun-sms-adapter.php';require_once SUN_PATH.'includes/class-sun-routed-adapter.php';require_once SUN_PATH.'includes/class-sun-delivery-service.php';require_once SUN_PATH.'includes/class-sun-notification-service.php';require_once SUN_PATH.'includes/class-sun-bulk-service.php';require_once SUN_PATH.'includes/class-sun-reconciliation.php';require_once SUN_PATH.'includes/class-sun-health.php';require_once SUN_PATH.'includes/class-sun-wellbeing.php';require_once SUN_PATH.'includes/class-sun-rest-controller.php';require_once SUN_PATH.'includes/class-sun-advanced-rest.php';require_once SUN_PATH.'includes/class-sun-renderer.php';require_once SUN_PATH.'includes/class-sun-router.php';require_once SUN_PATH.'includes/class-sun-admin.php';require_once SUN_PATH.'includes/class-sun-privacy.php';require_once SUN_PATH.'includes/class-sun-activator.php';require_once SUN_PATH.'includes/class-sun-advanced-activator.php';require_once SUN_PATH.'includes/class-sun-plugin.php';require_once SUN_PATH.'includes/functions.php';
-register_activation_hook(__FILE__,array('SUN_Activator','activate'));register_activation_hook(__FILE__,array('SUN_Advanced_Activator','activate'));register_deactivation_hook(__FILE__,array('SUN_Activator','deactivate'));function sun_notifications(){return SUN_Plugin::instance();}sun_notifications()->boot();
+if ( ! defined( 'ABSPATH' ) ) { exit; }
+define( 'SUN_VERSION', '3.0.1' );
+define( 'SUN_DB_VERSION', '3.0.0' );
+define( 'SUN_FILE', __FILE__ );
+define( 'SUN_PATH', plugin_dir_path( __FILE__ ) );
+define( 'SUN_URL', plugin_dir_url( __FILE__ ) );
+define( 'SUN_BASENAME', plugin_basename( __FILE__ ) );
+define( 'SUN_TEXT_DOMAIN', 'sabri-unified-notifications' );
+define( 'SUN_REST_NAMESPACE', 'sabri-notifications/v1' );
+define( 'SUN_MIN_WP_VERSION', '7.0' );
+define( 'SUN_MIN_PHP_VERSION', '8.3' );
+
+require_once SUN_PATH . 'includes/class-sun-database.php';
+require_once SUN_PATH . 'includes/class-sun-crypto.php';
+require_once SUN_PATH . 'includes/class-sun-audit.php';
+require_once SUN_PATH . 'includes/class-sun-four-plan-compliance.php';
+require_once SUN_PATH . 'includes/class-sun-operational-gate.php';
+require_once SUN_PATH . 'includes/class-sun-provider-circuit.php';
+require_once SUN_PATH . 'includes/class-sun-auth.php';
+require_once SUN_PATH . 'includes/class-sun-producer-registry.php';
+require_once SUN_PATH . 'includes/class-sun-event-validator.php';
+require_once SUN_PATH . 'includes/class-sun-template-engine.php';
+require_once SUN_PATH . 'includes/class-sun-preferences.php';
+require_once SUN_PATH . 'includes/class-sun-subscriptions.php';
+require_once SUN_PATH . 'includes/class-sun-trace-service.php';
+require_once SUN_PATH . 'includes/class-sun-attention-service.php';
+require_once SUN_PATH . 'includes/class-sun-intelligence-service.php';
+require_once SUN_PATH . 'includes/class-sun-automation-service.php';
+require_once SUN_PATH . 'includes/class-sun-routing-service.php';
+require_once SUN_PATH . 'includes/class-sun-experiments-service.php';
+require_once SUN_PATH . 'includes/class-sun-policy-engine.php';
+require_once SUN_PATH . 'includes/class-sun-deep-link.php';
+require_once SUN_PATH . 'includes/adapters/interface-sun-delivery-adapter.php';
+require_once SUN_PATH . 'includes/adapters/class-sun-email-adapter.php';
+require_once SUN_PATH . 'includes/adapters/class-sun-push-adapter.php';
+require_once SUN_PATH . 'includes/adapters/class-sun-sms-adapter.php';
+require_once SUN_PATH . 'includes/providers/class-sun-textbee-provider.php';
+require_once SUN_PATH . 'includes/class-sun-routed-adapter.php';
+require_once SUN_PATH . 'includes/class-sun-delivery-service.php';
+require_once SUN_PATH . 'includes/class-sun-notification-service.php';
+require_once SUN_PATH . 'includes/class-sun-bulk-service.php';
+require_once SUN_PATH . 'includes/class-sun-reconciliation.php';
+require_once SUN_PATH . 'includes/class-sun-health.php';
+require_once SUN_PATH . 'includes/class-sun-wellbeing.php';
+require_once SUN_PATH . 'includes/class-sun-rest-controller.php';
+require_once SUN_PATH . 'includes/class-sun-advanced-rest.php';
+require_once SUN_PATH . 'includes/class-sun-renderer.php';
+require_once SUN_PATH . 'includes/class-sun-router.php';
+require_once SUN_PATH . 'includes/class-sun-admin.php';
+require_once SUN_PATH . 'includes/class-sun-privacy.php';
+require_once SUN_PATH . 'includes/class-sun-activator.php';
+require_once SUN_PATH . 'includes/class-sun-advanced-activator.php';
+require_once SUN_PATH . 'includes/class-sun-plugin.php';
+require_once SUN_PATH . 'includes/functions.php';
+
+SUN_TextBee_Provider::register();
+register_activation_hook( __FILE__, array( 'SUN_Activator', 'activate' ) );
+register_activation_hook( __FILE__, array( 'SUN_Advanced_Activator', 'activate' ) );
+register_deactivation_hook( __FILE__, array( 'SUN_Activator', 'deactivate' ) );
+function sun_notifications() { return SUN_Plugin::instance(); }
+sun_notifications()->boot();
