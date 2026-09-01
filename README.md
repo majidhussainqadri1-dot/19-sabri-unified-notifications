@@ -13,7 +13,8 @@ Canonical intelligent notification and attention infrastructure for the **Sabri 
 - PHP minimum: **8.3**
 - WordPress minimum: **7.0**
 - Deterministic package: `19-sabri-unified-notifications-3.0.1.zip`
-- Package SHA-256: **pending exact-head CI freeze**
+- Frozen package SHA-256: `a358cf67b6a942a0cef63aed93f9652eba82e294d7ba1e6744bcbcd638f18d70`
+- Exact-head checksum-freeze QA: GitHub Actions run `33570462543` — success on PHP 8.3 and 8.4
 - Governing basis: consolidated central governing corpus + File 19 dedicated master plan + later Founder-approved Intelligent Attention extension
 
 File 19 remains the sole notification projection, preferences, orchestration, delivery, history and notification-intelligence owner. Domain truth remains with the native owner files; File 19 never becomes the source of truth for appointments, messages, publishing, marketplace, identity, search or other domain objects.
@@ -47,7 +48,7 @@ Existing 2.4 controls remain: one in-app center/File 20 single bell, versioned f
 
 ## Truth of status
 
-Repository coding for the 3.0.1 TextBee candidate is separate from real-environment truth. **Staging-Accepted**, **Live-Deployed** and **Operational** require the exact package to be deployed, the TextBee secret to be configured, SMS readiness to be re-read from Live, and a real OTP to be received and verified. No repository test alone proves Live SMS delivery.
+Repository evidence establishes **Coded / Deterministically Packaged / Automated-QA Green** for the 3.0.1 TextBee candidate, with the package checksum frozen above. **Staging-Accepted**, **Live-Deployed** and **Operational** remain separate real-environment gates: the exact 3.0.1 package must be deployed, the TextBee secret must be configured in `wp-config.php`, SMS readiness must be re-read from Live, and a real OTP must be received and verified. No repository test alone proves Live SMS delivery.
 
 ## Public integration examples
 
