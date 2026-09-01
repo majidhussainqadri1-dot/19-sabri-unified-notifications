@@ -2,22 +2,42 @@
 
 Canonical intelligent notification and attention infrastructure for the **Sabri Social Homeopathy Platform**.
 
-## Current 3.0.0 release candidate
+## Current 3.0.1 TextBee SMS release candidate
 
 - File number: **19**
-- Runtime / schema: **3.0.0 / 3.0.0**
+- Runtime / schema: **3.0.1 / 3.0.0**
 - Repository source folder: `19-unified-notifications`
 - Canonical installable package folder: `unified-notifications-19`
 - Text domain: `sabri-unified-notifications`
 - REST namespace: `sabri-notifications/v1`
 - PHP minimum: **8.3**
 - WordPress minimum: **7.0**
-- Deterministic package: `19-sabri-unified-notifications-3.0.0.zip`
-- Frozen SHA-256: `b5c2996892d24513e9212bd213e3bc63a89d9b9f3318d978bda3fb915d89b4a6`
-- Exact-head QA evidence: run `31240918089` — success on PHP 8.3 and 8.4
+- Deterministic package: `19-sabri-unified-notifications-3.0.1.zip`
+- Package SHA-256: **pending exact-head CI freeze**
 - Governing basis: consolidated central governing corpus + File 19 dedicated master plan + later Founder-approved Intelligent Attention extension
 
 File 19 remains the sole notification projection, preferences, orchestration, delivery, history and notification-intelligence owner. Domain truth remains with the native owner files; File 19 never becomes the source of truth for appointments, messages, publishing, marketplace, identity, search or other domain objects.
+
+## TextBee SMS provider bridge
+
+3.0.1 adds a first-party TextBee bridge to File 19's existing provider-neutral SMS contract. It uses the current account-level TextBee endpoint and keeps credentials outside WordPress data.
+
+Production configuration belongs in `wp-config.php` only:
+
+```php
+define( 'SUN_TEXTBEE_API_KEY', 'your-secret-api-key' );
+```
+
+Optional device/SIM pinning:
+
+```php
+define( 'SUN_TEXTBEE_DEVICE_ID', 'your-device-id' );
+define( 'SUN_TEXTBEE_SIM_SUBSCRIPTION_ID', 1 );
+```
+
+Do not commit production credentials to GitHub or store them in `wp_options`. See `19-unified-notifications/docs/TEXTBEE-SMS.md` for the complete security and Live verification sequence.
+
+TextBee API acceptance is recorded as **accepted**, never automatically as **delivered**. Carrier delivery remains a separate operational fact.
 
 ## Intelligent Attention & Notification OS 3.0
 
@@ -27,7 +47,7 @@ Existing 2.4 controls remain: one in-app center/File 20 single bell, versioned f
 
 ## Truth of status
 
-Repository evidence establishes **Specified / Coded / Packaged / Automated-QA Green** for the 3.0.0 candidate. Hostinger **Staging-Accepted**, **Live-Deployed** and **Operational** remain separate real-environment gates requiring companion contracts, configured providers, browser/device/accessibility tests, backup/restore, rollback rehearsal, security/privacy acceptance and Founder approval.
+Repository coding for the 3.0.1 TextBee candidate is separate from real-environment truth. **Staging-Accepted**, **Live-Deployed** and **Operational** require the exact package to be deployed, the TextBee secret to be configured, SMS readiness to be re-read from Live, and a real OTP to be received and verified. No repository test alone proves Live SMS delivery.
 
 ## Public integration examples
 
