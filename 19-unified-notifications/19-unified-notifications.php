@@ -25,6 +25,8 @@ define( 'SUN_MIN_PHP_VERSION', '8.3' );
 require_once SUN_PATH . 'includes/class-sun-database.php';
 require_once SUN_PATH . 'includes/class-sun-crypto.php';
 require_once SUN_PATH . 'includes/class-sun-audit.php';
+require_once SUN_PATH . 'includes/class-sun-request-idempotency.php';
+require_once SUN_PATH . 'includes/class-sun-provider-webhook-verifier.php';
 require_once SUN_PATH . 'includes/class-sun-four-plan-compliance.php';
 require_once SUN_PATH . 'includes/class-sun-operational-gate.php';
 require_once SUN_PATH . 'includes/class-sun-provider-circuit.php';
