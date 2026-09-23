@@ -29,6 +29,8 @@ jobs:
         run: php tests/unit.php
       - name: Intelligent Attention 3.0 assertions
         run: php tests/advanced-unit.php
+      - name: Completeness audit regression assertions
+        run: php tests/completeness-regression.php
       - name: TextBee SMS provider assertions
         run: php tests/textbee-provider.php
       - name: File 19 3.0.2 static and security regression audit
