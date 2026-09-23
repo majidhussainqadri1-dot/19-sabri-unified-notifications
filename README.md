@@ -13,8 +13,8 @@ Canonical intelligent notification and attention infrastructure for the **Sabri 
 - PHP minimum: **8.3**
 - WordPress minimum: **7.0**
 - Deterministic package: `19-sabri-unified-notifications-3.0.2.zip`
-- Package SHA-256: **pending exact-head 3.0.2 checksum re-freeze after permission-order hardening**
-- Prior 3.0.2 branch QA run `35876980905` passed PHP 8.3/8.4 before the final permission-order hardening; exact-head QA and checksum re-freeze are pending
+- Frozen package SHA-256: `0d69e236bc56cd3e1e2519322ab2fc296860b55cd4bbdf28b5529c2b750e9d16`
+- Post-hardening branch QA run `35877312271` passed PHP 8.3/8.4 unit, advanced, completeness-regression, TextBee, static/security/privacy, clean-extract package and deterministic rebuild gates; frozen-checksum exact-head re-verification follows this metadata-only commit
 - Governing basis: consolidated central governing corpus + File 19 dedicated master plan + later Founder-approved Intelligent Attention extension
 
 File 19 remains the sole notification projection, preferences, orchestration, delivery, history and notification-intelligence owner. Domain truth remains with the native owner files; File 19 never becomes the source of truth for appointments, messages, publishing, marketplace, identity, search or other domain objects.
