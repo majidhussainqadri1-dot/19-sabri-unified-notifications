@@ -2,7 +2,7 @@
 
 Canonical intelligent notification and attention infrastructure for the **Sabri Social Homeopathy Platform**.
 
-## Current 3.0.2 completeness-hardening release candidate
+## Current 3.0.2 repository release
 
 - File number: **19**
 - Runtime / schema: **3.0.2 / 3.0.1**
@@ -14,7 +14,7 @@ Canonical intelligent notification and attention infrastructure for the **Sabri 
 - WordPress minimum: **7.0**
 - Deterministic package: `19-sabri-unified-notifications-3.0.2.zip`
 - Frozen package SHA-256: `f08d27ac1148ea2a15309e8ccb7452e75fc32cc6d31663d1873365d54533f469`
-- Final source QA run `35877614852` passed PHP 8.3/8.4 unit, advanced, completeness-regression, TextBee, static/security/privacy, clean-extract package and deterministic rebuild gates; frozen-checksum exact-head verification follows this metadata-only commit
+- PR #14 merged the audited 3.0.2 source into `main` at `28e01559a2d00e655e50daaa2cbe3877dc0833cd`; main QA run `35877953837` passed PHP 8.3/8.4 unit, advanced, completeness-regression, TextBee, static/security/privacy, clean-extract package and frozen-checksum deterministic rebuild gates
 - Governing basis: consolidated central governing corpus + File 19 dedicated master plan + later Founder-approved Intelligent Attention extension
 
 File 19 remains the sole notification projection, preferences, orchestration, delivery, history and notification-intelligence owner. Domain truth remains with the native owner files; File 19 never becomes the source of truth for appointments, messages, publishing, marketplace, identity, search or other domain objects.
@@ -48,7 +48,7 @@ Existing 2.4 controls remain: one in-app center/File 20 single bell, versioned f
 
 ## Truth of status
 
-The 3.0.2 source candidate closes the latest 20-round repository audit findings: canonical re-authorization for privileged advanced REST, executable automation rules, saved-search owner binding, runtime shadow/canary evaluation, end-to-end trace stages, optimistic per-device concurrency, schema-neutral version bookkeeping, routed-provider identity/cost/rate accounting, missing-state reconciliation, durable authenticated mutation idempotency, and signed/timestamped/replay-protected provider webhooks. Repository CI/package evidence is tracked separately from staging and Live. **Staging-Accepted**, **Live-Deployed** and **Operational** are not implied by source completion. Exact deployed code remains unverified until deployment parity is checked.
+The 3.0.2 repository release closes the latest 20-round repository audit findings: canonical re-authorization for privileged advanced REST, executable automation rules, saved-search owner binding, runtime shadow/canary evaluation, end-to-end trace stages, optimistic per-device concurrency, schema-neutral version bookkeeping, routed-provider identity/cost/rate accounting, missing-state reconciliation, durable authenticated mutation idempotency, and signed/timestamped/replay-protected provider webhooks. Repository CI/package evidence is tracked separately from staging and Live. **Staging-Accepted**, **Live-Deployed** and **Operational** are not implied by source completion. Exact deployed code remains unverified until deployment parity is checked.
 
 ## Public integration examples
 
