@@ -2,26 +2,26 @@
 
 Canonical intelligent notification and attention infrastructure for the **Sabri Social Homeopathy Platform**.
 
-## Current 3.0.1 TextBee SMS release candidate
+## Current 3.0.2 completeness-hardening release candidate
 
 - File number: **19**
-- Runtime / schema: **3.0.1 / 3.0.0**
+- Runtime / schema: **3.0.2 / 3.0.1**
 - Repository source folder: `19-unified-notifications`
 - Canonical installable package folder: `unified-notifications-19`
 - Text domain: `sabri-unified-notifications`
 - REST namespace: `sabri-notifications/v1`
 - PHP minimum: **8.3**
 - WordPress minimum: **7.0**
-- Deterministic package: `19-sabri-unified-notifications-3.0.1.zip`
-- Frozen package SHA-256: `a358cf67b6a942a0cef63aed93f9652eba82e294d7ba1e6744bcbcd638f18d70`
-- Exact-head checksum-freeze QA: GitHub Actions run `33570462543` — success on PHP 8.3 and 8.4
+- Deterministic package: `19-sabri-unified-notifications-3.0.2.zip`
+- Package SHA-256: **pending exact-head 3.0.2 CI freeze**
+- Exact-head checksum-freeze QA: **pending 3.0.2 branch/PR acceptance**
 - Governing basis: consolidated central governing corpus + File 19 dedicated master plan + later Founder-approved Intelligent Attention extension
 
 File 19 remains the sole notification projection, preferences, orchestration, delivery, history and notification-intelligence owner. Domain truth remains with the native owner files; File 19 never becomes the source of truth for appointments, messages, publishing, marketplace, identity, search or other domain objects.
 
 ## TextBee SMS provider bridge
 
-3.0.1 adds a first-party TextBee bridge to File 19's existing provider-neutral SMS contract. It uses the current account-level TextBee endpoint and keeps credentials outside WordPress data.
+3.0.2 retains the first-party TextBee bridge and adds completeness/security hardening; 3.0.1 originally added the TextBee bridge to File 19's existing provider-neutral SMS contract. It uses the current account-level TextBee endpoint and keeps credentials outside WordPress data.
 
 Production configuration belongs in `wp-config.php` only:
 
@@ -48,7 +48,7 @@ Existing 2.4 controls remain: one in-app center/File 20 single bell, versioned f
 
 ## Truth of status
 
-Repository evidence establishes **Coded / Deterministically Packaged / Automated-QA Green** for the 3.0.1 TextBee candidate, with the package checksum frozen above. **Staging-Accepted**, **Live-Deployed** and **Operational** remain separate real-environment gates: the exact 3.0.1 package must be deployed, the TextBee secret must be configured in `wp-config.php`, SMS readiness must be re-read from Live, and a real OTP must be received and verified. No repository test alone proves Live SMS delivery.
+The 3.0.2 source candidate closes the latest 20-round repository audit findings: canonical re-authorization for privileged advanced REST, executable automation rules, saved-search owner binding, runtime shadow/canary evaluation, end-to-end trace stages, optimistic per-device concurrency, schema-neutral version bookkeeping, routed-provider identity/cost/rate accounting, missing-state reconciliation, durable authenticated mutation idempotency, and signed/timestamped/replay-protected provider webhooks. Repository CI/package evidence is tracked separately from staging and Live. **Staging-Accepted**, **Live-Deployed** and **Operational** are not implied by source completion. Exact deployed code remains unverified until deployment parity is checked.
 
 ## Public integration examples
 
@@ -68,3 +68,8 @@ sun_revoke_notifications_by_source('file21', $event_id, 'source_retracted');
 AI is optional and adapter-based. If no approved AI provider is configured, catch-up uses a deterministic summary. Any configured AI summary may cite only notification IDs already authorized for the current user. Domain actions are always re-authorized by their native owner at action time.
 
 See `19-unified-notifications/docs/ADVANCED-ATTENTION-OS-3.0.0.md` for the complete advanced requirement catalogue and implementation map.
+
+
+## 3.0.2 completeness hardening
+
+The 3.0.2 / DB 3.0.1 release adds two bounded operational tables: `sun_request_idempotency` for short-lived encrypted mutation replay responses and `sun_webhook_receipts` for provider webhook replay prevention. Delivery records now retain both the actual provider and canonical route-provider identity so rate caps and known-cost accounting use the route that was actually selected. Reconciliation repairs missing derived attention-state rows and expires short-lived replay evidence. Normal uninstall remains non-destructive.
