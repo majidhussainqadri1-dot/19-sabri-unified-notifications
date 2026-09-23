@@ -45,7 +45,7 @@ cr_check(false!==strpos($privacy,'route_provider'),'privacy export includes prov
 $db=cr_src('includes/class-sun-database.php');$idem=cr_src('includes/class-sun-request-idempotency.php');$webhook=cr_src('includes/class-sun-provider-webhook-verifier.php');
 cr_check(false!==strpos($db,"'request_idempotency'")&&false!==strpos($activator,'scope_hash char(64)'),'durable REST idempotency schema');
 cr_check(false!==strpos($idem,'rest_dispatch_request')&&false!==strpos($idem,'implicit:')&&false!==strpos($idem,'X-SUN-Idempotent-Replay'),'authorized legacy-safe explicit/implicit mutation idempotency');
-cr_check(false!==strpos($db,"'webhook_receipts'")&&false!==strpos($webhook,'hash_hmac')&&false!==strpos($webhook,'sun_webhook_replay'),'signed timestamped webhook replay protection');
+cr_check(false!==strpos($db,"'webhook_receipts'")&&false!==strpos($webhook,'hash_hmac')&&false!==strpos($webhook,'reserve_replay')&&false!==strpos($webhook,'sun_webhook_replay'),'signed timestamped/custom webhook replay protection');
 cr_check(false!==strpos($delivery,'SUN_Provider_Webhook_Verifier::verify'),'delivery webhook path uses core verifier');
 
 $reconciliation=cr_src('includes/class-sun-reconciliation.php');
