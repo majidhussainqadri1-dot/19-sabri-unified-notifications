@@ -14,8 +14,8 @@ final class SUN_Request_Idempotency {
 
 	/** @return void */
 	public static function register() {
-		add_filter( 'rest_pre_dispatch', array( __CLASS__, 'pre_dispatch' ), 10, 3 );
-		add_filter( 'rest_post_dispatch', array( __CLASS__, 'post_dispatch' ), 10, 3 );
+		add_filter( 'rest_request_before_callbacks', array( __CLASS__, 'pre_dispatch' ), 10, 3 );
+		add_filter( 'rest_request_after_callbacks', array( __CLASS__, 'post_dispatch' ), 10, 3 );
 	}
 
 	/** @param mixed $result Existing result. @param WP_REST_Server $server Server. @param WP_REST_Request $request Request. @return mixed */
@@ -27,8 +27,8 @@ final class SUN_Request_Idempotency {
 		if ( preg_match( '#/' . preg_quote( SUN_REST_NAMESPACE, '#' ) . '/(?:events|provider/)#', $route ) ) { return $result; }
 		$user_id = get_current_user_id(); if ( $user_id < 1 ) { return $result; }
 
-		$raw_body = (string) $request->get_body();
-		$request_hash = hash( 'sha256', $method . "\n" . $route . "\n" . $raw_body );
+		$raw_body = (string) $request->get_body(); $params = method_exists( $request, 'get_params' ) ? (array) $request->get_params() : array();
+		$request_hash = hash( 'sha256', $method . "\n" . $route . "\n" . $raw_body . "\n" . SUN_Database::canonical_json( $params ) );
 		$explicit = trim( (string) $request->get_header( 'idempotency-key' ) );
 		if ( strlen( $explicit ) > 191 ) { return new WP_Error( 'sun_idempotency_key_too_long', __( 'The idempotency key is too long.', 'sabri-unified-notifications' ), array( 'status' => 400 ) ); }
 		$key_material = '' !== $explicit ? $explicit : 'implicit:' . $request_hash;
@@ -42,7 +42,7 @@ final class SUN_Request_Idempotency {
 			if ( 'completed' === $row['status'] && ! empty( $row['response_ciphertext'] ) ) {
 				$plain = SUN_Crypto::decrypt( (string) $row['response_ciphertext'] );
 				if ( ! is_wp_error( $plain ) ) {
-					$data = json_decode( $plain, true ); if ( ! is_array( $data ) ) { $data = array(); }
+					$data = json_decode( $plain, true ); if ( JSON_ERROR_NONE !== json_last_error() ) { $data = array(); }
 					$response = new WP_REST_Response( $data, max( 200, (int) $row['response_code'] ) ); $response->header( 'X-SUN-Idempotent-Replay', '1' ); return $response;
 				}
 			}
