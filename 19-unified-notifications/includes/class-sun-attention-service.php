@@ -249,6 +249,48 @@ final class SUN_Attention_Service {
     /** @param int $user_id User ID. @return array<int,array<string,mixed>> */
     public function device_profiles( $user_id ) { global $wpdb; $rows = $wpdb->get_results( $wpdb->prepare( 'SELECT device_public_id,focus_mode,categories_json,channels_json,version,updated_at FROM ' . SUN_Database::table( 'device_profiles' ) . ' WHERE user_id=%d ORDER BY id DESC LIMIT 50', absint( $user_id ) ), ARRAY_A ); foreach ( (array) $rows as &$row ) { $row['categories'] = json_decode( (string) $row['categories_json'], true ) ?: array(); $row['channels'] = json_decode( (string) $row['channels_json'], true ) ?: array(); unset( $row['categories_json'], $row['channels_json'] ); } unset( $row ); return (array) $rows; }
 
+    /**
+     * Rebuild missing advanced state rows after a post-commit hook/database failure.
+     * Domain truth is not changed; only File 19's derived notification projection state is repaired.
+     *
+     * @param int $limit Maximum rows.
+     * @return int
+     */
+    public function repair_missing_states( $limit = 250 ) {
+        global $wpdb;
+        $limit = max( 1, min( 1000, absint( $limit ) ) );
+        $notes = SUN_Database::table( 'notifications' ); $states = SUN_Database::table( 'notification_states' ); $events = SUN_Database::table( 'events' );
+        $rows = $wpdb->get_results( $wpdb->prepare(
+            "SELECT n.id,n.public_id,n.recipient_id,n.event_type,n.category,n.priority,n.producer,n.event_id,e.owner,e.trace_id
+             FROM {$notes} n
+             LEFT JOIN {$states} s ON s.notification_id=n.id
+             LEFT JOIN {$events} e ON e.producer=n.producer AND e.event_id=n.event_id
+             WHERE s.id IS NULL AND n.status NOT IN ('deleted','expired')
+             ORDER BY n.id ASC LIMIT %d",
+            $limit
+        ), ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+        $repaired = 0; $now = SUN_Database::now();
+        foreach ( (array) $rows as $row ) {
+            $user_id = absint( $row['recipient_id'] ); if ( $user_id < 1 ) { continue; }
+            $profile = $this->profile( $user_id );
+            $event = array( 'event_type' => (string) $row['event_type'], 'producer' => (string) $row['producer'], 'subject' => array(), 'data' => array() );
+            $score = $this->attention_score( (string) $row['category'], (string) $row['priority'], $event, $profile );
+            $reason = 'reconciled_missing_projection_state';
+            $meta = array( 'actions' => array(), 'why' => array( 'event_type' => (string) $row['event_type'], 'producer' => (string) $row['producer'], 'attention_reason' => $reason, 'repaired' => true ) );
+            $cipher = SUN_Crypto::encrypt( SUN_Database::canonical_json( $meta ) ); if ( is_wp_error( $cipher ) ) { $cipher = null; }
+            $inserted = $wpdb->query( $wpdb->prepare(
+                "INSERT IGNORE INTO {$states} (notification_id,user_id,attention_score,attention_reason,group_key,source_label,source_kind,source_verified,live_revision,version,last_activity_at,meta_ciphertext,created_at,updated_at)
+                 VALUES (%d,%d,%d,%s,%s,%s,%s,%d,1,1,%s,%s,%s,%s)",
+                (int) $row['id'], $user_id, min( 100, $score ), $reason, hash( 'sha256', (string) $row['event_type'] . '||' ),
+                substr( sanitize_text_field( (string) ( $row['owner'] ?: $row['producer'] ) ), 0, 191 ),
+                'sabri-system' === $row['producer'] ? 'system' : 'module', 'sabri-system' === $row['producer'] ? 1 : 0, $now, $cipher, $now, $now
+            ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+            if ( $inserted ) { ++$repaired; SUN_Trace_Service::record( (string) ( $row['trace_id'] ?: $row['public_id'] ), 'attention_projection_repair', 'repaired', array( 'notification_id' => (int) $row['id'] ), (int) $row['id'] ); }
+        }
+        if ( $repaired ) { SUN_Audit::record( 'notification_states_repaired', 'system', 'file-19', array( 'count' => $repaired, 'purpose' => 'reconciliation' ), 0 ); }
+        return $repaired;
+    }
+
     /** @param int $user_id User ID. @param string $object_type Type. @param string $object_id ID. @param string $engagement Engagement. @return void */
     public function record_engagement( $user_id, $object_type, $object_id, $engagement = 'read' ) { global $wpdb; $user_id = absint( $user_id ); $object_type = substr( sanitize_key( $object_type ), 0, 50 ); $object_id = substr( sanitize_text_field( $object_id ), 0, 191 ); $engagement = substr( sanitize_key( $engagement ), 0, 32 ); if ( $user_id < 1 || '' === $object_type || '' === $object_id ) { return; } $table = SUN_Database::table( 'watch_history' ); $now = SUN_Database::now(); $wpdb->query( $wpdb->prepare( "INSERT INTO {$table} (user_id,object_type,object_id,engagement_type,first_seen_at,last_seen_at) VALUES (%d,%s,%s,%s,%s,%s) ON DUPLICATE KEY UPDATE engagement_type=VALUES(engagement_type),last_seen_at=VALUES(last_seen_at)", $user_id, $object_type, $object_id, $engagement, $now, $now ) ); }
 
