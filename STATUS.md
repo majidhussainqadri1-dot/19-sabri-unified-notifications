@@ -3,11 +3,11 @@
 | Status layer | Current evidence |
 |---|---|
 | Specified | File 19 master plan + central governing corpus + Intelligent Attention 3.0 register + 20-round completeness audit findings incorporated |
-| Repository candidate | **3.0.2** runtime / **3.0.1** DB schema on branch `file19-completeness-fixes-20260923` |
+| Repository HEAD | **3.0.2** runtime / **3.0.1** DB schema merged to `main`; audited source merge commit `28e01559a2d00e655e50daaa2cbe3877dc0833cd` via PR #14 |
 | Coded scope | Canonical advanced authorization, executable rules/saved-search owner binding, live shadow/canary wiring, end-to-end traces, device concurrency, routed-provider accounting, state repair, REST idempotency and signed replay-safe provider webhooks |
 | TextBee | Existing first-party TextBee SMS bridge retained; provider acceptance remains distinct from carrier delivery |
-| Package | Deterministic `19-sabri-unified-notifications-3.0.2.zip` configured; checksum remains **PENDING** until exact-head CI freeze |
-| Automated QA | Final source run `35877614852` passed all PHP 8.3/8.4 gates; frozen-checksum exact-head verification remains the last repository gate before merge |
+| Package | Deterministic `19-sabri-unified-notifications-3.0.2.zip`, canonical `unified-notifications-19/`, frozen SHA-256 `f08d27ac1148ea2a15309e8ccb7452e75fc32cc6d31663d1873365d54533f469` |
+| Automated QA | PR exact-head run `35877830616` and merged-main run `35877953837` passed PHP 8.3/8.4 baseline, advanced, completeness-regression, TextBee, static/security/privacy, clean-extract package and frozen-checksum deterministic rebuild gates |
 | Staging-Accepted | **Not claimed** in this repository coding pass |
 | Live-Deployed | **Unverified**. Repository state must not be treated as deployed state |
 | Operational | **Not claimed**; requires exact deployed-version/DB/migration parity, provider readiness, real-role journeys, monitoring and Live re-test |
@@ -30,4 +30,4 @@ This candidate closes the repository defects found in the latest 20-round File 1
 
 ## Live truth boundary
 
-The repository branch/PR can establish source-code and automated-package facts only. It cannot establish the active WordPress plugin version, deployed files/checksum, live DB schema/migration state, provider credentials, runtime logs, or real delivery. Final Live acceptance therefore remains: identify exact deployed artifact → verify DB/schema/migration parity → re-check File 00/File 20/producer/provider contracts → execute controlled real-role journeys → verify rollback/monitoring → only then mark Live/Operational.
+The repository `main` branch can establish source-code and automated-package facts only. It cannot establish the active WordPress plugin version, deployed files/checksum, live DB schema/migration state, provider credentials, runtime logs, or real delivery. Final Live acceptance therefore remains: identify exact deployed artifact → verify DB/schema/migration parity → re-check File 00/File 20/producer/provider contracts → execute controlled real-role journeys → verify rollback/monitoring → only then mark Live/Operational.
