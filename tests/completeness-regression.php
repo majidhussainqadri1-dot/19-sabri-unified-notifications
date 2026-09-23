@@ -13,7 +13,7 @@ cr_check(false!==strpos($advanced,'is_governance_actor_eligible($user_id,true)')
 cr_check(false!==strpos($advanced,'is_recipient_eligible($user_id)'),'trace endpoint revalidates current canonical eligibility');
 
 $attention=cr_src('includes/class-sun-attention-service.php');
-cr_check(false!==strpos($attention,'sun_device_profile_conflict')&&false!==strpos($attention,"'version' => (int) $existing['version']"),'per-device optimistic concurrency');
+cr_check(false!==strpos($attention,'sun_device_profile_conflict')&&false!==strpos($attention,"'version' => (int) \$existing['version']"),'per-device optimistic concurrency');
 cr_check(false!==strpos($attention,'repair_missing_states'),'missing advanced state repair path');
 cr_check(false!==strpos($attention,"'native_action', 'started'")&&false!==strpos($attention,"'native_action', 'completed'"),'native action trace stages');
 
@@ -44,7 +44,7 @@ cr_check(false!==strpos($privacy,'route_provider'),'privacy export includes prov
 
 $db=cr_src('includes/class-sun-database.php');$idem=cr_src('includes/class-sun-request-idempotency.php');$webhook=cr_src('includes/class-sun-provider-webhook-verifier.php');
 cr_check(false!==strpos($db,"'request_idempotency'")&&false!==strpos($activator,'scope_hash char(64)'),'durable REST idempotency schema');
-cr_check(false!==strpos($idem,'implicit:')&&false!==strpos($idem,'X-SUN-Idempotent-Replay'),'legacy-safe explicit/implicit mutation idempotency');
+cr_check(false!==strpos($idem,'rest_request_before_callbacks')&&false!==strpos($idem,'implicit:')&&false!==strpos($idem,'X-SUN-Idempotent-Replay'),'authorized legacy-safe explicit/implicit mutation idempotency');
 cr_check(false!==strpos($db,"'webhook_receipts'")&&false!==strpos($webhook,'hash_hmac')&&false!==strpos($webhook,'sun_webhook_replay'),'signed timestamped webhook replay protection');
 cr_check(false!==strpos($delivery,'SUN_Provider_Webhook_Verifier::verify'),'delivery webhook path uses core verifier');
 
