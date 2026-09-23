@@ -34,7 +34,7 @@ final class SUN_Activator {
 	/** @return void */
 	public static function install_schema(){
 		global $wpdb;require_once ABSPATH.'wp-admin/includes/upgrade.php';$charset=$wpdb->get_charset_collate();
-		$events=SUN_Database::table('events');$notes=SUN_Database::table('notifications');$prefs=SUN_Database::table('preferences');$subs=SUN_Database::table('subscriptions');$deliv=SUN_Database::table('deliveries');$temps=SUN_Database::table('templates');$policy=SUN_Database::table('policies');$devices=SUN_Database::table('devices');$dead=SUN_Database::table('dead_letters');$audit=SUN_Database::table('audit');$bulk=SUN_Database::table('bulk_jobs');$sql=array();
+		$events=SUN_Database::table('events');$notes=SUN_Database::table('notifications');$prefs=SUN_Database::table('preferences');$subs=SUN_Database::table('subscriptions');$deliv=SUN_Database::table('deliveries');$temps=SUN_Database::table('templates');$policy=SUN_Database::table('policies');$devices=SUN_Database::table('devices');$dead=SUN_Database::table('dead_letters');$audit=SUN_Database::table('audit');$bulk=SUN_Database::table('bulk_jobs');$idem=SUN_Database::table('request_idempotency');$webhooks=SUN_Database::table('webhook_receipts');$sql=array();
 		$sql[]="CREATE TABLE {$events} (
 			id bigint unsigned NOT NULL AUTO_INCREMENT, public_id char(36) NOT NULL, producer varchar(100) NOT NULL, event_id varchar(191) NOT NULL, event_type varchar(191) NOT NULL, schema_version varchar(32) NOT NULL, owner varchar(100) NOT NULL, occurred_at datetime NOT NULL, trace_id varchar(100) NOT NULL, payload_hash char(64) NOT NULL, payload_ciphertext longtext NULL, status varchar(32) NOT NULL DEFAULT 'received', error_code varchar(100) NULL, created_at datetime NOT NULL, updated_at datetime NOT NULL,
 			PRIMARY KEY (id), UNIQUE KEY public_id (public_id), UNIQUE KEY producer_event (producer,event_id), KEY event_type (event_type), KEY status_created (status,created_at), KEY trace_id (trace_id)
@@ -78,6 +78,14 @@ final class SUN_Activator {
 		$sql[]="CREATE TABLE {$bulk} (
 			id bigint unsigned NOT NULL AUTO_INCREMENT, public_id char(36) NOT NULL, created_by bigint unsigned NOT NULL, audience_hash char(64) NOT NULL, recipient_count int unsigned NOT NULL, event_type varchar(191) NOT NULL, payload_ciphertext longtext NOT NULL, status varchar(20) NOT NULL DEFAULT 'preview', confirmation_hash char(64) NOT NULL, cancel_requested tinyint(1) NOT NULL DEFAULT 0, processed_count int unsigned NOT NULL DEFAULT 0, failed_count int unsigned NOT NULL DEFAULT 0, created_at datetime NOT NULL, updated_at datetime NOT NULL,
 			PRIMARY KEY (id), UNIQUE KEY public_id (public_id), KEY status_created (status,created_at)
+		) {$charset};";
+		$sql[]="CREATE TABLE {$idem} (
+			id bigint unsigned NOT NULL AUTO_INCREMENT, scope_hash char(64) NOT NULL, user_id bigint unsigned NOT NULL, route varchar(191) NOT NULL, key_hash char(64) NOT NULL, request_hash char(64) NOT NULL, status varchar(20) NOT NULL DEFAULT 'processing', response_ciphertext longtext NULL, response_code smallint unsigned NULL, expires_at datetime NOT NULL, created_at datetime NOT NULL, updated_at datetime NOT NULL,
+			PRIMARY KEY (id), UNIQUE KEY scope_hash (scope_hash), KEY user_id (user_id), KEY expires_at (expires_at)
+		) {$charset};";
+		$sql[]="CREATE TABLE {$webhooks} (
+			id bigint unsigned NOT NULL AUTO_INCREMENT, replay_key char(64) NOT NULL, channel varchar(20) NOT NULL, provider_key varchar(100) NOT NULL, received_at datetime NOT NULL, expires_at datetime NOT NULL,
+			PRIMARY KEY (id), UNIQUE KEY replay_key (replay_key), KEY expires_at (expires_at), KEY channel_provider (channel,provider_key)
 		) {$charset};";
 		foreach($sql as $statement){dbDelta($statement);}
 	}
