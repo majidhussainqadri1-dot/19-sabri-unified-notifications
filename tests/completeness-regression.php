@@ -17,11 +17,11 @@ cr_check(false!==strpos($attention,'sun_device_profile_conflict')&&false!==strpo
 cr_check(false!==strpos($attention,'repair_missing_states'),'missing advanced state repair path');
 cr_check(false!==strpos($attention,"'native_action', 'started'")&&false!==strpos($attention,"'native_action', 'completed'"),'native action trace stages');
 
-$plugin=cr_src('includes/class-sun-plugin.php');
-cr_check(false!==strpos($plugin,'$plugin_changed=SUN_VERSION!==get_option')&&false!==strpos($plugin,'SUN_Activator::schedule_events();'),'schema-neutral runtime upgrade bookkeeping');
-cr_check(false!==strpos($plugin,'SUN_Request_Idempotency::register()'),'REST idempotency middleware registered');
-cr_check(false!==strpos($plugin,'new SUN_Reconciliation($delivery,$this->notifications,$this->attention)'),'reconciliation receives attention repair service');
-cr_check(false!==strpos($plugin,'$this->experiments'),'experiment service wired into policy graph');
+$plugin_src=cr_src('includes/class-sun-plugin.php');
+cr_check(false!==strpos($plugin_src,'$plugin_changed=SUN_VERSION!==get_option')&&false!==strpos($plugin_src,'SUN_Activator::schedule_events();'),'schema-neutral runtime upgrade bookkeeping');
+cr_check(false!==strpos($plugin_src,'SUN_Request_Idempotency::register()'),'REST idempotency middleware registered');
+cr_check(false!==strpos($plugin_src,'new SUN_Reconciliation($delivery,$this->notifications,$this->attention)'),'reconciliation receives attention repair service');
+cr_check(false!==strpos($plugin_src,'$this->experiments'),'experiment service wired into policy graph');
 
 $automation=cr_src('includes/class-sun-automation-service.php');
 cr_check(false!==strpos($automation,'execute_rule_action')&&false!==strpos($automation,'digest-scheduled'),'automation actions execute instead of match-only');
