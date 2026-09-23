@@ -2,26 +2,32 @@
 
 | Status layer | Current evidence |
 |---|---|
-| Specified | File 19 master plan + central governing corpus + Founder-approved Intelligent Attention 3.0 addendum mapped; TextBee SMS operational integration added without changing domain ownership |
-| Coded | **3.0.1** runtime with first-party TextBee SMS bridge, wp-config-only secret handling, fail-closed HTTP/E.164 validation, truthful provider acceptance receipts, and preserved 3.0 attention/intelligence/automation/routing scope |
-| Database schema | **3.0.0** — unchanged; TextBee integration adds no table or column |
-| Packaged | Deterministic `19-sabri-unified-notifications-3.0.1.zip`, canonical `unified-notifications-19/`, frozen SHA-256 `a358cf67b6a942a0cef63aed93f9652eba82e294d7ba1e6744bcbcd638f18d70` |
-| Automated-QA Green | Checksum-freeze run `33570462543` passed PHP 8.3/8.4 baseline unit assertions, 3.0 advanced assertions, 18 deterministic TextBee assertions, static/security/privacy regression, clean-extract package audit, deterministic rebuild and frozen-checksum verification |
-| Standalone TextBee provider | Real Android/SIM provider path manually confirmed outside WordPress; this does not by itself prove File 19 Live integration |
-| Staging-Accepted | Not claimed for 3.0.1 |
-| Live-Deployed | **Current known Live is 3.0.0, not 3.0.1** until the exact 3.0.1 package is deployed and parity re-verified |
-| Operational | Not claimed; requires Live secret configuration, readiness re-check, real `Send Mobile Code`, receipt, received OTP and completed verification |
+| Specified | File 19 master plan + central governing corpus + Intelligent Attention 3.0 register + 20-round completeness audit findings incorporated |
+| Repository candidate | **3.0.2** runtime / **3.0.1** DB schema on branch `file19-completeness-fixes-20260923` |
+| Coded scope | Canonical advanced authorization, executable rules/saved-search owner binding, live shadow/canary wiring, end-to-end traces, device concurrency, routed-provider accounting, state repair, REST idempotency and signed replay-safe provider webhooks |
+| TextBee | Existing first-party TextBee SMS bridge retained; provider acceptance remains distinct from carrier delivery |
+| Package | Deterministic `19-sabri-unified-notifications-3.0.2.zip` configured; checksum remains **PENDING** until exact-head CI freeze |
+| Automated QA | 3.0.2 exact-head CI/PR acceptance must be green before merge/release status is promoted |
+| Staging-Accepted | **Not claimed** in this repository coding pass |
+| Live-Deployed | **Unverified**. Repository state must not be treated as deployed state |
+| Operational | **Not claimed**; requires exact deployed-version/DB/migration parity, provider readiness, real-role journeys, monitoring and Live re-test |
 
-## 3.0.1 scope
+## 3.0.2 audit closure scope
 
-3.0.1 retains the complete 3.0 Intelligent Attention & Notification OS and adds the TextBee bridge to the existing provider-neutral SMS contract. The bridge reads `SUN_TEXTBEE_API_KEY` only from `wp-config.php`, optionally accepts `SUN_TEXTBEE_DEVICE_ID` and `SUN_TEXTBEE_SIM_SUBSCRIPTION_ID`, registers File 19 SMS readiness/provider/send hooks, uses TLS-verified account-level TextBee transport, preserves bounded provider receipts, and never upgrades provider acceptance into an unproven carrier-delivery claim.
+This candidate closes the repository defects found in the latest 20-round File 19 audit:
 
-## 3.0 scope retained
+1. advanced experiment/trace/synthetic permissions now re-check canonical File 00 eligibility and required Founder/step-up authority;
+2. automation matches now execute File-19-owned actions and route domain actions back to the native owner;
+3. File 26 saved-search watches bind both owner and saved-search ID;
+4. shadow and canary experiments are invoked by the real policy path;
+5. trace evidence spans event intake, policy, projection, queue, provider attempt/receipt and native action;
+6. per-device profiles use optimistic concurrency;
+7. schema-neutral runtime upgrades update persisted plugin-version evidence and always keep schedules present;
+8. delivery records retain route-provider identity for correct cost/rate-cap accounting;
+9. reconciliation repairs missing derived notification-state rows;
+10. authenticated mutating REST requests receive durable replay-safe idempotency;
+11. provider-neutral webhook verification supports HMAC signature, timestamp window and durable replay rejection.
 
-Smart/explainable priority; AI catch-up and read-only assistant with source-ID citation binding; semantic grouping keys; snooze/pin/needs-action/done; search/history; focus modes; attention budgets; essential-only and temporary mute; best-time scheduling; adaptive source caps; live/revocable projections; native-owner actions; source provenance; correction/retraction audience tracking; user automation and saved-search watches; learning/clinic/research trigger families; per-device controls and handoff data; Web Push/FCM/APNs architecture; opt-in WhatsApp/RCS adapters; multi-provider failover and cost-aware routing; simulator/shadow/canary framework; trace explorer; synthetic diagnostics; privacy lifecycle and wellbeing guardrails.
+## Live truth boundary
 
-## Truth boundary
-
-Repository evidence establishes **Specified / Coded / Deterministically Packaged / Automated-QA Green** for the 3.0.1 candidate. It does not prove that 3.0.1 is currently deployed on Hostinger, that the production TextBee API key is configured, or that a File 00 mobile OTP has traversed File 19 → TextBee → Android/SIM → recipient and then been verified. Those are separate Live gates.
-
-Final Live acceptance sequence: deploy exact package → confirm File 19 runtime 3.0.1 and DB 3.0.0 → configure secret in `wp-config.php` → re-check SMS readiness → send controlled OTP → confirm provider acceptance and actual receipt → verify six-digit code → confirm File 00 mobile-ownership state.
+The repository branch/PR can establish source-code and automated-package facts only. It cannot establish the active WordPress plugin version, deployed files/checksum, live DB schema/migration state, provider credentials, runtime logs, or real delivery. Final Live acceptance therefore remains: identify exact deployed artifact → verify DB/schema/migration parity → re-check File 00/File 20/producer/provider contracts → execute controlled real-role journeys → verify rollback/monitoring → only then mark Live/Operational.
