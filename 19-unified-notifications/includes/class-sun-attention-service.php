@@ -229,8 +229,20 @@ final class SUN_Attention_Service {
         $mode = sanitize_key( (string) ( $input['focus_mode'] ?? 'inherit' ) ); if ( 'inherit' !== $mode && ! in_array( $mode, $this->focus_modes(), true ) ) { $mode = 'inherit'; }
         $handoff = array_key_exists( 'handoff', $input ) ? SUN_Crypto::encrypt( SUN_Database::canonical_json( $input['handoff'] ) ) : null; if ( is_wp_error( $handoff ) ) { return $handoff; }
         $table = SUN_Database::table( 'device_profiles' ); $now = SUN_Database::now(); $existing = $wpdb->get_row( $wpdb->prepare( "SELECT id,version FROM {$table} WHERE device_public_id=%s AND user_id=%d LIMIT 1", $device_public_id, $user_id ), ARRAY_A );
+        $expected = array_key_exists( 'version', $input ) ? absint( $input['version'] ) : (int) ( $existing['version'] ?? 0 );
+        if ( $existing && $expected !== (int) $existing['version'] ) { return new WP_Error( 'sun_device_profile_conflict', __( 'This device notification profile changed in another session.', 'sabri-unified-notifications' ), array( 'status' => 409 ) ); }
+        if ( ! $existing && 0 !== $expected ) { return new WP_Error( 'sun_device_profile_conflict', __( 'This device notification profile changed in another session.', 'sabri-unified-notifications' ), array( 'status' => 409 ) ); }
         $data = array( 'device_public_id' => $device_public_id, 'user_id' => $user_id, 'focus_mode' => $mode, 'categories_json' => wp_json_encode( $categories ), 'channels_json' => wp_json_encode( $channels ), 'handoff_ciphertext' => $handoff, 'version' => (int) ( $existing['version'] ?? 0 ) + 1, 'updated_at' => $now );
-        if ( $existing ) { $wpdb->update( $table, $data, array( 'id' => (int) $existing['id'] ) ); } else { $data['created_at'] = $now; $wpdb->insert( $table, $data ); }
+        if ( $existing ) {
+            $updated = $wpdb->update( $table, $data, array( 'id' => (int) $existing['id'], 'version' => (int) $existing['version'] ) );
+            if ( 1 !== (int) $updated ) { return new WP_Error( 'sun_device_profile_conflict', __( 'This device notification profile changed in another session.', 'sabri-unified-notifications' ), array( 'status' => 409 ) ); }
+        } else {
+            $data['created_at'] = $now;
+            if ( false === $wpdb->insert( $table, $data ) ) {
+                $raced = $wpdb->get_var( $wpdb->prepare( "SELECT id FROM {$table} WHERE device_public_id=%s LIMIT 1", $device_public_id ) );
+                return new WP_Error( $raced ? 'sun_device_profile_conflict' : 'sun_device_profile_write_failed', __( 'The device notification profile could not be saved safely.', 'sabri-unified-notifications' ), array( 'status' => $raced ? 409 : 500 ) );
+            }
+        }
         return array( 'device_id' => $device_public_id, 'focus_mode' => $mode, 'categories' => $categories, 'channels' => $channels, 'version' => $data['version'] );
     }
 
