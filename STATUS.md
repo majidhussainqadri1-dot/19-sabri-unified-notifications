@@ -7,7 +7,7 @@
 | Coded scope | Canonical advanced authorization, executable rules/saved-search owner binding, live shadow/canary wiring, end-to-end traces, device concurrency, routed-provider accounting, state repair, REST idempotency and signed replay-safe provider webhooks |
 | TextBee | Existing first-party TextBee SMS bridge retained; provider acceptance remains distinct from carrier delivery |
 | Package | Deterministic `19-sabri-unified-notifications-3.0.2.zip` configured; checksum remains **PENDING** until exact-head CI freeze |
-| Automated QA | Prior post-hardening run `35877312271` passed all PHP 8.3/8.4 gates; final webhook replay hardening requires one new exact-head run before merge |
+| Automated QA | Final source run `35877614852` passed all PHP 8.3/8.4 gates; frozen-checksum exact-head verification remains the last repository gate before merge |
 | Staging-Accepted | **Not claimed** in this repository coding pass |
 | Live-Deployed | **Unverified**. Repository state must not be treated as deployed state |
 | Operational | **Not claimed**; requires exact deployed-version/DB/migration parity, provider readiness, real-role journeys, monitoring and Live re-test |
