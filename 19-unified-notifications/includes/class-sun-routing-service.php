@@ -10,7 +10,7 @@ final class SUN_Routing_Service {
     /** @param string $channel Channel. @param SUN_Delivery_Adapter|null $base Base adapter. @param array<string,mixed> $delivery Delivery. @param array<string,mixed> $notification Notification. @return array<string,mixed>|WP_Error */
     public function send( $channel, $base, array $delivery, array $notification ) {
         $channel = sanitize_key( $channel ); $base_key = $this->base_provider_key( $channel ); $errors = array(); $candidates = $this->candidates( $channel );
-        if ( empty( $candidates ) && $base instanceof SUN_Delivery_Adapter ) { return $base->send( $delivery, $notification ); }
+        if ( empty( $candidates ) && $base instanceof SUN_Delivery_Adapter ) { $direct=$base->send( $delivery, $notification ); if(is_array($direct)){$direct['route_provider']=$base_key;$direct['estimated_cost_micros']=null;} return $direct; }
         foreach ( $candidates as $candidate ) { $provider = sanitize_key( (string) $candidate['provider_key'] ); if ( ! $this->within_provider_cap( $candidate ) ) { $errors[] = $provider . ':rate_cap'; continue; }
             if ( $base instanceof SUN_Delivery_Adapter && $provider === $base_key ) { $result = $base->send( $delivery, $notification ); }
             else { $result = apply_filters( 'sun_send_routed_notification', null, $provider, $channel, $delivery, $notification, $candidate ); if ( null === $result ) { $result = new WP_Error( 'sun_routed_provider_unconfigured', __( 'The routed notification provider is not configured.', 'sabri-unified-notifications' ) ); } }
@@ -18,7 +18,7 @@ final class SUN_Routing_Service {
             if ( is_array( $result ) && in_array( (string) ( $result['status'] ?? '' ), array( 'accepted', 'delivered', 'suppressed' ), true ) ) { $result['provider'] = sanitize_key( (string) ( $result['provider'] ?? $provider ) ); $result['route_provider'] = $provider; $result['estimated_cost_micros'] = ! empty( $candidate['cost_known'] ) ? (int) $candidate['cost_micros'] : null; $this->record_health( $channel, $provider, true ); SUN_Audit::record( 'delivery_route_selected', 'delivery', (string) ( $delivery['public_id'] ?? '' ), array( 'channel' => $channel, 'provider' => $provider, 'cost_known' => ! empty( $candidate['cost_known'] ), 'purpose' => 'delivery_routing' ), 0 ); return $result; }
             $errors[] = $provider . ':invalid_result'; $this->record_health( $channel, $provider, false );
         }
-        if ( $base instanceof SUN_Delivery_Adapter && ! in_array( $base_key, array_map( static function( $c ) { return sanitize_key( (string) $c['provider_key'] ); }, $candidates ), true ) ) { $fallback = $base->send( $delivery, $notification ); if ( ! is_wp_error( $fallback ) ) { return $fallback; } $errors[] = $base_key . ':' . sanitize_key( $fallback->get_error_code() ); }
+        if ( $base instanceof SUN_Delivery_Adapter && ! in_array( $base_key, array_map( static function( $c ) { return sanitize_key( (string) $c['provider_key'] ); }, $candidates ), true ) ) { $fallback = $base->send( $delivery, $notification ); if ( ! is_wp_error( $fallback ) ) { if(is_array($fallback)){$fallback['route_provider']=$base_key;$fallback['estimated_cost_micros']=null;} return $fallback; } $errors[] = $base_key . ':' . sanitize_key( $fallback->get_error_code() ); }
         return new WP_Error( 'sun_all_providers_failed', __( 'No configured notification provider accepted this delivery.', 'sabri-unified-notifications' ), array( 'attempts' => array_slice( $errors, 0, 20 ) ) );
     }
 
