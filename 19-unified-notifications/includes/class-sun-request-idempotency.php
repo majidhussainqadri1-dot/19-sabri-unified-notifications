@@ -14,15 +14,15 @@ final class SUN_Request_Idempotency {
 
 	/** @return void */
 	public static function register() {
-		add_filter( 'rest_request_before_callbacks', array( __CLASS__, 'pre_dispatch' ), 10, 3 );
+		add_filter( 'rest_dispatch_request', array( __CLASS__, 'pre_dispatch' ), 10, 4 );
 		add_filter( 'rest_request_after_callbacks', array( __CLASS__, 'post_dispatch' ), 10, 3 );
 	}
 
-	/** @param mixed $result Existing result. @param WP_REST_Server $server Server. @param WP_REST_Request $request Request. @return mixed */
-	public static function pre_dispatch( $result, $server, $request ) {
-		unset( $server );
+	/** @param mixed $result Existing dispatch result. @param WP_REST_Request $request Request. @param string $route Matched route. @param array<string,mixed> $handler Handler. @return mixed */
+	public static function pre_dispatch( $result, $request, $route, $handler ) {
+		unset( $handler );
 		if ( null !== $result || ! is_object( $request ) || ! method_exists( $request, 'get_route' ) ) { return $result; }
-		$route = (string) $request->get_route(); $method = strtoupper( (string) $request->get_method() );
+		$route = (string) $route; $method = strtoupper( (string) $request->get_method() );
 		if ( 0 !== strpos( $route, '/' . SUN_REST_NAMESPACE . '/' ) || in_array( $method, array( 'GET','HEAD','OPTIONS' ), true ) ) { return $result; }
 		if ( preg_match( '#/' . preg_quote( SUN_REST_NAMESPACE, '#' ) . '/(?:events|provider/)#', $route ) ) { return $result; }
 		$user_id = get_current_user_id(); if ( $user_id < 1 ) { return $result; }
@@ -63,6 +63,7 @@ final class SUN_Request_Idempotency {
 	public static function post_dispatch( $response, $server, $request ) {
 		unset( $server ); $key = is_object( $request ) ? spl_object_hash( $request ) : ''; if ( ! isset( self::$contexts[ $key ] ) ) { return $response; }
 		$context = self::$contexts[ $key ]; unset( self::$contexts[ $key ] ); global $wpdb; $table = SUN_Database::table( 'request_idempotency' );
+		if ( is_wp_error( $response ) ) { $wpdb->delete( $table, array( 'scope_hash' => $context['scope_hash'] ) ); return $response; }
 		$status = is_object( $response ) && method_exists( $response, 'get_status' ) ? (int) $response->get_status() : 200;
 		if ( $status < 200 || $status >= 400 ) { $wpdb->delete( $table, array( 'scope_hash' => $context['scope_hash'] ) ); return $response; }
 		$data = is_object( $response ) && method_exists( $response, 'get_data' ) ? $response->get_data() : $response;
