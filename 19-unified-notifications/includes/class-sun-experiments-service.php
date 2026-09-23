@@ -57,8 +57,10 @@ final class SUN_Experiments_Service {
     /** @param array<string,mixed> $baseline Baseline. @param array<string,mixed> $config Config. @return array<string,mixed> */
     private function apply_candidate( array $baseline, array $config ) {
         $candidate = $baseline;
-        if ( ! empty( $config['priority'] ) && in_array( sanitize_key( $config['priority'] ), array( 'low','normal','high','critical' ), true ) ) { $candidate['priority'] = sanitize_key( $config['priority'] ); }
-        if ( ! empty( $config['channel'] ) ) {
+        if ( ! empty( $config['priority'] ) && in_array( sanitize_key( $config['priority'] ), array( 'low','normal','high','critical' ), true ) ) {
+            $requested=sanitize_key($config['priority']); if(!empty($baseline['mandatory'])){$order=array('low'=>0,'normal'=>1,'high'=>2,'critical'=>3);$base=sanitize_key((string)($baseline['priority']??'normal'));$candidate['priority']=($order[$requested]??1)>=($order[$base]??1)?$requested:$base;}else{$candidate['priority']=$requested;}
+        }
+        if ( empty( $baseline['mandatory'] ) && ! empty( $config['channel'] ) ) {
             $channel = sanitize_key( $config['channel'] );
             if ( in_array( $channel, (array) ( $baseline['channels'] ?? array() ), true ) ) {
                 $candidate['channels'] = array_values( array_unique( array( 'in_app', $channel ) ) );
