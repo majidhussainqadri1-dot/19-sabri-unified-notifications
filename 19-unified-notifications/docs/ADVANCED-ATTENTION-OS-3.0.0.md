@@ -69,6 +69,8 @@ File 19 owns notification projections, user notification preferences/subscriptio
 - `sun_experiments`: simulator/shadow/canary configuration and privacy-safe metrics.
 - `sun_trace_spans`: minimized operational trace evidence.
 - `sun_watch_history`: user/object engagement needed to notify materially affected readers after correction/retraction.
+- `sun_request_idempotency`: short-lived encrypted replay evidence for authenticated mutating REST requests.
+- `sun_webhook_receipts`: short-lived provider webhook replay keys after successful signature/timestamp verification.
 
 ## Security, privacy and AI laws
 
@@ -86,8 +88,8 @@ File 19 owns notification projections, user notification preferences/subscriptio
 ## Release gates
 
 - **Specified:** this advanced register + Word master-plan addendum.
-- **Coded:** reviewable 3.0.0 source implements the listed contracts.
-- **Packaged:** deterministic `19-sabri-unified-notifications-3.0.0.zip` with canonical `unified-notifications-19/` folder and frozen checksum.
+- **Coded:** 3.0.2 candidate closes the latest repository completeness audit, including live experiment wiring, full trace stages, automation execution, concurrency, replay and provider-route accounting.
+- **Packaged:** deterministic `19-sabri-unified-notifications-3.0.2.zip` with canonical `unified-notifications-19/` folder; checksum is frozen only after exact-head CI.
 - **Automated-QA Green:** PHP 8.3/8.4 unit/static/security/privacy/package/reproducibility gates pass on exact head.
 - **Staging-Accepted:** real WordPress/Hostinger upgrade/fresh install, real File 00/File 20/producer contracts, provider credentials, browser/mobile/RTL/accessibility, security/load, backup/restore and rollback rehearsal pass.
 - **Live-Deployed / Operational:** separate Founder-approved production and monitoring/support evidence.

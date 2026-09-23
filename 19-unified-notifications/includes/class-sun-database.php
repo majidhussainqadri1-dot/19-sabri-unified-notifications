@@ -15,7 +15,7 @@ final class SUN_Database {
             'events', 'notifications', 'preferences', 'subscriptions', 'deliveries', 'templates',
             'policies', 'devices', 'dead_letters', 'audit', 'bulk_jobs',
             'attention_profiles', 'notification_states', 'notification_rules', 'device_profiles',
-            'provider_routes', 'experiments', 'trace_spans', 'watch_history',
+            'provider_routes', 'experiments', 'trace_spans', 'watch_history', 'request_idempotency', 'webhook_receipts',
         );
         if ( ! in_array( $logical, $allowed, true ) ) { throw new InvalidArgumentException( 'Unknown SUN table.' ); }
         return $wpdb->prefix . self::$prefix . $logical;

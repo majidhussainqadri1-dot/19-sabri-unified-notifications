@@ -189,8 +189,9 @@ final class SUN_Attention_Service {
         $meta = $this->state_meta( $row ); $actions = (array) ( $meta['actions'] ?? array() ); $action_key = sanitize_key( $action_key ); $selected = null;
         foreach ( $actions as $action ) { if ( is_array( $action ) && $action_key === ( $action['key'] ?? '' ) ) { $selected = $action; break; } }
         if ( ! $selected ) { return new WP_Error( 'sun_notification_action_unknown', __( 'This notification action is unavailable.', 'sabri-unified-notifications' ), array( 'status' => 404 ) ); }
-        $result = apply_filters( 'sun_notification_execute_action', null, $selected, $row, $user_id ); if ( null === $result ) { return new WP_Error( 'sun_notification_action_owner_unavailable', __( 'The owning module is not available to perform this action.', 'sabri-unified-notifications' ), array( 'status' => 503 ) ); } if ( is_wp_error( $result ) ) { return $result; }
-        SUN_Audit::record( 'notification_action_executed', 'notification', $public_id, array( 'action' => $action_key, 'purpose' => 'native_owner_action' ), $user_id ); return $result;
+        SUN_Trace_Service::record( (string) ( $row['trace_id'] ?? $public_id ), 'native_action', 'started', array( 'action' => $action_key ), (int) $row['notification_id'] );
+        $result = apply_filters( 'sun_notification_execute_action', null, $selected, $row, $user_id ); if ( null === $result ) { SUN_Trace_Service::record( (string) ( $row['trace_id'] ?? $public_id ), 'native_action', 'owner-unavailable', array( 'action' => $action_key ), (int) $row['notification_id'] ); return new WP_Error( 'sun_notification_action_owner_unavailable', __( 'The owning module is not available to perform this action.', 'sabri-unified-notifications' ), array( 'status' => 503 ) ); } if ( is_wp_error( $result ) ) { SUN_Trace_Service::record( (string) ( $row['trace_id'] ?? $public_id ), 'native_action', 'failed', array( 'action' => $action_key, 'error' => $result->get_error_code() ), (int) $row['notification_id'] ); return $result; }
+        SUN_Audit::record( 'notification_action_executed', 'notification', $public_id, array( 'action' => $action_key, 'purpose' => 'native_owner_action' ), $user_id ); SUN_Trace_Service::record( (string) ( $row['trace_id'] ?? $public_id ), 'native_action', 'completed', array( 'action' => $action_key ), (int) $row['notification_id'] ); return $result;
     }
 
     /** @param string $public_id Notification ID. @param array<string,mixed> $patch Patch. @return true|WP_Error */
@@ -228,14 +229,68 @@ final class SUN_Attention_Service {
         $channels = array_values( array_intersect( array( 'push','email','sms','whatsapp','rcs' ), array_map( 'sanitize_key', (array) ( $input['channels'] ?? array() ) ) ) );
         $mode = sanitize_key( (string) ( $input['focus_mode'] ?? 'inherit' ) ); if ( 'inherit' !== $mode && ! in_array( $mode, $this->focus_modes(), true ) ) { $mode = 'inherit'; }
         $handoff = array_key_exists( 'handoff', $input ) ? SUN_Crypto::encrypt( SUN_Database::canonical_json( $input['handoff'] ) ) : null; if ( is_wp_error( $handoff ) ) { return $handoff; }
-        $table = SUN_Database::table( 'device_profiles' ); $now = SUN_Database::now(); $existing = $wpdb->get_row( $wpdb->prepare( "SELECT id,version FROM {$table} WHERE device_public_id=%s AND user_id=%d LIMIT 1", $device_public_id, $user_id ), ARRAY_A );
-        $data = array( 'device_public_id' => $device_public_id, 'user_id' => $user_id, 'focus_mode' => $mode, 'categories_json' => wp_json_encode( $categories ), 'channels_json' => wp_json_encode( $channels ), 'handoff_ciphertext' => $handoff, 'version' => (int) ( $existing['version'] ?? 0 ) + 1, 'updated_at' => $now );
-        if ( $existing ) { $wpdb->update( $table, $data, array( 'id' => (int) $existing['id'] ) ); } else { $data['created_at'] = $now; $wpdb->insert( $table, $data ); }
+        $table = SUN_Database::table( 'device_profiles' ); $now = SUN_Database::now(); $existing = $wpdb->get_row( $wpdb->prepare( "SELECT id,version,handoff_ciphertext FROM {$table} WHERE device_public_id=%s AND user_id=%d LIMIT 1", $device_public_id, $user_id ), ARRAY_A );
+        $expected = array_key_exists( 'version', $input ) ? absint( $input['version'] ) : (int) ( $existing['version'] ?? 0 );
+        if ( $existing && $expected !== (int) $existing['version'] ) { return new WP_Error( 'sun_device_profile_conflict', __( 'This device notification profile changed in another session.', 'sabri-unified-notifications' ), array( 'status' => 409 ) ); }
+        if ( ! $existing && 0 !== $expected ) { return new WP_Error( 'sun_device_profile_conflict', __( 'This device notification profile changed in another session.', 'sabri-unified-notifications' ), array( 'status' => 409 ) ); }
+        $data = array( 'device_public_id' => $device_public_id, 'user_id' => $user_id, 'focus_mode' => $mode, 'categories_json' => wp_json_encode( $categories ), 'channels_json' => wp_json_encode( $channels ), 'handoff_ciphertext' => array_key_exists('handoff',$input)?$handoff:( $existing['handoff_ciphertext'] ?? null ), 'version' => (int) ( $existing['version'] ?? 0 ) + 1, 'updated_at' => $now );
+        if ( $existing ) {
+            $updated = $wpdb->update( $table, $data, array( 'id' => (int) $existing['id'], 'version' => (int) $existing['version'] ) );
+            if ( 1 !== (int) $updated ) { return new WP_Error( 'sun_device_profile_conflict', __( 'This device notification profile changed in another session.', 'sabri-unified-notifications' ), array( 'status' => 409 ) ); }
+        } else {
+            $data['created_at'] = $now;
+            if ( false === $wpdb->insert( $table, $data ) ) {
+                $raced = $wpdb->get_var( $wpdb->prepare( "SELECT id FROM {$table} WHERE device_public_id=%s LIMIT 1", $device_public_id ) );
+                return new WP_Error( $raced ? 'sun_device_profile_conflict' : 'sun_device_profile_write_failed', __( 'The device notification profile could not be saved safely.', 'sabri-unified-notifications' ), array( 'status' => $raced ? 409 : 500 ) );
+            }
+        }
         return array( 'device_id' => $device_public_id, 'focus_mode' => $mode, 'categories' => $categories, 'channels' => $channels, 'version' => $data['version'] );
     }
 
     /** @param int $user_id User ID. @return array<int,array<string,mixed>> */
     public function device_profiles( $user_id ) { global $wpdb; $rows = $wpdb->get_results( $wpdb->prepare( 'SELECT device_public_id,focus_mode,categories_json,channels_json,version,updated_at FROM ' . SUN_Database::table( 'device_profiles' ) . ' WHERE user_id=%d ORDER BY id DESC LIMIT 50', absint( $user_id ) ), ARRAY_A ); foreach ( (array) $rows as &$row ) { $row['categories'] = json_decode( (string) $row['categories_json'], true ) ?: array(); $row['channels'] = json_decode( (string) $row['channels_json'], true ) ?: array(); unset( $row['categories_json'], $row['channels_json'] ); } unset( $row ); return (array) $rows; }
+
+    /**
+     * Rebuild missing advanced state rows after a post-commit hook/database failure.
+     * Domain truth is not changed; only File 19's derived notification projection state is repaired.
+     *
+     * @param int $limit Maximum rows.
+     * @return int
+     */
+    public function repair_missing_states( $limit = 250 ) {
+        global $wpdb;
+        $limit = max( 1, min( 1000, absint( $limit ) ) );
+        $notes = SUN_Database::table( 'notifications' ); $states = SUN_Database::table( 'notification_states' ); $events = SUN_Database::table( 'events' );
+        $rows = $wpdb->get_results( $wpdb->prepare(
+            "SELECT n.id,n.public_id,n.recipient_id,n.event_type,n.category,n.priority,n.producer,n.event_id,e.owner,e.trace_id
+             FROM {$notes} n
+             LEFT JOIN {$states} s ON s.notification_id=n.id
+             LEFT JOIN {$events} e ON e.producer=n.producer AND e.event_id=n.event_id
+             WHERE s.id IS NULL AND n.status NOT IN ('deleted','expired')
+             ORDER BY n.id ASC LIMIT %d",
+            $limit
+        ), ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+        $repaired = 0; $now = SUN_Database::now();
+        foreach ( (array) $rows as $row ) {
+            $user_id = absint( $row['recipient_id'] ); if ( $user_id < 1 ) { continue; }
+            $profile = $this->profile( $user_id );
+            $event = array( 'event_type' => (string) $row['event_type'], 'producer' => (string) $row['producer'], 'subject' => array(), 'data' => array() );
+            $score = $this->attention_score( (string) $row['category'], (string) $row['priority'], $event, $profile );
+            $reason = 'reconciled_missing_projection_state';
+            $meta = array( 'actions' => array(), 'why' => array( 'event_type' => (string) $row['event_type'], 'producer' => (string) $row['producer'], 'attention_reason' => $reason, 'repaired' => true ) );
+            $cipher = SUN_Crypto::encrypt( SUN_Database::canonical_json( $meta ) ); if ( is_wp_error( $cipher ) ) { $cipher = null; }
+            $inserted = $wpdb->query( $wpdb->prepare(
+                "INSERT IGNORE INTO {$states} (notification_id,user_id,attention_score,attention_reason,group_key,source_label,source_kind,source_verified,live_revision,version,last_activity_at,meta_ciphertext,created_at,updated_at)
+                 VALUES (%d,%d,%d,%s,%s,%s,%s,%d,1,1,%s,%s,%s,%s)",
+                (int) $row['id'], $user_id, min( 100, $score ), $reason, hash( 'sha256', (string) $row['event_type'] . '||' ),
+                substr( sanitize_text_field( (string) ( $row['owner'] ?: $row['producer'] ) ), 0, 191 ),
+                'sabri-system' === $row['producer'] ? 'system' : 'module', 'sabri-system' === $row['producer'] ? 1 : 0, $now, $cipher, $now, $now
+            ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+            if ( $inserted ) { ++$repaired; SUN_Trace_Service::record( (string) ( $row['trace_id'] ?: $row['public_id'] ), 'attention_projection_repair', 'repaired', array( 'notification_id' => (int) $row['id'] ), (int) $row['id'] ); }
+        }
+        if ( $repaired ) { SUN_Audit::record( 'notification_states_repaired', 'system', 'file-19', array( 'count' => $repaired, 'purpose' => 'reconciliation' ), 0 ); }
+        return $repaired;
+    }
 
     /** @param int $user_id User ID. @param string $object_type Type. @param string $object_id ID. @param string $engagement Engagement. @return void */
     public function record_engagement( $user_id, $object_type, $object_id, $engagement = 'read' ) { global $wpdb; $user_id = absint( $user_id ); $object_type = substr( sanitize_key( $object_type ), 0, 50 ); $object_id = substr( sanitize_text_field( $object_id ), 0, 191 ); $engagement = substr( sanitize_key( $engagement ), 0, 32 ); if ( $user_id < 1 || '' === $object_type || '' === $object_id ) { return; } $table = SUN_Database::table( 'watch_history' ); $now = SUN_Database::now(); $wpdb->query( $wpdb->prepare( "INSERT INTO {$table} (user_id,object_type,object_id,engagement_type,first_seen_at,last_seen_at) VALUES (%d,%s,%s,%s,%s,%s) ON DUPLICATE KEY UPDATE engagement_type=VALUES(engagement_type),last_seen_at=VALUES(last_seen_at)", $user_id, $object_type, $object_id, $engagement, $now, $now ) ); }
@@ -263,7 +318,7 @@ final class SUN_Attention_Service {
     /** @param int $user_id User ID. @param string $time Local time. @return string */
     private function next_local_time( $user_id, $time ) { $claims = $this->auth->assertions( $user_id ); try { $tz = new DateTimeZone( (string) ( $claims['timezone'] ?? 'UTC' ) ); } catch ( Exception $e ) { $tz = new DateTimeZone( 'UTC' ); } $parts = array_map( 'intval', explode( ':', $this->valid_time( $time ) ?: '08:00:00' ) ); $now = new DateTimeImmutable( 'now', $tz ); $target = $now->setTime( $parts[0], $parts[1], $parts[2] ?? 0 ); if ( $target <= $now ) { $target = $target->modify( '+1 day' ); } return $target->setTimezone( new DateTimeZone( 'UTC' ) )->format( 'Y-m-d H:i:s' ); }
     /** @param int $user_id User ID. @param string $public_id Public ID. @return array<string,mixed>|WP_Error */
-    private function state_row( $user_id, $public_id ) { global $wpdb; $row = $wpdb->get_row( $wpdb->prepare( 'SELECT n.id AS notification_id,n.public_id,n.recipient_id,n.event_type,n.category,n.priority,n.status,n.version AS notification_version,s.id AS state_id,s.pinned_at,s.snoozed_until,s.action_state,s.attention_score,s.attention_reason,s.group_key,s.source_label,s.source_kind,s.source_verified,s.live_revision,s.version AS state_version,s.revoked_at,s.meta_ciphertext FROM ' . SUN_Database::table( 'notifications' ) . ' n INNER JOIN ' . SUN_Database::table( 'notification_states' ) . ' s ON s.notification_id=n.id WHERE n.public_id=%s AND n.recipient_id=%d LIMIT 1', sanitize_text_field( $public_id ), absint( $user_id ) ), ARRAY_A ); return $row ?: new WP_Error( 'sun_attention_state_not_found', __( 'Notification state not found.', 'sabri-unified-notifications' ), array( 'status' => 404 ) ); }
+    private function state_row( $user_id, $public_id ) { global $wpdb; $row = $wpdb->get_row( $wpdb->prepare( 'SELECT n.id AS notification_id,n.public_id,n.recipient_id,n.event_type,n.category,n.priority,n.status,n.version AS notification_version,e.trace_id,s.id AS state_id,s.pinned_at,s.snoozed_until,s.action_state,s.attention_score,s.attention_reason,s.group_key,s.source_label,s.source_kind,s.source_verified,s.live_revision,s.version AS state_version,s.revoked_at,s.meta_ciphertext FROM ' . SUN_Database::table( 'notifications' ) . ' n INNER JOIN ' . SUN_Database::table( 'notification_states' ) . ' s ON s.notification_id=n.id LEFT JOIN ' . SUN_Database::table( 'events' ) . ' e ON e.producer=n.producer AND e.event_id=n.event_id WHERE n.public_id=%s AND n.recipient_id=%d LIMIT 1', sanitize_text_field( $public_id ), absint( $user_id ) ), ARRAY_A ); return $row ?: new WP_Error( 'sun_attention_state_not_found', __( 'Notification state not found.', 'sabri-unified-notifications' ), array( 'status' => 404 ) ); }
     /** @param array<string,mixed> $row State row. @return array<string,mixed> */ private function state_meta( array $row ) { if ( empty( $row['meta_ciphertext'] ) ) { return array(); } $plain = SUN_Crypto::decrypt( $row['meta_ciphertext'] ); if ( is_wp_error( $plain ) ) { return array(); } $decoded = json_decode( $plain, true ); return is_array( $decoded ) ? $decoded : array(); }
     /** @param mixed $actions Actions. @return array<int,array<string,string>> */ private function sanitize_actions( $actions ) { if ( ! is_array( $actions ) ) { return array(); } $out = array(); foreach ( array_slice( $actions, 0, 5 ) as $action ) { if ( ! is_array( $action ) ) { continue; } $key = sanitize_key( (string) ( $action['key'] ?? '' ) ); $label = substr( sanitize_text_field( (string) ( $action['label'] ?? '' ) ), 0, 80 ); $owner_action = substr( sanitize_key( (string) ( $action['owner_action'] ?? $key ) ), 0, 80 ); if ( '' === $key || '' === $label ) { continue; } $out[] = array( 'key' => $key, 'label' => $label, 'owner_action' => $owner_action ); } return $out; }
     /** @param mixed $value Value. @return string|null */ private function valid_future_datetime( $value ) { if ( null === $value || '' === $value ) { return null; } $ts = strtotime( (string) $value ); if ( false === $ts || $ts <= time() || $ts > time() + YEAR_IN_SECONDS ) { return null; } return gmdate( 'Y-m-d H:i:s', $ts ); }

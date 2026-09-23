@@ -12,10 +12,65 @@ final class SUN_Experiments_Service {
     public function set_status( $public_id, $status ) { global $wpdb; $status = sanitize_key( $status ); if ( ! in_array( $status, array( 'draft','running','paused','completed','cancelled' ), true ) ) { return new WP_Error( 'sun_experiment_status_invalid', __( 'Notification experiment status is invalid.', 'sabri-unified-notifications' ), array( 'status' => 400 ) ); } $updated = $wpdb->update( SUN_Database::table( 'experiments' ), array( 'status' => $status, 'updated_at' => SUN_Database::now() ), array( 'public_id' => sanitize_text_field( $public_id ) ) ); return false === $updated ? new WP_Error( 'sun_experiment_update_failed', __( 'The notification experiment could not be updated.', 'sabri-unified-notifications' ) ) : $this->get( $public_id ); }
     /** @param array<string,mixed> $candidate Candidate. @param int $days Days. @return array<string,mixed> */
     public function simulate_policy( array $candidate, $days = 7 ) { global $wpdb; $candidate = $this->sanitize_config( $candidate ); $days = max( 1, min( 90, absint( $days ) ) ); $where = array( 'created_at>=%s' ); $params = array( gmdate( 'Y-m-d H:i:s', time() - DAY_IN_SECONDS * $days ) ); if ( ! empty( $candidate['category'] ) ) { $where[] = 'category=%s'; $params[] = sanitize_key( $candidate['category'] ); } if ( ! empty( $candidate['priority'] ) ) { $where[] = 'priority=%s'; $params[] = sanitize_key( $candidate['priority'] ); } $sql = 'SELECT category,priority,COUNT(*) AS total FROM ' . SUN_Database::table( 'notifications' ) . ' WHERE ' . implode( ' AND ', $where ) . ' GROUP BY category,priority ORDER BY total DESC LIMIT 100'; $rows = $wpdb->get_results( $wpdb->prepare( $sql, $params ), ARRAY_A ); $total = 0; foreach ( (array) $rows as &$row ) { $row['total'] = (int) $row['total']; $total += $row['total']; } unset( $row ); return array( 'mode' => 'dry-run', 'period_days' => $days, 'matched_historical_projections' => $total, 'breakdown' => (array) $rows, 'candidate' => $candidate, 'delivery_side_effects' => 0, 'truth_note' => 'Simulation uses historical notification projections and never sends a notification.' ); }
+    /**
+     * Evaluate running shadow/canary experiments against a real baseline decision.
+     * Shadow never changes the user-facing decision. Canary changes it only for a deterministic assigned bucket.
+     *
+     * @param int $user_id User ID.
+     * @param array<string,mixed> $event Event.
+     * @param array<string,mixed> $baseline Baseline decision.
+     * @return array<string,mixed>
+     */
+    public function evaluate_decision( $user_id, array $event, array $baseline ) {
+        global $wpdb;
+        $rows = $wpdb->get_results( "SELECT public_id,experiment_type,policy_key,config_json,status,rollout_percent FROM " . SUN_Database::table( 'experiments' ) . " WHERE status='running' AND experiment_type IN ('shadow','canary') ORDER BY id ASC LIMIT 20", ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+        $decision = $baseline;
+        foreach ( (array) $rows as $row ) {
+            $config = json_decode( (string) $row['config_json'], true ) ?: array();
+            if ( ! $this->matches_experiment( $row, $config, $event, $baseline ) ) { continue; }
+            $candidate = $this->apply_candidate( $baseline, $config );
+            if ( 'shadow' === $row['experiment_type'] ) { $this->record_shadow_result( $row['public_id'], $baseline, $candidate ); continue; }
+            if ( 'canary' === $row['experiment_type'] && $this->assigned_to_canary( $row['public_id'], $user_id ) ) {
+                $this->record_shadow_result( $row['public_id'], $baseline, $candidate );
+                $candidate['experiment'] = array( 'id' => $row['public_id'], 'mode' => 'canary' );
+                $decision = $candidate;
+            }
+        }
+        return $decision;
+    }
+
     /** @param string $public_id Experiment ID. @param int $user_id User ID. @return bool */
     public function assigned_to_canary( $public_id, $user_id ) { $experiment = $this->get( $public_id ); if ( is_wp_error( $experiment ) || 'running' !== $experiment['status'] || 'canary' !== $experiment['experiment_type'] ) { return false; } $bucket = hexdec( substr( hash( 'sha256', $public_id . '|' . absint( $user_id ) ), 0, 8 ) ) % 10000; return $bucket < (int) round( (float) $experiment['rollout_percent'] * 100 ); }
     /** @param string $public_id ID. @param array<string,mixed> $baseline Baseline. @param array<string,mixed> $candidate Candidate. @return void */
     public function record_shadow_result( $public_id, array $baseline, array $candidate ) { global $wpdb; $experiment = $this->get( $public_id ); if ( is_wp_error( $experiment ) || 'running' !== $experiment['status'] ) { return; } $metrics = (array) $experiment['metrics']; $metrics['evaluated'] = (int) ( $metrics['evaluated'] ?? 0 ) + 1; $different = SUN_Database::canonical_json( $this->decision_shape( $baseline ) ) !== SUN_Database::canonical_json( $this->decision_shape( $candidate ) ); if ( $different ) { $metrics['differences'] = (int) ( $metrics['differences'] ?? 0 ) + 1; } if ( ! empty( $baseline['mandatory'] ) && ! empty( $candidate['suppressed'] ) ) { $metrics['critical_misses'] = (int) ( $metrics['critical_misses'] ?? 0 ) + 1; } $wpdb->update( SUN_Database::table( 'experiments' ), array( 'metrics_json' => wp_json_encode( $metrics ), 'updated_at' => SUN_Database::now() ), array( 'public_id' => sanitize_text_field( $public_id ) ) ); }
+    /** @param array<string,mixed> $row Experiment. @param array<string,mixed> $config Config. @param array<string,mixed> $event Event. @param array<string,mixed> $baseline Baseline. @return bool */
+    private function matches_experiment( array $row, array $config, array $event, array $baseline ) {
+        $policy_key = sanitize_key( (string) ( $row['policy_key'] ?? '' ) );
+        if ( $policy_key && ! in_array( $policy_key, array( '*','candidate' ), true ) && $policy_key !== sanitize_key( (string) ( $baseline['policy_key'] ?? '' ) ) ) { return false; }
+        if ( ! empty( $config['category'] ) && sanitize_key( (string) $config['category'] ) !== sanitize_key( (string) ( $baseline['category'] ?? '' ) ) ) { return false; }
+        if ( ! empty( $config['event_pattern'] ) ) {
+            $pattern = (string) $config['event_pattern']; $type = (string) ( $event['event_type'] ?? '' );
+            if ( $type !== $pattern && ! ( str_ends_with( $pattern, '.*' ) && str_starts_with( $type, substr( $pattern, 0, -1 ) ) ) ) { return false; }
+        }
+        return true;
+    }
+    /** @param array<string,mixed> $baseline Baseline. @param array<string,mixed> $config Config. @return array<string,mixed> */
+    private function apply_candidate( array $baseline, array $config ) {
+        $candidate = $baseline;
+        if ( ! empty( $config['priority'] ) && in_array( sanitize_key( $config['priority'] ), array( 'low','normal','high','critical' ), true ) ) {
+            $requested=sanitize_key($config['priority']); if(!empty($baseline['mandatory'])){$order=array('low'=>0,'normal'=>1,'high'=>2,'critical'=>3);$base=sanitize_key((string)($baseline['priority']??'normal'));$candidate['priority']=($order[$requested]??1)>=($order[$base]??1)?$requested:$base;}else{$candidate['priority']=$requested;}
+        }
+        if ( empty( $baseline['mandatory'] ) && ! empty( $config['channel'] ) ) {
+            $channel = sanitize_key( $config['channel'] );
+            if ( in_array( $channel, (array) ( $baseline['channels'] ?? array() ), true ) ) {
+                $candidate['channels'] = array_values( array_unique( array( 'in_app', $channel ) ) );
+                $candidate['deliveries'] = array_values( array_filter( (array) ( $baseline['deliveries'] ?? array() ), static function( $delivery ) use ( $channel ) { return $channel === sanitize_key( (string) ( $delivery['channel'] ?? '' ) ); } ) );
+            }
+        }
+        if ( ! empty( $baseline['mandatory'] ) && ! empty( $candidate['suppressed'] ) ) { $candidate['suppressed'] = false; unset( $candidate['suppress_reason'] ); }
+        return $candidate;
+    }
+
     /** @param array<string,mixed> $config Config. @return array<string,mixed> */ private function sanitize_config( array $config ) { $out = array(); foreach ( array( 'category','priority','focus_mode','provider','channel','event_pattern' ) as $key ) { if ( isset( $config[ $key ] ) ) { $out[ $key ] = substr( sanitize_text_field( (string) $config[ $key ] ), 0, 191 ); } } foreach ( array( 'frequency_cap','hourly_budget','daily_budget' ) as $key ) { if ( isset( $config[ $key ] ) ) { $out[ $key ] = max( 0, absint( $config[ $key ] ) ); } } return $out; }
     /** @param array<string,mixed> $decision Decision. @return array<string,mixed> */ private function decision_shape( array $decision ) { return array( 'suppressed' => ! empty( $decision['suppressed'] ), 'category' => sanitize_key( (string) ( $decision['category'] ?? '' ) ), 'priority' => sanitize_key( (string) ( $decision['priority'] ?? '' ) ), 'mandatory' => ! empty( $decision['mandatory'] ), 'channels' => array_values( array_map( 'sanitize_key', (array) ( $decision['channels'] ?? array() ) ) ) ); }
 }
