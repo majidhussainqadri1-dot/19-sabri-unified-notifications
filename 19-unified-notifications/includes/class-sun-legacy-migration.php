@@ -24,7 +24,8 @@ final class SUN_Legacy_Migration {
 			if(is_wp_error($result)){$report['ready']=false;$report['sources'][$source['key']]=array('status'=>'error','code'=>$result->get_error_code());continue;}
 			$report['sources'][$source['key']]=array('status'=>'inventoried','owner'=>$source['owner'],'version'=>$source['version'],'evidence_hash'=>hash('sha256',SUN_Database::canonical_json($result)),'inventory'=>$result);
 		}
-		if(empty($report['sources'])){$report['ready']=false;$report['blocking_reason']='legacy_source_contracts_unverified';}
+		if(empty($report['sources'])){$report['ready']=true;$report['applicable']=false;$report['blocking_reason']=null;}
+		else{$report['applicable']=true;}
 		update_option(self::OPTION,$report,false);return$report;
 	}
 	/** @param string $key Source key. @param string $evidence_hash Dry-run hash. @return array<string,mixed>|WP_Error */
@@ -45,7 +46,16 @@ final class SUN_Legacy_Migration {
 	}
 	/** @return array<string,mixed> */
 	public static function health(){
-		$state=get_option(self::OPTION,array());$sources=self::sources();
-		return array('ready'=>!empty($state['ready'])&&!empty($sources),'declared_sources'=>count($sources),'last_dry_run'=>$state['generated_at']??null,'blocking_reason'=>$state['blocking_reason']??(empty($sources)?'legacy_source_contracts_unverified':null),'rule'=>'no historical table or bell is migrated without an owner-declared reversible adapter and dry-run evidence');
+		$state=get_option(self::OPTION,array());$sources=self::sources();$applicable=!empty($sources);
+		$ready=$applicable?!empty($state['ready']):true;
+		return array(
+			'ready'=>$ready,
+			'applicable'=>$applicable,
+			'status'=>$applicable?($ready?'ready':'evidence_required'):'not_applicable',
+			'declared_sources'=>count($sources),
+			'last_dry_run'=>$state['generated_at']??null,
+			'blocking_reason'=>$applicable?($state['blocking_reason']??(!$ready?'current_dry_run_required':null)):null,
+			'rule'=>'no historical table or bell is migrated without an owner-declared reversible adapter and dry-run evidence'
+		);
 	}
 }
