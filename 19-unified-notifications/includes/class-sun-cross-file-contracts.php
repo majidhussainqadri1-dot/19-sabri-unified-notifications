@@ -7,8 +7,10 @@ final class SUN_Cross_File_Contracts {
 
 	/** @return void */
 	public static function register() {
-		if ( is_admin() ) { add_action( 'admin_init', array( __CLASS__, 'sync_file01_registry' ), 60 ); }
+		/* Registration remains authorization-bound, but is no longer limited to wp-admin. */
+		add_action( 'init', array( __CLASS__, 'sync_file01_registry' ), 60 );
 		add_filter( 'sun_file19_cross_file_health', array( __CLASS__, 'health' ) );
+		add_filter( 'spcrc/file19_contract_state', array( __CLASS__, 'file24_contract_state' ), 10, 2 );
 	}
 
 	/** @return array<string,mixed> */
@@ -16,8 +18,9 @@ final class SUN_Cross_File_Contracts {
 		return array(
 			'module_key' => 'file-19', 'owner_file' => '19', 'owner_name' => 'Sabri Unified Notifications and Alerts',
 			'slug' => 'sabri-unified-notifications', 'namespace_prefix' => 'SUN_', 'software_version' => SUN_VERSION,
-			'contract_version' => '3.0.0', 'state' => 'active',
-			'required' => array(), 'optional' => array(),
+			'contract_version' => '3.0.1', 'state' => 'active',
+			'required' => array( 'file-00', 'file-20' ),
+			'optional' => array( 'file-02', 'file-24', 'file-25', 'file-26' ),
 			'capabilities' => array( 'notification_projection','single_bell','preferences','delivery_queue','digest','device_delivery','attention_os','dead_letter','privacy_lifecycle' ),
 			'commands' => array( 'IngestNotificationEvent.v1','UpdateNotificationPreferences.v1','RegisterNotificationDevice.v1','RetryNotificationDelivery.v1' ),
 			'queries' => array( 'ListNotifications.v1','GetUnreadCount.v1','GetNotificationHealth.v1' ),
@@ -75,31 +78,68 @@ final class SUN_Cross_File_Contracts {
 
 	/** @return bool */
 	public static function saved_search_verifier_ready() {
-		return class_exists( 'Sabri\\File26\\Central_Plan' ) || false !== has_filter( 'sun_validate_saved_search_ownership' );
+		/* File 26 must publish an explicit ownership verifier; class presence alone is not authority. */
+		return false !== has_filter( 'sun_validate_saved_search_ownership' );
 	}
 
 	/** @return true|WP_Error */
 	public static function saved_search_owned( $user_id, $owner, $search_id ) {
 		$user_id=absint($user_id); $owner=sanitize_key((string)$owner); $search_id=substr(sanitize_text_field((string)$search_id),0,191);
 		if($user_id<1||''===$search_id){return new WP_Error('sun_saved_search_invalid',__('A valid saved-search owner and identifier are required.','sabri-unified-notifications'),array('status'=>400));}
+		if(false===has_filter('sun_validate_saved_search_ownership')){return new WP_Error('sun_saved_search_owner_unavailable',__('The canonical saved-search ownership verifier is unavailable.','sabri-unified-notifications'),array('status'=>503));}
 		$external=apply_filters('sun_validate_saved_search_ownership',null,$user_id,$owner,$search_id);
 		if(is_wp_error($external)){return $external;}
-		if(is_bool($external)){return $external?true:new WP_Error('sun_saved_search_not_owned',__('The saved search is not owned by this user.','sabri-unified-notifications'),array('status'=>403));}
-		if(!in_array($owner,array('file26','file-26','search','sabri-file26'),true)){return new WP_Error('sun_saved_search_owner_unverified',__('The saved-search owner cannot be verified.','sabri-unified-notifications'),array('status'=>503));}
-		$records=get_user_meta($user_id,self::FILE26_SAVED_META,true);
-		if(!is_array($records)||!isset($records[$search_id])||!is_array($records[$search_id])){return new WP_Error('sun_saved_search_not_owned',__('The saved search is not owned by this user.','sabri-unified-notifications'),array('status'=>403));}
-		$expires=(string)($records[$search_id]['expires_at']??'');
-		if($expires&&strtotime($expires.' UTC')<=time()){return new WP_Error('sun_saved_search_expired',__('The saved search has expired.','sabri-unified-notifications'),array('status'=>410));}
-		return true;
+		if(true===$external){return true;}
+		if(false===$external){return new WP_Error('sun_saved_search_not_owned',__('The saved search is not owned by this user.','sabri-unified-notifications'),array('status'=>403));}
+		return new WP_Error('sun_saved_search_owner_unverified',__('The canonical saved-search owner returned no authoritative ownership result.','sabri-unified-notifications'),array('status'=>503));
 	}
 
 	/** @param array<string,mixed> $health Health. @return array<string,mixed> */
+	/** @return bool */
+	public static function file20_single_bell_ready() {
+		if ( ! class_exists( 'Sabri\\UnifiedShell\\Integrations' ) || ! is_callable( array( 'Sabri\\UnifiedShell\\Integrations', 'detect' ) ) ) {
+			return false;
+		}
+		try {
+			$detected = \Sabri\UnifiedShell\Integrations::detect();
+		} catch ( Throwable $error ) {
+			unset( $error );
+			return false;
+		}
+		return is_array( $detected ) && ! empty( $detected['notifications'] ) && shortcode_exists( 'sabri_notification_bell' );
+	}
+
+	/** @return bool */
+	public static function file25_visual_contract_ready() {
+		return false !== has_filter( 'sun_file25_notification_visual_contract' )
+			|| false !== has_filter( 'sabri_file25_notification_visual_contract' );
+	}
+
+	/**
+	 * File 24 integration matrix consumes a bounded compatibility state.
+	 * This is runtime contract compatibility only; it is not staging/live assurance evidence.
+	 *
+	 * @param mixed $state Existing state.
+	 * @param mixed $definition File 24 definition.
+	 * @return string
+	 */
+	public static function file24_contract_state( $state='unassessed', $definition=array() ) {
+		unset( $state, $definition );
+		$native = class_exists( 'SUN_Event_Validator' )
+			&& class_exists( 'SUN_Provider_Webhook_Verifier' )
+			&& class_exists( 'SUN_Deep_Link' )
+			&& class_exists( 'SUN_Crypto' );
+		if ( ! $native ) { return 'blocked'; }
+		return ! empty( SUN_Operational_Gate::snapshot()['safe_mode_active'] ) ? 'degraded' : 'compatible';
+	}
+
 	public static function health( $health=array() ) {
 		$health=is_array($health)?$health:array();
 		$health['file01_registry']=self::file01_registry_ready();
-		$health['file20_single_bell']=class_exists('Sabri\\UnifiedShell\\Plugin')&&(bool)has_action('sun_file20_notification_slot');
+		$health['file20_single_bell']=self::file20_single_bell_ready();
+		$health['file24_assurance_contract']=false!==has_filter('spcrc/file19_contract_state');
+		$health['file25_visual_contract']=self::file25_visual_contract_ready();
 		$health['file26_saved_search_verifier']=self::saved_search_verifier_ready();
-		$health['visual_owner']='file-25-css-variable-contract';
 		return $health;
 	}
 }
