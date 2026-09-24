@@ -2,20 +2,21 @@
 
 Canonical intelligent notification and attention infrastructure for the **Sabri Social Homeopathy Platform**.
 
-## Current 3.0.2 repository release
+## Current 3.0.4 repository candidate
 
 - File number: **19**
-- Runtime / schema: **3.0.2 / 3.0.1**
+- Runtime / schema: **3.0.4 / 3.0.2**
 - Repository source folder: `19-unified-notifications`
 - Canonical installable package folder: `unified-notifications-19`
 - Text domain: `sabri-unified-notifications`
 - REST namespace: `sabri-notifications/v1`
 - PHP minimum: **8.3**
 - WordPress minimum: **7.0**
-- Deterministic package: `19-sabri-unified-notifications-3.0.2.zip`
-- Frozen package SHA-256: `f08d27ac1148ea2a15309e8ccb7452e75fc32cc6d31663d1873365d54533f469`
-- PR #14 merged the audited 3.0.2 source into `main` at `28e01559a2d00e655e50daaa2cbe3877dc0833cd`; main QA run `35877953837` passed PHP 8.3/8.4 unit, advanced, completeness-regression, TextBee, static/security/privacy, clean-extract package and frozen-checksum deterministic rebuild gates
+- Deterministic package target: `19-sabri-unified-notifications-3.0.4.zip`
+- Package checksum: **pending exact-head CI rebuild**
 - Governing basis: consolidated central governing corpus + File 19 dedicated master plan + later Founder-approved Intelligent Attention extension
+
+3.0.4 is the cross-file completion candidate. It moves File 19 to the current File 00 `SMC_Contracts::assertions()` / `smc_assertions_v1` identity contract, consumes File 02 purpose-bound AAL2 authentication assurance for sensitive governance, declares File 00/File 20 as required File 01 dependencies, binds containment to File 20 Safe Mode, publishes the File 24 assurance-matrix state, requires an explicit File 26 saved-search ownership verifier instead of reading another module's private storage, completes the governed bulk-notice form/controller evidence path, and exposes reversible legacy migration dry-run/execute/rollback operations.
 
 File 19 remains the sole notification projection, preferences, orchestration, delivery, history and notification-intelligence owner. Domain truth remains with the native owner files; File 19 never becomes the source of truth for appointments, messages, publishing, marketplace, identity, search or other domain objects.
 
@@ -48,7 +49,7 @@ Existing 2.4 controls remain: one in-app center/File 20 single bell, versioned f
 
 ## Truth of status
 
-The 3.0.2 repository release closes the latest 20-round repository audit findings: canonical re-authorization for privileged advanced REST, executable automation rules, saved-search owner binding, runtime shadow/canary evaluation, end-to-end trace stages, optimistic per-device concurrency, schema-neutral version bookkeeping, routed-provider identity/cost/rate accounting, missing-state reconciliation, durable authenticated mutation idempotency, and signed/timestamped/replay-protected provider webhooks. Repository CI/package evidence is tracked separately from staging and Live. **Staging-Accepted**, **Live-Deployed** and **Operational** are not implied by source completion. Exact deployed code remains unverified until deployment parity is checked.
+The 3.0.4 repository candidate closes the latest current-contract and cross-file audit findings while preserving earlier 3.0.x hardening: canonical re-authorization for privileged advanced REST, executable automation rules, saved-search owner binding, runtime shadow/canary evaluation, end-to-end trace stages, optimistic per-device concurrency, schema-neutral version bookkeeping, routed-provider identity/cost/rate accounting, missing-state reconciliation, durable authenticated mutation idempotency, and signed/timestamped/replay-protected provider webhooks. Repository CI/package evidence is tracked separately from staging and Live. **Staging-Accepted**, **Live-Deployed** and **Operational** are not implied by source completion. Exact deployed code remains unverified until deployment parity is checked.
 
 ## Public integration examples
 
@@ -70,6 +71,6 @@ AI is optional and adapter-based. If no approved AI provider is configured, catc
 See `19-unified-notifications/docs/ADVANCED-ATTENTION-OS-3.0.0.md` for the complete advanced requirement catalogue and implementation map.
 
 
-## 3.0.2 completeness hardening
+## 3.0.x completeness hardening
 
-The 3.0.2 / DB 3.0.1 release adds two bounded operational tables: `sun_request_idempotency` for short-lived encrypted mutation replay responses and `sun_webhook_receipts` for provider webhook replay prevention. Delivery records now retain both the actual provider and canonical route-provider identity so rate caps and known-cost accounting use the route that was actually selected. Reconciliation repairs missing derived attention-state rows and expires short-lived replay evidence. Normal uninstall remains non-destructive.
+The 3.0.x line includes two bounded operational tables: `sun_request_idempotency` for short-lived encrypted mutation replay responses and `sun_webhook_receipts` for provider webhook replay prevention. Delivery records now retain both the actual provider and canonical route-provider identity so rate caps and known-cost accounting use the route that was actually selected. Reconciliation repairs missing derived attention-state rows and expires short-lived replay evidence. Normal uninstall remains non-destructive.
