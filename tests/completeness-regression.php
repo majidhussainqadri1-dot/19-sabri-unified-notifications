@@ -5,8 +5,12 @@ function cr_check($condition,$label){global$tests,$failures;++$tests;if(!$condit
 function cr_src($path){global$plugin;return file_get_contents($plugin.'/'.$path);}
 
 $bootstrap=cr_src('19-unified-notifications.php');
-cr_check(false!==strpos($bootstrap,"Version: 3.0.3")&&false!==strpos($bootstrap,"SUN_DB_VERSION', '3.0.2"),'runtime/schema release bump');
+cr_check(false!==strpos($bootstrap,"Version: 3.0.4")&&false!==strpos($bootstrap,"SUN_DB_VERSION', '3.0.2"),'runtime/schema release bump');
 cr_check(false!==strpos($bootstrap,'class-sun-request-idempotency.php')&&false!==strpos($bootstrap,'class-sun-provider-webhook-verifier.php'),'replay-safety classes bootstrapped');
+
+$auth_src=cr_src('includes/class-sun-auth.php');
+cr_check(false!==strpos($auth_src,'SMC_Contracts::assertions')&&false===strpos($auth_src,'sabri_membership_claims_v2'),'File 00 current identity contract replaces retired claims filter');
+cr_check(false!==strpos($auth_src,'SAUTH_Passkey_Runtime::current_assurance'),'File 02 owns current step-up assurance');
 
 $advanced=cr_src('includes/class-sun-advanced-rest.php');
 cr_check(false!==strpos($advanced,'is_governance_actor_eligible($user_id,true)'),'advanced governance endpoints revalidate File 00 + step-up');
@@ -37,6 +41,9 @@ $notifications=cr_src('includes/class-sun-notification-service.php');$delivery=c
 foreach(array('event_intake','event_processed','projection_created','queue_enqueue') as $stage){cr_check(false!==strpos($notifications,$stage),'trace stage '.$stage);}
 foreach(array('provider_attempt','provider_receipt') as $stage){cr_check(false!==strpos($delivery,$stage),'trace stage '.$stage);}
 
+$ownership=cr_src('includes/class-sun-four-plan-compliance.php');
+cr_check(false!==strpos($ownership,"AccountAuthenticationFailed.v1'=>array('owner'=>2")&&false!==strpos($ownership,"PasswordResetCompleted.v1'=>array('owner'=>2"),'authentication event ownership aligned to File 02');
+
 $activator=cr_src('includes/class-sun-activator.php');$routing=cr_src('includes/class-sun-routing-service.php');$privacy=cr_src('includes/class-sun-privacy.php');
 cr_check(false!==strpos($activator,'route_provider varchar(100)')&&false!==strpos($delivery,"'route_provider'"),'route provider identity persisted');
 cr_check(false!==strpos($routing,'COALESCE(NULLIF(d.route_provider')&&false!==strpos($routing,'COALESCE(NULLIF(route_provider'),'route-aware cost and rate-cap accounting');
@@ -54,7 +61,9 @@ cr_check(false!==strpos($reconciliation,'expired_idempotency')&&false!==strpos($
 
 $cross=cr_src('includes/class-sun-cross-file-contracts.php');$legacy=cr_src('includes/class-sun-legacy-migration.php');
 cr_check(false!==strpos($cross,'SPF_Registry::register_manifest')&&false!==strpos($cross,'SPF_Registry::map_route'),'File 01 manifest/route registry adapter');
-cr_check(false!==strpos($cross,'sabri_file26_saved_queries_v1')&&false!==strpos($automation,'SUN_Cross_File_Contracts::saved_search_owned'),'File 26 saved-search ownership verified fail-closed');
+cr_check(false!==strpos($cross,'sun_validate_saved_search_ownership')&&false===strpos($cross,'sabri_file26_saved_queries_v1')&&false!==strpos($automation,'SUN_Cross_File_Contracts::saved_search_owned'),'File 26 saved-search ownership uses owner contract and never private meta');
+cr_check(false!==strpos($cross,"'module_key'=>'file-00'")&&false!==strpos($cross,"'module_key'=>'file-20'")&&false!==strpos($cross,"'module_key'=>'file-24'"),'File 01 manifest declares required File 00/20/24 dependencies');
+cr_check(false!==strpos($cross,'spcrc/file19_contract_state')&&false!==strpos($cross,'sun_file20_notification_surface_state'),'File 24 assurance and File 20 surface contracts published/consumed');
 cr_check(false!==strpos($attention,"n.status NOT IN ('deleted','expired')")&&false!==strpos($attention,'n.expires_at IS NULL OR n.expires_at>%s'),'attention search/state expiry guards');
 $validator=cr_src('includes/class-sun-event-validator.php');
 cr_check(false!==strpos($validator,'sun_event_data_field_not_allowed')&&false!==strpos($validator,'sun_event_sensitive_data_forbidden'),'event payload allowlist and sensitive-key block');
@@ -65,13 +74,16 @@ cr_check(false!==strpos($privacy,'scrub_legacy_event_payloads')&&false!==strpos(
 cr_check(false!==strpos($activator,"array('search','Search.*'")&&false!==strpos($activator,"array('analytics','Analytics.*'"),'Search/Research/Knowledge/Analytics policy families');
 $bulk=cr_src('includes/class-sun-bulk-service.php');
 cr_check(false!==strpos($bulk,'sun_bulk_governance_evidence_required')&&false!==strpos($activator,'compensation_plan text NULL'),'bulk reason and compensation evidence');
+$admin=cr_src('includes/class-sun-admin.php');$admin_template=cr_src('templates/admin.php');
+cr_check(false!==strpos($admin,"'reason'=>")&&false!==strpos($admin,"'compensation_plan'=>")&&false!==strpos($admin_template,'name="reason"')&&false!==strpos($admin_template,'name="compensation_plan"'),'bulk governance evidence wired through admin controller and UI');
 $health=cr_src('includes/class-sun-health.php');
 cr_check(false!==strpos($health,"'request_idempotency','webhook_receipts'")&&false!==strpos($health,"'file01_registry'")&&false!==strpos($health,"'legacy_migration_gate'"),'health covers current schema and cross-file gates');
+cr_check(false!==strpos($health,"'file00_contract'")&&false!==strpos($health,"'file02_step_up_provider'")&&false!==strpos($health,"'file24_containment_contract'"),'health uses current File 00/02/24 contract evidence');
 $functions=cr_src('includes/functions.php');
 cr_check(false!==strpos($functions,'sun_live_owner_required')&&false!==strpos($attention,'sun_live_owner_mismatch'),'live projection update is producer-bound');
 $css=cr_src('assets/css/notifications.css');
 cr_check(false!==strpos($css,'--sabri-color-primary')&&false!==strpos($css,'--sabri-shadow-card'),'File 25 visual token bridge');
-cr_check(false!==strpos($legacy,'sun_legacy_notification_sources')&&false!==strpos($legacy,'legacy_source_contracts_unverified')&&false!==strpos($legacy,'public static function execute')&&false!==strpos($legacy,'public static function rollback'),'historical migration is reversible and evidence-gated');
+cr_check(false!==strpos($legacy,'sun_legacy_notification_sources')&&false!==strpos($legacy,'sun_legacy_notification_migration_applicable')&&false!==strpos($legacy,'legacy_source_contracts_unverified')&&false!==strpos($legacy,'public static function execute')&&false!==strpos($legacy,'public static function rollback'),'historical migration is reversible, applicability-aware and evidence-gated');
 $push=cr_src('includes/adapters/class-sun-push-adapter.php');cr_check(false!==strpos($push,'sun_push_invalid_token_codes')&&false!==strpos($push,"'status'=>'revoked'"),'invalid push tokens are revoked');
 cr_check(false!==strpos($privacy,'$page=1')&&false!==strpos($privacy,'\'done\'=>count((array)$rows)<$limit'),'legacy event erasure is paginated to completion');
 
