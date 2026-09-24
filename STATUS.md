@@ -2,32 +2,23 @@
 
 | Status layer | Current evidence |
 |---|---|
-| Specified | File 19 master plan + central governing corpus + Intelligent Attention 3.0 register + 20-round completeness audit findings incorporated |
-| Repository HEAD | **3.0.2** runtime / **3.0.1** DB schema merged to `main`; audited source merge commit `28e01559a2d00e655e50daaa2cbe3877dc0833cd` via PR #14 |
-| Coded scope | Canonical advanced authorization, executable rules/saved-search owner binding, live shadow/canary wiring, end-to-end traces, device concurrency, routed-provider accounting, state repair, REST idempotency and signed replay-safe provider webhooks |
-| TextBee | Existing first-party TextBee SMS bridge retained; provider acceptance remains distinct from carrier delivery |
-| Package | Deterministic `19-sabri-unified-notifications-3.0.2.zip`, canonical `unified-notifications-19/`, frozen SHA-256 `f08d27ac1148ea2a15309e8ccb7452e75fc32cc6d31663d1873365d54533f469` |
-| Automated QA | PR exact-head run `35877830616` and merged-main run `35877953837` passed PHP 8.3/8.4 baseline, advanced, completeness-regression, TextBee, static/security/privacy, clean-extract package and frozen-checksum deterministic rebuild gates |
-| Staging-Accepted | **Not claimed** in this repository coding pass |
-| Live-Deployed | **Unverified**. Repository state must not be treated as deployed state |
-| Operational | **Not claimed**; requires exact deployed-version/DB/migration parity, provider readiness, real-role journeys, monitoring and Live re-test |
+| Specified | File 19 master plan + central governing corpus + cross-file plans + fresh 20-round plan-to-code audit |
+| Repository candidate | **3.1.0 runtime / 3.1.0 DB schema** on corrective branch `fix/file19-cross-plan-completion-2026-09-24`; this is source-repository truth only until merged |
+| Coded scope | File 01 route registry bridge; File 20 single-bell compatibility; File 25 token consumer bridge; File 26 saved-search attestation; owner-bound live/revocation mutation; cross-domain policies; explicit event DTOs; minimized event storage/retention; expired-attention guards; digest receipt reconciliation; health/region routing; invalid push-token revocation; bulk governance evidence; expanded health; legacy migration audit framework |
+| Package | Target `19-sabri-unified-notifications-3.1.0.zip`; checksum **PENDING** until exact candidate CI succeeds |
+| Automated QA | **Pending for the exact 3.1.0 corrective branch/PR** |
+| Staging-Accepted | **Not claimed** |
+| Live-Deployed | **Unverified** |
+| Operational | **Not claimed**; requires exact deployed-version/DB/migration parity, provider/dependency readiness, real-role journeys, rollback/monitoring and Live re-test |
 
-## 3.0.2 audit closure scope
+## 3.1.0 truth boundary
 
-This candidate closes the repository defects found in the latest 20-round File 19 audit:
+Repository coding can establish only source and automated-package evidence. File 01 registry rows, File 25 visual attestation, File 26 saved-search ownership callback, historical migration state, provider configuration and Live database/deployed artifact state are runtime/deployment evidence and therefore fail closed or remain explicitly unverified until proven.
 
-1. advanced experiment/trace/synthetic permissions now re-check canonical File 00 eligibility and required Founder/step-up authority;
-2. automation matches now execute File-19-owned actions and route domain actions back to the native owner;
-3. File 26 saved-search watches bind both owner and saved-search ID;
-4. shadow and canary experiments are invoked by the real policy path;
-5. trace evidence spans event intake, policy, projection, queue, provider attempt/receipt and native action;
-6. per-device profiles use optimistic concurrency;
-7. schema-neutral runtime upgrades update persisted plugin-version evidence and always keep schedules present;
-8. delivery records retain route-provider identity for correct cost/rate-cap accounting;
-9. reconciliation repairs missing derived notification-state rows;
-10. authenticated mutating REST requests receive durable replay-safe idempotency;
-11. provider-neutral webhook verification supports HMAC signature, timestamp window and durable replay rejection.
+## Required post-merge acceptance sequence
+
+Exact merged HEAD → deterministic package/checksum → controlled staging install/upgrade → DB/schema shape check → File 01 registry synchronization → File 20 single-bell verification → File 25/File 26 dependency evidence → migration inventory/dry-run/rollback evidence → provider synthetic/real-role tests → Founder acceptance → production deploy → Live parity and smoke re-test.
 
 ## Live truth boundary
 
-The repository `main` branch can establish source-code and automated-package facts only. It cannot establish the active WordPress plugin version, deployed files/checksum, live DB schema/migration state, provider credentials, runtime logs, or real delivery. Final Live acceptance therefore remains: identify exact deployed artifact → verify DB/schema/migration parity → re-check File 00/File 20/producer/provider contracts → execute controlled real-role journeys → verify rollback/monitoring → only then mark Live/Operational.
+The repository candidate must never be described as deployed or operational merely because source tests are green.
