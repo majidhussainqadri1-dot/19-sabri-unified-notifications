@@ -25,6 +25,7 @@ final class SUN_Notification_Service {
 		$source_event_json=SUN_Database::canonical_json($event);
 		$payload_hash=hash('sha256',$source_event_json);
 		$stored_event=array(
+			'_storage_version'=>2,
 			'producer'=>$event['producer'],'owner'=>$event['owner'],'event_id'=>$event['event_id'],'event_type'=>$event['event_type'],
 			'schema_version'=>$event['schema_version'],'occurred_at'=>$event['occurred_at'],'trace_id'=>$event['trace_id'],
 			'subject'=>$event['subject'],'source_version'=>(string)($event['meta']['source_version']??''),
