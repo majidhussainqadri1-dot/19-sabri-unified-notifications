@@ -4,8 +4,9 @@ if ( ! defined( 'ABSPATH' ) ) { exit; }
 
 final class SUN_Attention_Service {
     /** @var SUN_Auth */ private $auth;
-    /** @param SUN_Auth $auth Authorization. */
-    public function __construct( SUN_Auth $auth ) { $this->auth = $auth; }
+    /** @var SUN_Producer_Registry|null */ private $registry;
+    /** @param SUN_Auth $auth Authorization. @param SUN_Producer_Registry|null $registry Producer ownership registry. */
+    public function __construct( SUN_Auth $auth, $registry = null ) { $this->auth = $auth; $this->registry = $registry instanceof SUN_Producer_Registry ? $registry : null; }
 
     /** @return string[] */
     public function focus_modes() { return array( 'balanced', 'study', 'clinic', 'work', 'sleep', 'travel', 'essential', 'custom' ); }
@@ -160,7 +161,7 @@ final class SUN_Attention_Service {
     /** @param int $user_id User ID. @param string $query Query. @param array<string,mixed> $args Args. @return array<string,mixed> */
     public function search( $user_id, $query = '', array $args = array() ) {
         global $wpdb; $user_id = absint( $user_id ); $limit = max( 1, min( 50, absint( $args['limit'] ?? 20 ) ) );
-        $where = array( 'n.recipient_id=%d', "n.status<>'deleted'" ); $params = array( $user_id );
+        $where = array( 'n.recipient_id=%d', "n.status NOT IN ('deleted','expired')", '(n.expires_at IS NULL OR n.expires_at>%s)' ); $params = array( $user_id, SUN_Database::now() );
         if ( '' !== trim( $query ) ) { $like = '%' . $wpdb->esc_like( substr( sanitize_text_field( $query ), 0, 100 ) ) . '%'; $where[] = '(n.title LIKE %s OR n.summary LIKE %s OR n.event_type LIKE %s OR n.category LIKE %s OR s.source_label LIKE %s)'; array_push( $params, $like, $like, $like, $like, $like ); }
         foreach ( array( 'category', 'priority' ) as $field ) { if ( ! empty( $args[ $field ] ) ) { $where[] = "n.{$field}=%s"; $params[] = sanitize_key( $args[ $field ] ); } }
         if ( ! empty( $args['after'] ) ) { $after = gmdate( 'Y-m-d H:i:s', strtotime( (string) $args['after'] ) ?: 0 ); if ( '1970-01-01 00:00:00' !== $after ) { $where[] = 'n.created_at>=%s'; $params[] = $after; } }
@@ -195,9 +196,12 @@ final class SUN_Attention_Service {
     }
 
     /** @param string $public_id Notification ID. @param array<string,mixed> $patch Patch. @return true|WP_Error */
-    public function live_update( $public_id, array $patch ) {
-        global $wpdb; $note = $wpdb->get_row( $wpdb->prepare( 'SELECT id,recipient_id,version,status FROM ' . SUN_Database::table( 'notifications' ) . ' WHERE public_id=%s LIMIT 1', sanitize_text_field( $public_id ) ), ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
-        if ( ! $note || in_array( $note['status'], array( 'deleted', 'expired' ), true ) ) { return new WP_Error( 'sun_live_notification_not_found', __( 'The live notification is unavailable.', 'sabri-unified-notifications' ) ); }
+    public function live_update( $public_id, array $patch, $producer = '' ) {
+        global $wpdb; $note = $wpdb->get_row( $wpdb->prepare( 'SELECT id,recipient_id,producer,event_id,expires_at,version,status FROM ' . SUN_Database::table( 'notifications' ) . ' WHERE public_id=%s LIMIT 1', sanitize_text_field( $public_id ) ), ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+        if ( ! $note || in_array( $note['status'], array( 'deleted', 'expired' ), true ) || ( ! empty( $note['expires_at'] ) && $note['expires_at'] <= SUN_Database::now() ) ) { return new WP_Error( 'sun_live_notification_not_found', __( 'The live notification is unavailable.', 'sabri-unified-notifications' ), array( 'status'=>404 ) ); }
+        $producer = sanitize_key( (string) $producer );
+        if ( ! $this->registry || '' === $producer || ! hash_equals( sanitize_key( (string) $note['producer'] ), $producer ) ) { return new WP_Error( 'sun_live_notification_owner_unverified', __( 'The canonical source owner is required for a live notification update.', 'sabri-unified-notifications' ), array( 'status'=>403 ) ); }
+        $authorized = $this->registry->authorize_mutation( $producer, 'live_update', array( 'public_id'=>$public_id, 'event_id'=>(string)$note['event_id'] ) ); if ( is_wp_error( $authorized ) ) { return $authorized; }
         $data = array( 'updated_at' => SUN_Database::now(), 'version' => (int) $note['version'] + 1 );
         if ( array_key_exists( 'title', $patch ) ) { $data['title'] = substr( sanitize_text_field( (string) $patch['title'] ), 0, 500 ); }
         if ( array_key_exists( 'summary', $patch ) ) { $data['summary'] = substr( sanitize_textarea_field( (string) $patch['summary'] ), 0, 2000 ); }
@@ -208,9 +212,11 @@ final class SUN_Attention_Service {
         do_action( 'sun_live_notification_updated', $public_id, $patch ); return true;
     }
 
-    /** @param string $producer Producer. @param string $event_id Event ID. @param string $reason Reason. @return int */
+    /** @param string $producer Producer. @param string $event_id Event ID. @param string $reason Reason. @return int|WP_Error */
     public function revoke_source( $producer, $event_id, $reason = 'source_withdrawn' ) {
         global $wpdb; $producer = sanitize_key( $producer ); $event_id = substr( sanitize_text_field( $event_id ), 0, 191 ); $reason = substr( sanitize_key( $reason ), 0, 100 ); $now = SUN_Database::now();
+        if ( ! $this->registry ) { return new WP_Error( 'sun_source_owner_registry_unavailable', __( 'The producer ownership registry is unavailable.', 'sabri-unified-notifications' ), array( 'status'=>503 ) ); }
+        $authorized = $this->registry->authorize_mutation( $producer, 'revoke_source', array( 'event_id'=>$event_id, 'reason'=>$reason ) ); if ( is_wp_error( $authorized ) ) { return $authorized; }
         $notes = $wpdb->get_results( $wpdb->prepare( 'SELECT id,public_id FROM ' . SUN_Database::table( 'notifications' ) . " WHERE producer=%s AND event_id=%s AND status NOT IN ('deleted','expired') LIMIT 1000", $producer, $event_id ), ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
         $count = 0; foreach ( (array) $notes as $note ) {
             $wpdb->update( SUN_Database::table( 'notifications' ), array( 'status' => 'expired', 'title' => __( 'Update withdrawn', 'sabri-unified-notifications' ), 'summary' => __( 'The source withdrew or replaced this update.', 'sabri-unified-notifications' ), 'deep_link' => null, 'updated_at' => $now ), array( 'id' => (int) $note['id'] ) );
@@ -318,7 +324,7 @@ final class SUN_Attention_Service {
     /** @param int $user_id User ID. @param string $time Local time. @return string */
     private function next_local_time( $user_id, $time ) { $claims = $this->auth->assertions( $user_id ); try { $tz = new DateTimeZone( (string) ( $claims['timezone'] ?? 'UTC' ) ); } catch ( Exception $e ) { $tz = new DateTimeZone( 'UTC' ); } $parts = array_map( 'intval', explode( ':', $this->valid_time( $time ) ?: '08:00:00' ) ); $now = new DateTimeImmutable( 'now', $tz ); $target = $now->setTime( $parts[0], $parts[1], $parts[2] ?? 0 ); if ( $target <= $now ) { $target = $target->modify( '+1 day' ); } return $target->setTimezone( new DateTimeZone( 'UTC' ) )->format( 'Y-m-d H:i:s' ); }
     /** @param int $user_id User ID. @param string $public_id Public ID. @return array<string,mixed>|WP_Error */
-    private function state_row( $user_id, $public_id ) { global $wpdb; $row = $wpdb->get_row( $wpdb->prepare( 'SELECT n.id AS notification_id,n.public_id,n.recipient_id,n.event_type,n.category,n.priority,n.status,n.version AS notification_version,e.trace_id,s.id AS state_id,s.pinned_at,s.snoozed_until,s.action_state,s.attention_score,s.attention_reason,s.group_key,s.source_label,s.source_kind,s.source_verified,s.live_revision,s.version AS state_version,s.revoked_at,s.meta_ciphertext FROM ' . SUN_Database::table( 'notifications' ) . ' n INNER JOIN ' . SUN_Database::table( 'notification_states' ) . ' s ON s.notification_id=n.id LEFT JOIN ' . SUN_Database::table( 'events' ) . ' e ON e.producer=n.producer AND e.event_id=n.event_id WHERE n.public_id=%s AND n.recipient_id=%d LIMIT 1', sanitize_text_field( $public_id ), absint( $user_id ) ), ARRAY_A ); return $row ?: new WP_Error( 'sun_attention_state_not_found', __( 'Notification state not found.', 'sabri-unified-notifications' ), array( 'status' => 404 ) ); }
+    private function state_row( $user_id, $public_id ) { global $wpdb; $row = $wpdb->get_row( $wpdb->prepare( 'SELECT n.id AS notification_id,n.public_id,n.recipient_id,n.event_type,n.category,n.priority,n.status,n.version AS notification_version,e.trace_id,s.id AS state_id,s.pinned_at,s.snoozed_until,s.action_state,s.attention_score,s.attention_reason,s.group_key,s.source_label,s.source_kind,s.source_verified,s.live_revision,s.version AS state_version,s.revoked_at,s.meta_ciphertext FROM ' . SUN_Database::table( 'notifications' ) . ' n INNER JOIN ' . SUN_Database::table( 'notification_states' ) . ' s ON s.notification_id=n.id LEFT JOIN ' . SUN_Database::table( 'events' ) . ' e ON e.producer=n.producer AND e.event_id=n.event_id WHERE n.public_id=%s AND n.recipient_id=%d AND n.status NOT IN (\'deleted\',\'expired\') AND (n.expires_at IS NULL OR n.expires_at>%s) LIMIT 1', sanitize_text_field( $public_id ), absint( $user_id ), SUN_Database::now() ), ARRAY_A ); return $row ?: new WP_Error( 'sun_attention_state_not_found', __( 'Notification state not found.', 'sabri-unified-notifications' ), array( 'status' => 404 ) ); }
     /** @param array<string,mixed> $row State row. @return array<string,mixed> */ private function state_meta( array $row ) { if ( empty( $row['meta_ciphertext'] ) ) { return array(); } $plain = SUN_Crypto::decrypt( $row['meta_ciphertext'] ); if ( is_wp_error( $plain ) ) { return array(); } $decoded = json_decode( $plain, true ); return is_array( $decoded ) ? $decoded : array(); }
     /** @param mixed $actions Actions. @return array<int,array<string,string>> */ private function sanitize_actions( $actions ) { if ( ! is_array( $actions ) ) { return array(); } $out = array(); foreach ( array_slice( $actions, 0, 5 ) as $action ) { if ( ! is_array( $action ) ) { continue; } $key = sanitize_key( (string) ( $action['key'] ?? '' ) ); $label = substr( sanitize_text_field( (string) ( $action['label'] ?? '' ) ), 0, 80 ); $owner_action = substr( sanitize_key( (string) ( $action['owner_action'] ?? $key ) ), 0, 80 ); if ( '' === $key || '' === $label ) { continue; } $out[] = array( 'key' => $key, 'label' => $label, 'owner_action' => $owner_action ); } return $out; }
     /** @param mixed $value Value. @return string|null */ private function valid_future_datetime( $value ) { if ( null === $value || '' === $value ) { return null; } $ts = strtotime( (string) $value ); if ( false === $ts || $ts <= time() || $ts > time() + YEAR_IN_SECONDS ) { return null; } return gmdate( 'Y-m-d H:i:s', $ts ); }

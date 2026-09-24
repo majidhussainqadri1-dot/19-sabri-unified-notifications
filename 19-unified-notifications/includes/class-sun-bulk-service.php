@@ -19,6 +19,9 @@ final class SUN_Bulk_Service {
 		$user_ids=array_values(array_unique(array_filter(array_map('absint',$user_ids))));
 		$maximum=(int)apply_filters('sun_bulk_max_recipients',5000);
 		if(empty($user_ids)||count($user_ids)>$maximum){return new WP_Error('sun_bulk_audience_invalid',__('The explicit bulk audience is invalid.','sabri-unified-notifications'),array('status'=>400));}
+		$reason=trim(substr(sanitize_textarea_field((string)($event['reason']??'')),0,2000));
+		$compensation=trim(substr(sanitize_textarea_field((string)($event['compensation_plan']??'')),0,4000));
+		if(''===$reason||''===$compensation){return new WP_Error('sun_bulk_governance_evidence_required',__('Bulk notification preview requires a reason and a compensation or reversal plan.','sabri-unified-notifications'),array('status'=>400));}
 		$event_type=sanitize_text_field((string)($event['event_type']??'System.AdministrativeNotice'));
 		$data=array(
 			'user_ids'=>$user_ids,
@@ -35,10 +38,10 @@ final class SUN_Bulk_Service {
 		);
 		$cipher=SUN_Crypto::encrypt(SUN_Database::canonical_json($data)); if(is_wp_error($cipher)){return $cipher;}
 		$public_id=SUN_Database::uuid();$audience_hash=hash('sha256',implode(',',$user_ids));$confirmation=wp_generate_password(12,false,false);$confirm_hash=wp_hash_password($confirmation);$now=SUN_Database::now();
-		$ok=$wpdb->insert(SUN_Database::table('bulk_jobs'),array('public_id'=>$public_id,'created_by'=>get_current_user_id(),'audience_hash'=>$audience_hash,'recipient_count'=>count($user_ids),'event_type'=>$event_type,'payload_ciphertext'=>$cipher,'status'=>'preview','confirmation_hash'=>$confirm_hash,'cancel_requested'=>0,'processed_count'=>0,'failed_count'=>0,'created_at'=>$now,'updated_at'=>$now)); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+		$ok=$wpdb->insert(SUN_Database::table('bulk_jobs'),array('public_id'=>$public_id,'created_by'=>get_current_user_id(),'audience_hash'=>$audience_hash,'recipient_count'=>count($user_ids),'event_type'=>$event_type,'reason'=>$reason,'compensation_plan'=>$compensation,'payload_ciphertext'=>$cipher,'status'=>'preview','confirmation_hash'=>$confirm_hash,'cancel_requested'=>0,'processed_count'=>0,'failed_count'=>0,'created_at'=>$now,'updated_at'=>$now)); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
 		if(false===$ok){return new WP_Error('sun_bulk_preview_failed',__('The bulk preview could not be created.','sabri-unified-notifications'));}
-		SUN_Audit::record('bulk_preview_created','bulk_job',$public_id,array('count'=>count($user_ids),'event_type'=>$event_type,'purpose'=>'bulk_notice'));
-		return array('id'=>$public_id,'recipient_count'=>count($user_ids),'event_type'=>$event_type,'confirmation_code'=>$confirmation,'status'=>'preview');
+		SUN_Audit::record('bulk_preview_created','bulk_job',$public_id,array('count'=>count($user_ids),'event_type'=>$event_type,'reason_hash'=>hash('sha256',$reason),'compensation_hash'=>hash('sha256',$compensation),'purpose'=>'bulk_notice'));
+		return array('id'=>$public_id,'recipient_count'=>count($user_ids),'event_type'=>$event_type,'reason'=>$reason,'confirmation_code'=>$confirmation,'status'=>'preview');
 	}
 
 	/** @param string $public_id Job ID. @param string $confirmation Confirmation code. @return true|WP_Error */
@@ -52,7 +55,7 @@ final class SUN_Bulk_Service {
 		$updated=$wpdb->update(SUN_Database::table('bulk_jobs'),array('status'=>'queued','updated_at'=>SUN_Database::now()),array('id'=>(int)$row['id'],'status'=>'preview')); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
 		if(1!==(int)$updated){return new WP_Error('sun_bulk_confirmation_conflict',__('The bulk notice changed before confirmation.','sabri-unified-notifications'),array('status'=>409));}
 		if(!wp_next_scheduled('sun_process_bulk_jobs')){wp_schedule_single_event(time()+5,'sun_process_bulk_jobs');}
-		SUN_Audit::record('bulk_job_confirmed','bulk_job',$public_id,array('count'=>(int)$row['recipient_count'],'purpose'=>'bulk_notice'));
+		SUN_Audit::record('bulk_job_confirmed','bulk_job',$public_id,array('count'=>(int)$row['recipient_count'],'reason_hash'=>hash('sha256',(string)$row['reason']),'compensation_hash'=>hash('sha256',(string)$row['compensation_plan']),'purpose'=>'bulk_notice'));
 		return true;
 	}
 

@@ -3,7 +3,7 @@
 if ( ! defined( 'ABSPATH' ) ) { exit; }
 
 final class SUN_Privacy {
-	/** @return void */ public function register(){add_filter('wp_privacy_personal_data_exporters',array($this,'exporters'));add_filter('wp_privacy_personal_data_erasers',array($this,'erasers'));}
+	/** @return void */ public function register(){add_filter('wp_privacy_personal_data_exporters',array($this,'exporters'));add_filter('wp_privacy_personal_data_erasers',array($this,'erasers'));add_action('sun_notification_privacy_retention',array($this,'retention'));}
 	/** @param array<string,mixed> $exporters Exporters. @return array<string,mixed> */ public function exporters($exporters){$exporters['sabri-unified-notifications']=array('exporter_friendly_name'=>__('Sabri Notifications','sabri-unified-notifications'),'callback'=>array($this,'export'));return $exporters;}
 	/** @param array<string,mixed> $erasers Erasers. @return array<string,mixed> */ public function erasers($erasers){$erasers['sabri-unified-notifications']=array('eraser_friendly_name'=>__('Sabri Notifications','sabri-unified-notifications'),'callback'=>array($this,'erase'));return $erasers;}
 
@@ -33,7 +33,30 @@ final class SUN_Privacy {
 		$wpdb->query($wpdb->prepare("UPDATE {$deliveries} SET recipient_id=0,provider_message_id=NULL,last_error_code=NULL,last_error_safe=NULL,updated_at=%s WHERE recipient_id=%d",$now,$user->ID));
 		$wpdb->query($wpdb->prepare("UPDATE {$states} SET user_id=0,attention_reason=NULL,source_label=NULL,meta_ciphertext=NULL,pinned_at=NULL,snoozed_until=NULL,action_state='none',updated_at=%s WHERE user_id=%d",$now,$user->ID));
 		foreach(array('devices','preferences','subscriptions','attention_profiles','notification_rules','device_profiles','watch_history','request_idempotency') as $logical){$wpdb->delete(SUN_Database::table($logical),array('user_id'=>$user->ID),array('%d'));}
-		do_action('sun_privacy_provider_erasure_requested',(int)$user->ID,$email);SUN_Audit::record('privacy_erasure_completed','user',hash('sha256','erased:'.$user->ID),array('purpose'=>'privacy_request','advanced_attention'=>true),0);return array('items_removed'=>true,'items_retained'=>false,'messages'=>array(),'done'=>true);
+		$legacy=$this->minimize_legacy_event_payloads(500,max(0,($page-1)*500));
+		do_action('sun_privacy_provider_erasure_requested',(int)$user->ID,$email);SUN_Audit::record('privacy_erasure_completed','user',hash('sha256','erased:'.$user->ID),array('purpose'=>'privacy_request','advanced_attention'=>true,'legacy_event_payloads_minimized'=>$legacy['updated']),0);return array('items_removed'=>true,'items_retained'=>false,'messages'=>array(),'done'=>!$legacy['has_more']);
+	}
+
+	/** Remove old arbitrary event envelopes and expire durable payload bodies on a bounded schedule. @return array<string,int> */
+	public function retention(){
+		global $wpdb;$days=max(1,min(365,(int)apply_filters('sun_event_payload_retention_days',30)));$cutoff=gmdate('Y-m-d H:i:s',time()-$days*DAY_IN_SECONDS);
+		$minimized=$this->minimize_legacy_event_payloads(500,0);
+		$events=$wpdb->query($wpdb->prepare("UPDATE ".SUN_Database::table('events')." SET payload_ciphertext=NULL,updated_at=%s WHERE payload_ciphertext IS NOT NULL AND status='processed' AND created_at<%s",SUN_Database::now(),$cutoff));
+		$bulk_days=max(30,min(365,(int)apply_filters('sun_bulk_job_retention_days',90)));$bulk_cutoff=gmdate('Y-m-d H:i:s',time()-$bulk_days*DAY_IN_SECONDS);
+		$bulk=$wpdb->query($wpdb->prepare("DELETE FROM ".SUN_Database::table('bulk_jobs')." WHERE status IN ('completed','cancelled','failed','held') AND updated_at<%s",$bulk_cutoff));
+		SUN_Audit::record('notification_privacy_retention','system','file-19',array('event_payloads_expired'=>max(0,(int)$events),'legacy_payloads_minimized'=>$minimized['updated'],'bulk_jobs_expired'=>max(0,(int)$bulk),'purpose'=>'retention'),0);
+		return array('event_payloads_expired'=>max(0,(int)$events),'legacy_payloads_minimized'=>$minimized['updated'],'bulk_jobs_expired'=>max(0,(int)$bulk));
+	}
+
+	/** @param int $limit Limit. @param int $offset Offset. @return array{updated:int,has_more:bool} */
+	private function minimize_legacy_event_payloads($limit=500,$offset=0){
+		global $wpdb;$limit=max(1,min(1000,absint($limit)));$offset=max(0,absint($offset));$table=SUN_Database::table('events');
+		$rows=$wpdb->get_results($wpdb->prepare("SELECT id,payload_ciphertext FROM {$table} WHERE payload_ciphertext IS NOT NULL ORDER BY id ASC LIMIT %d OFFSET %d",$limit,$offset),ARRAY_A);$updated=0;
+		foreach((array)$rows as $row){$plain=SUN_Crypto::decrypt((string)$row['payload_ciphertext']);if(is_wp_error($plain)){continue;}$decoded=json_decode($plain,true);if(!is_array($decoded)||2===(int)($decoded['_storage_version']??0)){continue;}
+			$minimal=array('_storage_version'=>2,'producer'=>sanitize_key((string)($decoded['producer']??'')),'owner'=>substr(sanitize_text_field((string)($decoded['owner']??'')),0,100),'event_id'=>substr(sanitize_text_field((string)($decoded['event_id']??'')),0,191),'event_type'=>substr(sanitize_text_field((string)($decoded['event_type']??'')),0,191),'schema_version'=>substr(sanitize_text_field((string)($decoded['schema_version']??'')),0,32),'occurred_at'=>substr(sanitize_text_field((string)($decoded['occurred_at']??'')),0,40),'trace_id'=>substr(sanitize_text_field((string)($decoded['trace_id']??'')),0,100),'subject'=>is_array($decoded['subject']??null)?array('type'=>substr(sanitize_key((string)($decoded['subject']['type']??'')),0,50),'id'=>substr(sanitize_text_field((string)($decoded['subject']['id']??'')),0,191)):array(),'source_version'=>substr(sanitize_text_field((string)($decoded['meta']['source_version']??$decoded['source_version']??'')),0,64));
+			$cipher=SUN_Crypto::encrypt(SUN_Database::canonical_json($minimal));if(is_wp_error($cipher)){continue;}$ok=$wpdb->update($table,array('payload_ciphertext'=>$cipher,'updated_at'=>SUN_Database::now()),array('id'=>(int)$row['id']));if(false!==$ok){++$updated;}
+		}
+		return array('updated'=>$updated,'has_more'=>count((array)$rows)===$limit);
 	}
 	/** @param string $group_id Group ID. @param string $group_label Label. @param string $item_id Item ID. @param array<string,mixed> $row Row. @return array<string,mixed> */ private function export_item($group_id,$group_label,$item_id,array $row){$data=array();foreach($row as $key=>$value){$data[]=array('name'=>ucwords(str_replace('_',' ',$key)),'value'=>(string)$value);}return array('group_id'=>$group_id,'group_label'=>$group_label,'item_id'=>$item_id,'data'=>$data);}
 }

@@ -70,7 +70,15 @@ final class SUN_Event_Validator {
 		}
 
 		$this->data_nodes = 0;
-		$data = isset( $event['data'] ) && is_array( $event['data'] ) ? $this->sanitize_data( $event['data'], 0 ) : array();
+		$raw_data = isset( $event['data'] ) && is_array( $event['data'] ) ? $event['data'] : array();
+		$allowed_data_fields = $this->allowed_data_fields( $config, $event_type );
+		foreach ( array_keys( $raw_data ) as $raw_key ) {
+			$key = sanitize_key( (string) $raw_key );
+			if ( (string) $raw_key !== $key || ! in_array( $key, $allowed_data_fields, true ) ) {
+				return new WP_Error( 'sun_event_data_field_denied', __( 'The event data contains a field outside the registered notification contract.', 'sabri-unified-notifications' ), array( 'status'=>400, 'field'=>$key ) );
+			}
+		}
+		$data = $this->sanitize_data( $raw_data, 0 );
 		if ( is_wp_error( $data ) ) { return $data; }
 		if ( strlen( wp_json_encode( $data ) ) > (int) apply_filters( 'sun_event_data_max_bytes', 65536, $producer ) ) {
 			return new WP_Error( 'sun_event_data_too_large', __( 'The event data exceeds the allowed size.', 'sabri-unified-notifications' ), array( 'status' => 413 ) );
@@ -156,6 +164,41 @@ final class SUN_Event_Validator {
 		return array('type'=>substr(sanitize_key((string)($reference['type']??'object')),0,50),'id'=>substr(sanitize_text_field((string)($reference['id']??'')),0,191),'public_id'=>substr(sanitize_text_field((string)($reference['public_id']??'')),0,191));
 	}
 
+	/**
+	 * Notification data is an explicit DTO. Generic domain payloads are never
+	 * accepted into File 19 merely because they are syntactically valid.
+	 *
+	 * @param array<string,mixed> $config Producer config.
+	 * @param string $event_type Event type.
+	 * @return string[]
+	 */
+	private function allowed_data_fields( array $config, $event_type ) {
+		$allowed = array( 'actor_name','object_name','action_name','summary','group_key','actions' );
+		$schemas = isset( $config['data_schemas'] ) && is_array( $config['data_schemas'] ) ? $config['data_schemas'] : array();
+		foreach ( $schemas as $pattern=>$fields ) {
+			if ( ! is_array( $fields ) || ! $this->registry->matches_pattern( (string) $event_type, (string) $pattern ) ) { continue; }
+			foreach ( $fields as $field ) {
+				$field = sanitize_key( (string) $field );
+				if ( '' !== $field && ! $this->sensitive_key( $field ) ) { $allowed[] = $field; }
+			}
+		}
+		$allowed = apply_filters( 'sun_event_allowed_data_fields', array_values( array_unique( $allowed ) ), (string) $event_type, $config );
+		$final=array();foreach((array)$allowed as $field){$field=sanitize_key((string)$field);if(''!==$field&&!$this->sensitive_key($field)){$final[]=$field;}}
+		return array_values( array_unique( $final ) );
+	}
+
+	/** @param string $key Key. @return bool */
+	private function sensitive_key( $key ) {
+		$key = sanitize_key( (string) $key );
+		$blocked = array( 'password','passwd','secret','token','credential','api_key','email','phone','mobile','address','national_id','cnic','patient','clinical','diagnosis','remedy','prescription','message_body','raw_body','attachment','medical_record' );
+		$blocked = apply_filters( 'sun_event_blocked_data_key_fragments', $blocked );
+		foreach ( (array) $blocked as $needle ) {
+			$needle = sanitize_key( (string) $needle );
+			if ( '' !== $needle && false !== strpos( $key, $needle ) ) { return true; }
+		}
+		return false;
+	}
+
 	/** @param mixed $value Value. @param int $depth Depth. @return mixed|WP_Error */
 	private function sanitize_data( $value, $depth = 0 ) {
 		++$this->data_nodes;
@@ -167,9 +210,14 @@ final class SUN_Event_Validator {
 		if ( is_array( $value ) ) {
 			$out=array();
 			foreach(array_slice($value,0,100,true) as $key=>$item){
+				$is_list_key = is_int( $key ) || ctype_digit( (string) $key );
+				$safe_key = $is_list_key ? (string) $key : sanitize_key( (string) $key );
+				if ( ! $is_list_key && ( (string) $key !== $safe_key || $this->sensitive_key( $safe_key ) ) ) {
+					return new WP_Error( 'sun_event_sensitive_data_denied', __( 'Sensitive or noncanonical fields are not accepted in notification event data.', 'sabri-unified-notifications' ), array( 'status'=>400, 'field'=>$safe_key ) );
+				}
 				$clean=$this->sanitize_data($item,$depth+1);
 				if(is_wp_error($clean)){return $clean;}
-				$out[sanitize_key((string)$key)]=$clean;
+				$out[$safe_key]=$clean;
 			}
 			return $out;
 		}

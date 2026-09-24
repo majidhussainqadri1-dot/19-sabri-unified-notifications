@@ -60,7 +60,12 @@ final class SUN_Automation_Service {
     }
 
     /** @param int $user_id User ID. @param string $search_owner Owner. @param string $search_id Search ID. @param string $label Label. @param string $frequency Frequency. @return array<string,mixed>|WP_Error */
-    public function register_saved_search( $user_id, $search_owner, $search_id, $label, $frequency = 'daily' ) { $frequency = sanitize_key( $frequency ); if ( ! in_array( $frequency, array( 'immediate', 'daily', 'weekly' ), true ) ) { $frequency = 'daily'; } return $this->upsert_rule( $user_id, array( 'name' => sprintf( __( 'Saved search: %s', 'sabri-unified-notifications' ), substr( sanitize_text_field( $label ), 0, 120 ) ), 'trigger_type' => 'saved_search', 'enabled' => true, 'trigger' => array( 'owner' => substr( sanitize_key( $search_owner ), 0, 100 ), 'search_id' => substr( sanitize_text_field( $search_id ), 0, 191 ) ), 'action' => array( 'type' => 'digest', 'frequency' => $frequency ) ) ); }
+    public function register_saved_search( $user_id, $search_owner, $search_id, $label, $frequency = 'daily' ) {
+        $user_id=absint($user_id);$search_owner=substr(sanitize_key((string)$search_owner),0,100);$search_id=substr(sanitize_text_field((string)$search_id),0,191);
+        $authorized=SUN_Cross_File_Contracts::authorize_saved_search($user_id,$search_owner,$search_id);if(is_wp_error($authorized)){return$authorized;}
+        $frequency = sanitize_key( $frequency ); if ( ! in_array( $frequency, array( 'immediate', 'daily', 'weekly' ), true ) ) { $frequency = 'daily'; }
+        return $this->upsert_rule( $user_id, array( 'name' => sprintf( __( 'Saved search: %s', 'sabri-unified-notifications' ), substr( sanitize_text_field( $label ), 0, 120 ) ), 'trigger_type' => 'saved_search', 'enabled' => true, 'trigger' => array( 'owner' => $search_owner, 'search_id' => $search_id ), 'action' => array( 'type' => 'digest', 'frequency' => $frequency ) ) );
+    }
     /** @param string $object_type Object type. @param string $object_id Object ID. @return int[] */ public function correction_audience( $object_type, $object_id ) { return $this->attention->correction_audience( $object_type, $object_id ); }
 
     /** @param string $type Trigger type. @param array<string,mixed> $trigger Trigger. @param array<string,mixed> $event Event. @return bool */

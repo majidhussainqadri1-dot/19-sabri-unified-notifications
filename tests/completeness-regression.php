@@ -5,7 +5,7 @@ function cr_check($condition,$label){global$tests,$failures;++$tests;if(!$condit
 function cr_src($path){global$plugin;return file_get_contents($plugin.'/'.$path);}
 
 $bootstrap=cr_src('19-unified-notifications.php');
-cr_check(false!==strpos($bootstrap,"Version: 3.0.2")&&false!==strpos($bootstrap,"SUN_DB_VERSION', '3.0.1"),'runtime/schema release bump');
+cr_check(false!==strpos($bootstrap,"Version: 3.1.0")&&false!==strpos($bootstrap,"SUN_DB_VERSION', '3.1.0"),'runtime/schema release bump');
 cr_check(false!==strpos($bootstrap,'class-sun-request-idempotency.php')&&false!==strpos($bootstrap,'class-sun-provider-webhook-verifier.php'),'replay-safety classes bootstrapped');
 
 $advanced=cr_src('includes/class-sun-advanced-rest.php');
@@ -47,6 +47,21 @@ cr_check(false!==strpos($db,"'request_idempotency'")&&false!==strpos($activator,
 cr_check(false!==strpos($idem,'rest_dispatch_request')&&false!==strpos($idem,'implicit:')&&false!==strpos($idem,'X-SUN-Idempotent-Replay'),'authorized legacy-safe explicit/implicit mutation idempotency');
 cr_check(false!==strpos($db,"'webhook_receipts'")&&false!==strpos($webhook,'hash_hmac')&&false!==strpos($webhook,'reserve_replay')&&false!==strpos($webhook,'sun_webhook_replay'),'signed timestamped/custom webhook replay protection');
 cr_check(false!==strpos($delivery,'SUN_Provider_Webhook_Verifier::verify'),'delivery webhook path uses core verifier');
+
+$cross=cr_src('includes/class-sun-cross-file-contracts.php');$migration=cr_src('includes/class-sun-migration-audit.php');$validator=cr_src('includes/class-sun-event-validator.php');$health=cr_src('includes/class-sun-health.php');$bulk=cr_src('includes/class-sun-bulk-service.php');$push=cr_src('includes/adapters/class-sun-push-adapter.php');$css=cr_src('assets/css/notifications.css');
+cr_check(false!==strpos($cross,"'module_key' => 'file-19'")&&false!==strpos($cross,'file19-notifications'),'File 01 owner manifest and route registry bridge');
+cr_check(false!==strpos($cross,'sun_file26_saved_search_authorized')&&false!==strpos($automation,'authorize_saved_search'),'File 26 saved-search ownership fails closed');
+cr_check(false!==strpos($validator,'sun_event_data_field_denied')&&false!==strpos($validator,'sun_event_sensitive_data_denied'),'event DTO allowlist and sensitive-field denial');
+cr_check(false!==strpos($notifications,"'_storage_version'=>2")&&false===strpos($notifications,'canonical_json($event);$cipher'),'durable event payload minimized');
+cr_check(false!==strpos($privacy,'minimize_legacy_event_payloads')&&false!==strpos($privacy,'sun_event_payload_retention_days'),'historical event minimization and bounded retention');
+cr_check(false!==strpos($attention,"n.status NOT IN ('deleted','expired')")&&false!==strpos($attention,'sun_live_notification_owner_unverified'),'expired attention guard and owner-bound live mutation');
+cr_check(false!==strpos($delivery,'Review all securely:')&&false!==strpos($delivery,'ORDER BY id ASC LIMIT 100'),'digest overflow link and shared receipt reconciliation');
+cr_check(false!==strpos($routing,'sun_notification_recipient_region')&&false!==strpos($routing,'CASE health_state'),'region/health-aware provider routing');
+cr_check(false!==strpos($push,'push_device_auto_revoked')&&false!==strpos($push,'sun_push_token_permanently_invalid'),'permanently invalid push-token revocation');
+cr_check(false!==strpos($bulk,'sun_bulk_governance_evidence_required')&&false!==strpos($bulk,'compensation_plan'),'bulk reason and compensation governance evidence');
+cr_check(false!==strpos($health,"'request_idempotency','webhook_receipts'")&&false!==strpos($health,"'file01_registry'")&&false!==strpos($health,"'file26_saved_search_verifier'"),'health covers replay schema and cross-file readiness');
+cr_check(false!==strpos($migration,'sun_legacy_notification_migration_adapters')&&false!==strpos($migration,"'dry-run-complete'"),'fail-closed legacy migration adapter framework');
+cr_check(false!==strpos($css,'--sabri-file25-color-primary')&&false!==strpos($css,'--sabri-file25-radius-card'),'File 25 visual-token bridge');
 
 $reconciliation=cr_src('includes/class-sun-reconciliation.php');
 cr_check(false!==strpos($reconciliation,'expired_idempotency')&&false!==strpos($reconciliation,'expired_webhook_receipts'),'ephemeral replay evidence cleanup');

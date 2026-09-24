@@ -19,11 +19,22 @@ final class SUN_Notification_Service {
 		$events=SUN_Database::table('events');
 		$found=$wpdb->get_row($wpdb->prepare("SELECT id,public_id,status FROM {$events} WHERE producer=%s AND event_id=%s LIMIT 1",$event['producer'],$event['event_id']),ARRAY_A);
 		if($found){SUN_Trace_Service::record((string)$event['trace_id'],'event_intake','duplicate',array('event_public_id'=>$found['public_id']));return array('event_public_id'=>$found['public_id'],'status'=>'duplicate','created'=>0,'suppressed'=>0);}
-		$payload_json=SUN_Database::canonical_json($event);$cipher=SUN_Crypto::encrypt($payload_json);if(is_wp_error($cipher)){return $cipher;}
+		/* Keep an integrity hash of the canonical validated event, but persist only
+		 * the minimum reconciliation envelope. Recipients and arbitrary domain data
+		 * never become durable File 19 event payload storage. */
+		$source_event_json=SUN_Database::canonical_json($event);
+		$payload_hash=hash('sha256',$source_event_json);
+		$stored_event=array(
+			'_storage_version'=>2,
+			'producer'=>$event['producer'],'owner'=>$event['owner'],'event_id'=>$event['event_id'],'event_type'=>$event['event_type'],
+			'schema_version'=>$event['schema_version'],'occurred_at'=>$event['occurred_at'],'trace_id'=>$event['trace_id'],
+			'subject'=>$event['subject'],'source_version'=>(string)($event['meta']['source_version']??''),
+		);
+		$payload_json=SUN_Database::canonical_json($stored_event);$cipher=SUN_Crypto::encrypt($payload_json);if(is_wp_error($cipher)){return $cipher;}
 		$event_public_id=SUN_Database::uuid();$created=0;$suppressed=0;$created_hooks=array();
 		SUN_Database::begin();
 		try{
-			$inserted=$wpdb->insert($events,array('public_id'=>$event_public_id,'producer'=>$event['producer'],'event_id'=>$event['event_id'],'event_type'=>$event['event_type'],'schema_version'=>$event['schema_version'],'owner'=>$event['owner'],'occurred_at'=>$event['occurred_at'],'trace_id'=>$event['trace_id'],'payload_hash'=>hash('sha256',$payload_json),'payload_ciphertext'=>$cipher,'status'=>'processing','created_at'=>SUN_Database::now(),'updated_at'=>SUN_Database::now()),array('%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s'));
+			$inserted=$wpdb->insert($events,array('public_id'=>$event_public_id,'producer'=>$event['producer'],'event_id'=>$event['event_id'],'event_type'=>$event['event_type'],'schema_version'=>$event['schema_version'],'owner'=>$event['owner'],'occurred_at'=>$event['occurred_at'],'trace_id'=>$event['trace_id'],'payload_hash'=>$payload_hash,'payload_ciphertext'=>$cipher,'status'=>'processing','created_at'=>SUN_Database::now(),'updated_at'=>SUN_Database::now()),array('%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s'));
 			if(false===$inserted){
 				/* Concurrent replay may have won the unique producer/event key race. */
 				$existing=$wpdb->get_row($wpdb->prepare("SELECT public_id,status FROM {$events} WHERE producer=%s AND event_id=%s LIMIT 1",$event['producer'],$event['event_id']),ARRAY_A);

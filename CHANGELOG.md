@@ -1,5 +1,22 @@
 # Changelog
 
+## 3.1.0 — 2026-09-24 — cross-plan completion candidate
+
+- Added a File 01 owner-manifest and canonical route-family synchronization bridge with explicit admin authorization; no registry state is fabricated when File 01 is absent.
+- Changed File 25 integration to consume canonical CSS-variable tokens with accessible local fallbacks and report the visual contract separately in health.
+- Made File 26 saved-search watch creation fail closed until the native search owner attests the exact user/owner/search identifier.
+- Bound live-notification updates and source revocations to registered producer ownership plus native-owner mutation attestation.
+- Added default policy families for `Search.*`, `Research.*`, `Knowledge.*` and approved `Analytics.*` alert events.
+- Replaced arbitrary event-data acceptance with explicit notification DTO allowlists and recursive sensitive-key denial.
+- Stopped durably storing recipient lists/arbitrary domain payloads in event envelopes; added storage versioning, legacy-payload minimization and bounded retention.
+- Blocked expired notifications from Priority Inbox, history/search state and actionable-attention paths.
+- Added secure notification-center overflow links to digests and reconciled provider receipts across every row sharing one digest provider receipt.
+- Made provider selection region-aware and health-prioritized without bypassing configured routing policy; permanently invalid push tokens are automatically revoked.
+- Added mandatory bulk-notice reason and compensation/reversal evidence.
+- Expanded health checks to replay tables, critical schema columns, File 01/File 20/File 25/File 26 readiness and legacy migration evidence.
+- Added a fail-closed legacy notification migration adapter inventory/dry-run framework instead of guessing historical mappings.
+- Runtime and database schema are both 3.1.0. Staging, deployed and operational status remain separate evidence states.
+
 ## 3.0.1 — 2026-09-02 — TextBee SMS provider candidate
 
 - Added a first-party TextBee bridge to the existing provider-neutral `sun_send_sms` contract.

@@ -4,7 +4,7 @@ Tags: notifications, alerts, intelligent-attention, subscriptions, automation, p
 Requires at least: 7.0
 Tested up to: 7.0
 Requires PHP: 8.3
-Stable tag: 3.0.0
+Stable tag: 3.1.0
 License: GPLv2 or later
 
 Canonical intelligent attention and notification operating system for the Sabri Social Homeopathy Platform.
@@ -13,7 +13,7 @@ Canonical intelligent attention and notification operating system for the Sabri 
 
 File 19 consumes versioned factual events from approved domain owners and creates privacy-minimized notification projections. It does not replace domain state, decisions, messages, appointments, publishing, search/discovery or marketplace truth. Runtime access follows current File 00 membership claims; File 20 owns the single bell/shell placement, File 25 owns shared visual tokens and File 26 owns global search/discovery.
 
-Runtime 3.0.0 preserves the complete 2.4 baseline and adds smart/explainable priority, Priority Inbox, AI catch-up with deterministic fallback, source-ID citation binding, search/history, snooze, pin, needs-action/done, semantic grouping keys, focus modes, attention budgets, essential-only, temporary mute, best-time scheduling, adaptive frequency caps, live/revocable projections, native-owner actions, verified-source provenance, correction/retraction watch audiences, user automation and saved-search watches, per-device controls, Web Push/FCM/APNs readiness, opt-in WhatsApp/RCS adapters, provider failover, cost-aware routing, simulator/shadow/canary framework, trace explorer, synthetic diagnostics and privacy lifecycle coverage.
+Runtime 3.1.0 preserves the complete 2.4 baseline and adds smart/explainable priority, Priority Inbox, AI catch-up with deterministic fallback, source-ID citation binding, search/history, snooze, pin, needs-action/done, semantic grouping keys, focus modes, attention budgets, essential-only, temporary mute, best-time scheduling, adaptive frequency caps, live/revocable projections, native-owner actions, verified-source provenance, correction/retraction watch audiences, user automation and saved-search watches, per-device controls, Web Push/FCM/APNs readiness, opt-in WhatsApp/RCS adapters, provider failover, cost-aware routing, simulator/shadow/canary framework, trace explorer, synthetic diagnostics and privacy lifecycle coverage.
 
 AI is optional and does not become domain authority. WhatsApp/RCS, FCM and APNs require separately configured providers and staging acceptance. More notifications are not treated as a KPI.
 
@@ -26,6 +26,9 @@ AI is optional and does not become domain authority. WhatsApp/RCS, FCM and APNs 
 5. Run System Check, functional, security, accessibility, provider, backup/restore and rollback acceptance before production.
 
 == Changelog ==
+
+= 3.1.0 =
+Cross-plan completion: File 01 route-registry bridge; File 25 token consumption; fail-closed File 26 saved-search ownership; owner-attested live/revocation mutations; Search/Research/Knowledge/Analytics policies; explicit event DTO allowlists; minimized/retained event payloads; expired-attention guards; digest overflow/receipt reconciliation; region/health routing; invalid push-token revocation; bulk reason/reversal evidence; expanded health and governed legacy migration audit.
 
 = 3.0.0 =
 Intelligent Attention & Notification OS: priority, focus, budgets, catch-up, automation, watchlists, live/revocable notifications, device profiles, routed providers, experiments, trace and privacy-safe diagnostics.

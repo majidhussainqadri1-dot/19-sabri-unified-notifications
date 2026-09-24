@@ -100,6 +100,35 @@ final class SUN_Producer_Registry {
 		return hash_equals( $expected, strtolower( (string) $signature ) ) ? true : new WP_Error( 'sun_signature_invalid', __( 'The producer signature is invalid.', 'sabri-unified-notifications' ), array( 'status' => 403 ) );
 	}
 
+	/**
+	 * Authorize a producer-owned projection mutation. Registered producer identity
+	 * is necessary but not sufficient: the native owner must also attest the
+	 * specific operation through its callback or the fail-closed shared filter.
+	 *
+	 * @param string $producer Producer.
+	 * @param string $operation Operation.
+	 * @param array<string,mixed> $context Context.
+	 * @return true|WP_Error
+	 */
+	public function authorize_mutation( $producer, $operation, array $context = array() ) {
+		$producer = sanitize_key( (string) $producer );
+		$operation = sanitize_key( (string) $operation );
+		$config = $this->get( $producer );
+		if ( ! $config ) {
+			return new WP_Error( 'sun_unknown_producer', __( 'The notification producer is not registered.', 'sabri-unified-notifications' ), array( 'status'=>403 ) );
+		}
+		$allowed = null;
+		if ( ! empty( $config['mutation_callback'] ) && is_callable( $config['mutation_callback'] ) ) {
+			$allowed = call_user_func( $config['mutation_callback'], $operation, $context, $producer );
+		}
+		if ( true !== $allowed ) {
+			$allowed = apply_filters( 'sun_notification_owner_mutation_authorized', false, $producer, $operation, $context );
+		}
+		return true === $allowed
+			? true
+			: new WP_Error( 'sun_owner_mutation_unverified', __( 'The canonical source owner did not authorize this notification mutation.', 'sabri-unified-notifications' ), array( 'status'=>403 ) );
+	}
+
 	/** @param string $event_type Event type. @param string $pattern Pattern. @return bool */
 	public function matches_pattern( $event_type, $pattern ) {
 		if ( '*' === $pattern ) {
