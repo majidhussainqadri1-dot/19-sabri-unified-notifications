@@ -27,6 +27,22 @@ final class SUN_Legacy_Migration {
 		if(empty($report['sources'])){$report['ready']=false;$report['blocking_reason']='legacy_source_contracts_unverified';}
 		update_option(self::OPTION,$report,false);return$report;
 	}
+	/** @param string $key Source key. @param string $evidence_hash Dry-run hash. @return array<string,mixed>|WP_Error */
+	public static function execute($key,$evidence_hash){
+		$key=sanitize_key((string)$key);$state=get_option(self::OPTION,array());$sources=array();
+		foreach(self::sources() as$source){$sources[$source['key']]=$source;}
+		if(empty($sources[$key])||empty($state['ready'])||empty($state['sources'][$key]['evidence_hash'])||!hash_equals((string)$state['sources'][$key]['evidence_hash'],(string)$evidence_hash)){return new WP_Error('sun_legacy_migration_evidence_required',__('A current matching dry-run inventory is required before legacy migration.','sabri-unified-notifications'),array('status'=>409));}
+		$result=call_user_func($sources[$key]['migrate'],$state['sources'][$key]['inventory'],$evidence_hash);
+		if(is_wp_error($result)){return$result;}if(!is_array($result)||empty($result['receipt'])||empty($result['rollback_evidence'])){return new WP_Error('sun_legacy_migration_receipt_invalid',__('The legacy owner did not return reversible migration evidence.','sabri-unified-notifications'),array('status'=>500));}
+		$state['executions'][$key]=array('receipt'=>$result['receipt'],'rollback_evidence'=>$result['rollback_evidence'],'executed_at'=>SUN_Database::now(),'evidence_hash'=>$evidence_hash);update_option(self::OPTION,$state,false);return$state['executions'][$key];
+	}
+	/** @param string $key Source key. @return array<string,mixed>|WP_Error */
+	public static function rollback($key){
+		$key=sanitize_key((string)$key);$state=get_option(self::OPTION,array());$sources=array();foreach(self::sources() as$source){$sources[$source['key']]=$source;}
+		if(empty($sources[$key])||empty($state['executions'][$key])){return new WP_Error('sun_legacy_rollback_evidence_missing',__('No verified migration receipt is available for rollback.','sabri-unified-notifications'),array('status'=>404));}
+		$execution=$state['executions'][$key];$result=call_user_func($sources[$key]['rollback'],$execution['receipt'],$execution['rollback_evidence']);if(is_wp_error($result)){return$result;}
+		$state['executions'][$key]['rolled_back_at']=SUN_Database::now();$state['executions'][$key]['rollback_result']=$result;update_option(self::OPTION,$state,false);return$state['executions'][$key];
+	}
 	/** @return array<string,mixed> */
 	public static function health(){
 		$state=get_option(self::OPTION,array());$sources=self::sources();
