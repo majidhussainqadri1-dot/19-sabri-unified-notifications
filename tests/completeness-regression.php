@@ -73,7 +73,7 @@ $css=cr_src('assets/css/notifications.css');
 cr_check(false!==strpos($css,'--sabri-color-primary')&&false!==strpos($css,'--sabri-shadow-card'),'File 25 visual token bridge');
 cr_check(false!==strpos($legacy,'sun_legacy_notification_sources')&&false!==strpos($legacy,'legacy_source_contracts_unverified')&&false!==strpos($legacy,'public static function execute')&&false!==strpos($legacy,'public static function rollback'),'historical migration is reversible and evidence-gated');
 $push=cr_src('includes/adapters/class-sun-push-adapter.php');cr_check(false!==strpos($push,'sun_push_invalid_token_codes')&&false!==strpos($push,"'status'=>'revoked'"),'invalid push tokens are revoked');
-cr_check(false!==strpos($privacy,'$page=1')&&false!==strpos($privacy,"'done'=>count((array)$rows)<$limit"),'legacy event erasure is paginated to completion');
+cr_check(false!==strpos($privacy,'$page=1')&&false!==strpos($privacy,'\'done\'=>count((array)$rows)<$limit'),'legacy event erasure is paginated to completion');
 
 if($failures){fwrite(STDERR,"FAIL (".count($failures)."/$tests):\n - ".implode("\n - ",$failures)."\n");exit(1);}
 echo "PASS: $tests completeness-audit regression assertions\n";
