@@ -11,7 +11,7 @@ final class SUN_Four_Plan_Compliance {
 	/** @return array<string,mixed> */
 	public static function snapshot() {
 		return array(
-			'contract'                 => 'sun.four-plan-compliance.v3',
+			'contract'                 => 'sun.four-plan-compliance.v4',
 			'file'                     => 19,
 			'canonical_owner'          => 'Unified Notifications and Alerts',
 			'governing_plans'          => array(
@@ -91,9 +91,9 @@ final class SUN_Four_Plan_Compliance {
 			'Clinic.AppointmentFollowUpDue'=>array('owner'=>8,'category'=>'clinic','priority'=>'normal'),
 			'Publishing.CorrectionPublished'=>array('owner'=>21,'category'=>'publishing','priority'=>'high'),
 			'Publishing.RetractionPublished'=>array('owner'=>21,'category'=>'publishing','priority'=>'critical'),
-			'Security.NewDeviceDetected'=>array('owner'=>0,'category'=>'security','priority'=>'critical'),
-			'Security.PasswordChanged'=>array('owner'=>0,'category'=>'security','priority'=>'critical'),
-			'Security.MFAChanged'=>array('owner'=>0,'category'=>'security','priority'=>'critical'),
+			'Security.NewDeviceDetected'=>array('owner'=>2,'category'=>'security','priority'=>'critical'),
+			'Security.PasswordChanged'=>array('owner'=>2,'category'=>'security','priority'=>'critical'),
+			'Security.MFAChanged'=>array('owner'=>2,'category'=>'security','priority'=>'critical'),
 			'Security.DataExportRequested'=>array('owner'=>0,'category'=>'security','priority'=>'critical'),
 			'Security.RoleChanged'=>array('owner'=>0,'category'=>'security','priority'=>'critical'),
 			'Social.CreatorBulletinPublished'=>array('owner'=>21,'category'=>'social','priority'=>'normal','subscription_required'=>true),
