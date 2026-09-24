@@ -15,7 +15,7 @@ final class SUN_Cross_File_Contracts {
 		return array(
 			'module_key' => 'file-19', 'owner_file' => '19', 'owner_name' => 'Sabri Unified Notifications and Alerts',
 			'slug' => 'sabri-unified-notifications', 'namespace_prefix' => 'SUN_', 'software_version' => SUN_VERSION,
-			'contract_version' => '3.0.0', 'state' => 'active',
+			'contract_version' => '3.0.1', 'state' => 'active',
 			'required' => array(
 				array( 'module_key'=>'file-00','minimum_version'=>'1.2.44','maximum_version'=>'','purpose'=>'Canonical recipient identity, eligibility and verified contact assertions.','fail_mode'=>'Protected notification access and privileged actions fail closed.' ),
 				array( 'module_key'=>'file-20','minimum_version'=>'1.4.17','maximum_version'=>'','purpose'=>'Single global notification bell, center placement and shell Safe Mode.','fail_mode'=>'Shell notification placement is unavailable and external delivery containment remains fail closed.' ),
@@ -34,7 +34,7 @@ final class SUN_Cross_File_Contracts {
 			'data_classes' => array( 'private_notification_projection','delivery_evidence','notification_preference','restricted_operational' ),
 			'canonical_entities' => array( 'notification','notification_preference','notification_delivery' ),
 			'writes' => array(), 'global_shell_owner' => false, 'application_shell_owner' => false,
-			'health' => array( 'contract' => 'sun.health.v6', 'callback' => 'sun_notification_capability_contract' ),
+			'health' => array( 'contract' => 'sun.health.v7', 'callback' => 'sun_notification_capability_contract' ),
 		);
 	}
 
