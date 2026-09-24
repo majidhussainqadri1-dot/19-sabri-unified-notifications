@@ -22,7 +22,7 @@ final class SUN_Cross_File_Contracts {
 			'commands' => array( 'IngestNotificationEvent.v1','UpdateNotificationPreferences.v1','RegisterNotificationDevice.v1','RetryNotificationDelivery.v1' ),
 			'queries' => array( 'ListNotifications.v1','GetUnreadCount.v1','GetNotificationHealth.v1' ),
 			'events' => array( 'NotificationCreated.v1','NotificationRead.v1','NotificationDeliveryFailed.v1','NotificationPreferenceChanged.v1' ),
-			'routes' => array( '/notifications/','/settings/notifications/' ),
+			'routes' => array( '/notifications/','/settings/notifications/','/notifications/unsubscribe/' ),
 			'data_classes' => array( 'private_notification_projection','delivery_evidence','notification_preference','restricted_operational' ),
 			'canonical_entities' => array( 'notification','notification_preference','notification_delivery' ),
 			'writes' => array(), 'global_shell_owner' => false, 'application_shell_owner' => false,
@@ -35,6 +35,7 @@ final class SUN_Cross_File_Contracts {
 		return array(
 			array( 'route_key'=>'file19-notifications','route_path'=>'/notifications/','owner_module'=>'file-19','layout_context'=>'minimal','status'=>'active','destination'=>home_url('/notifications/'),'redirects'=>array() ),
 			array( 'route_key'=>'file19-notification-settings','route_path'=>'/settings/notifications/','owner_module'=>'file-19','layout_context'=>'minimal','status'=>'active','destination'=>home_url('/settings/notifications/'),'redirects'=>array() ),
+			array( 'route_key'=>'file19-notification-unsubscribe','route_path'=>'/notifications/unsubscribe/','owner_module'=>'file-19','layout_context'=>'minimal','status'=>'active','destination'=>home_url('/notifications/unsubscribe/'),'redirects'=>array() ),
 		);
 	}
 
@@ -45,7 +46,8 @@ final class SUN_Cross_File_Contracts {
 		$existing = SPF_Registry::get_module( 'file-19' );
 		$context = array( 'purpose'=>'file19_cross_file_registry_sync' );
 		if ( is_array( $existing ) && isset( $existing['record_version'] ) ) { $context['expected_version'] = (int) $existing['record_version']; }
-		$result = SPF_Registry::register_manifest( self::manifest(), $context );
+		$manifest=self::manifest();$manifest_current=is_array($existing)&&($existing['software_version']??'')===SUN_VERSION&&($existing['contract_version']??'')===$manifest['contract_version']&&($existing['state']??'')==='active'&&array_values((array)($existing['routes']??array()))===array_values($manifest['routes']);
+		$result=$manifest_current?array('unchanged'=>true):SPF_Registry::register_manifest($manifest,$context);
 		if ( is_wp_error( $result ) ) { $status['error']=$result->get_error_code(); update_option( 'sun_file01_registry_sync', $status, false ); return; }
 		$status['manifest'] = true;
 		$existing_routes = SPF_Registry::list_routes(); $by_key = array();
@@ -53,8 +55,8 @@ final class SUN_Cross_File_Contracts {
 		foreach ( self::routes() as $route ) {
 			$ctx = array( 'purpose'=>'file19_cross_file_route_sync' );
 			if ( isset( $by_key[ $route['route_key'] ]['record_version'] ) ) { $ctx['expected_version'] = (int) $by_key[ $route['route_key'] ]['record_version']; }
-			$mapped = SPF_Registry::map_route( $route, $ctx );
-			$status['routes'][ $route['route_key'] ] = is_wp_error( $mapped ) ? $mapped->get_error_code() : 'ok';
+			$current=$by_key[$route['route_key']]??null;$route_current=is_array($current)&&($current['route_path']??'')===$route['route_path']&&($current['owner_module']??'')===$route['owner_module']&&($current['layout_context']??'')===$route['layout_context']&&($current['status']??'')===$route['status']&&($current['destination']??'')===$route['destination'];$mapped=$route_current?array('unchanged'=>true):SPF_Registry::map_route($route,$ctx);
+			$status['routes'][ $route['route_key'] ] = is_wp_error( $mapped ) ? $mapped->get_error_code() : ( $route_current ? 'unchanged' : 'ok' );
 		}
 		update_option( 'sun_file01_registry_sync', $status, false );
 	}
@@ -64,7 +66,7 @@ final class SUN_Cross_File_Contracts {
 		if ( ! class_exists( 'SPF_Registry' ) ) { return false; }
 		$module = SPF_Registry::get_module( 'file-19' );
 		if ( ! is_array( $module ) || 'active' !== ( $module['state'] ?? '' ) ) { return false; }
-		$needed = array( 'file19-notifications'=>false, 'file19-notification-settings'=>false );
+		$needed = array( 'file19-notifications'=>false, 'file19-notification-settings'=>false, 'file19-notification-unsubscribe'=>false );
 		foreach ( (array) SPF_Registry::list_routes() as $route ) {
 			if ( isset( $needed[ $route['route_key'] ] ) && 'file-19' === ( $route['owner_module'] ?? '' ) && 'active' === ( $route['status'] ?? '' ) ) { $needed[ $route['route_key'] ] = true; }
 		}
