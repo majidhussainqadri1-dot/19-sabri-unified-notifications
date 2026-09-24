@@ -10,7 +10,7 @@ final class SUN_Plugin {
 
 	/** @return void */
 	public function boot(){
-		SUN_Request_Idempotency::register();
+		SUN_Request_Idempotency::register();SUN_Cross_File_Contracts::register();SUN_Legacy_Migration::register();
 		$this->auth=new SUN_Auth();$this->registry=new SUN_Producer_Registry();$templates=new SUN_Template_Engine();$this->preferences=new SUN_Preferences($this->auth);$this->subscriptions=new SUN_Subscriptions();
 		$this->attention=new SUN_Attention_Service($this->auth);$this->trace=new SUN_Trace_Service();$this->routing=new SUN_Routing_Service();$this->experiments=new SUN_Experiments_Service();$this->intelligence=new SUN_Intelligence_Service($this->attention);$this->automation=new SUN_Automation_Service($this->attention);
 		$policy=new SUN_Policy_Engine($this->preferences,$this->registry,$this->subscriptions,$this->attention,$this->experiments);$validator=new SUN_Event_Validator($this->registry);$delivery=new SUN_Delivery_Service($templates,$this->auth);

@@ -3,7 +3,7 @@
  * Plugin Name: Sabri Unified Notifications and Alerts
  * Plugin URI: https://sabrihomeopathy.com/
  * Description: Canonical intelligent attention and notification operating system: unified inbox/bell, priority, search/history, snooze/pin/action states, AI catch-up, automation rules, focus modes, wellbeing budgets, live/revocable notifications, multi-device controls, routed external delivery, experiments, tracing and privacy-safe diagnostics for the Sabri Social Homeopathy Platform.
- * Version: 3.0.2
+ * Version: 3.0.3
  * Requires at least: 7.0
  * Requires PHP: 8.3
  * Author: Dr. Allamah Majid Hussain Sabri Muhaddith Mursheed
@@ -11,8 +11,8 @@
  * Domain Path: /languages
  */
 if ( ! defined( 'ABSPATH' ) ) { exit; }
-define( 'SUN_VERSION', '3.0.2' );
-define( 'SUN_DB_VERSION', '3.0.1' );
+define( 'SUN_VERSION', '3.0.3' );
+define( 'SUN_DB_VERSION', '3.0.2' );
 define( 'SUN_FILE', __FILE__ );
 define( 'SUN_PATH', plugin_dir_path( __FILE__ ) );
 define( 'SUN_URL', plugin_dir_url( __FILE__ ) );
@@ -29,6 +29,8 @@ require_once SUN_PATH . 'includes/class-sun-request-idempotency.php';
 require_once SUN_PATH . 'includes/class-sun-provider-webhook-verifier.php';
 require_once SUN_PATH . 'includes/class-sun-four-plan-compliance.php';
 require_once SUN_PATH . 'includes/class-sun-operational-gate.php';
+require_once SUN_PATH . 'includes/class-sun-cross-file-contracts.php';
+require_once SUN_PATH . 'includes/class-sun-legacy-migration.php';
 require_once SUN_PATH . 'includes/class-sun-provider-circuit.php';
 require_once SUN_PATH . 'includes/class-sun-auth.php';
 require_once SUN_PATH . 'includes/class-sun-producer-registry.php';

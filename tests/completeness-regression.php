@@ -5,7 +5,7 @@ function cr_check($condition,$label){global$tests,$failures;++$tests;if(!$condit
 function cr_src($path){global$plugin;return file_get_contents($plugin.'/'.$path);}
 
 $bootstrap=cr_src('19-unified-notifications.php');
-cr_check(false!==strpos($bootstrap,"Version: 3.0.2")&&false!==strpos($bootstrap,"SUN_DB_VERSION', '3.0.1"),'runtime/schema release bump');
+cr_check(false!==strpos($bootstrap,"Version: 3.0.3")&&false!==strpos($bootstrap,"SUN_DB_VERSION', '3.0.2"),'runtime/schema release bump');
 cr_check(false!==strpos($bootstrap,'class-sun-request-idempotency.php')&&false!==strpos($bootstrap,'class-sun-provider-webhook-verifier.php'),'replay-safety classes bootstrapped');
 
 $advanced=cr_src('includes/class-sun-advanced-rest.php');
@@ -50,6 +50,30 @@ cr_check(false!==strpos($delivery,'SUN_Provider_Webhook_Verifier::verify'),'deli
 
 $reconciliation=cr_src('includes/class-sun-reconciliation.php');
 cr_check(false!==strpos($reconciliation,'expired_idempotency')&&false!==strpos($reconciliation,'expired_webhook_receipts'),'ephemeral replay evidence cleanup');
+
+
+$cross=cr_src('includes/class-sun-cross-file-contracts.php');$legacy=cr_src('includes/class-sun-legacy-migration.php');
+cr_check(false!==strpos($cross,'SPF_Registry::register_manifest')&&false!==strpos($cross,'SPF_Registry::map_route'),'File 01 manifest/route registry adapter');
+cr_check(false!==strpos($cross,'sabri_file26_saved_queries_v1')&&false!==strpos($automation,'SUN_Cross_File_Contracts::saved_search_owned'),'File 26 saved-search ownership verified fail-closed');
+cr_check(false!==strpos($attention,"n.status NOT IN ('deleted','expired')")&&false!==strpos($attention,'n.expires_at IS NULL OR n.expires_at>%s'),'attention search/state expiry guards');
+$validator=cr_src('includes/class-sun-event-validator.php');
+cr_check(false!==strpos($validator,'sun_event_data_field_not_allowed')&&false!==strpos($validator,'sun_event_sensitive_data_forbidden'),'event payload allowlist and sensitive-key block');
+cr_check(false!==strpos($notifications,"'subscription_scope'=>\$event['subscription_scope']")&&false===strpos(substr($notifications,strpos($notifications,'$stored_payload='),500),"'recipients'"),'persisted event payload excludes recipient list');
+cr_check(false!==strpos($delivery,"home_url('/notifications/')")&&false!==strpos($delivery,'digest_key=%s'),'digest overflow center link and receipt fanout');
+cr_check(false!==strpos($routing,'sun_recipient_delivery_region')&&false!==strpos($routing,"CASE health_state WHEN 'healthy'"),'region/health-aware provider routing');
+cr_check(false!==strpos($privacy,'scrub_legacy_event_payloads')&&false!==strpos($privacy,'sun_event_payload_retention_days'),'legacy payload erasure and event retention');
+cr_check(false!==strpos($activator,"array('search','Search.*'")&&false!==strpos($activator,"array('analytics','Analytics.*'"),'Search/Research/Knowledge/Analytics policy families');
+$bulk=cr_src('includes/class-sun-bulk-service.php');
+cr_check(false!==strpos($bulk,'sun_bulk_governance_evidence_required')&&false!==strpos($activator,'compensation_plan text NULL'),'bulk reason and compensation evidence');
+$health=cr_src('includes/class-sun-health.php');
+cr_check(false!==strpos($health,"'request_idempotency','webhook_receipts'")&&false!==strpos($health,"'file01_registry'")&&false!==strpos($health,"'legacy_migration_gate'"),'health covers current schema and cross-file gates');
+$functions=cr_src('includes/functions.php');
+cr_check(false!==strpos($functions,'sun_live_owner_required')&&false!==strpos($attention,'sun_live_owner_mismatch'),'live projection update is producer-bound');
+$css=cr_src('assets/css/notifications.css');
+cr_check(false!==strpos($css,'--sabri-color-primary')&&false!==strpos($css,'--sabri-shadow-card'),'File 25 visual token bridge');
+cr_check(false!==strpos($legacy,'sun_legacy_notification_sources')&&false!==strpos($legacy,'legacy_source_contracts_unverified')&&false!==strpos($legacy,'public static function execute')&&false!==strpos($legacy,'public static function rollback'),'historical migration is reversible and evidence-gated');
+$push=cr_src('includes/adapters/class-sun-push-adapter.php');cr_check(false!==strpos($push,'sun_push_invalid_token_codes')&&false!==strpos($push,"'status'=>'revoked'"),'invalid push tokens are revoked');
+cr_check(false!==strpos($privacy,'$page=1')&&false!==strpos($privacy,'\'done\'=>count((array)$rows)<$limit'),'legacy event erasure is paginated to completion');
 
 if($failures){fwrite(STDERR,"FAIL (".count($failures)."/$tests):\n - ".implode("\n - ",$failures)."\n");exit(1);}
 echo "PASS: $tests completeness-audit regression assertions\n";

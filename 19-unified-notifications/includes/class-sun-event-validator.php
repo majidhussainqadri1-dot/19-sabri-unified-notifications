@@ -72,6 +72,9 @@ final class SUN_Event_Validator {
 		$this->data_nodes = 0;
 		$data = isset( $event['data'] ) && is_array( $event['data'] ) ? $this->sanitize_data( $event['data'], 0 ) : array();
 		if ( is_wp_error( $data ) ) { return $data; }
+		$allowed_fields = isset( $config['allowed_data_fields'] ) && is_array( $config['allowed_data_fields'] ) ? $config['allowed_data_fields'] : array( 'actor_name','object_name','action_name','summary','site_name','progress','status','label','count','due_at','correction_reason','source_label','source_kind','source_verified','actions','why','group_key' );
+		$allowed_fields = array_values( array_unique( array_filter( array_map( 'sanitize_key', (array) apply_filters( 'sun_event_allowed_data_fields', $allowed_fields, $producer, $event_type, $config ) ) ) ) );
+		foreach ( array_keys( $data ) as $data_key ) { if ( ! in_array( $data_key, $allowed_fields, true ) ) { return new WP_Error( 'sun_event_data_field_not_allowed', __( 'The event contains a data field outside the registered notification contract.', 'sabri-unified-notifications' ), array( 'status' => 400, 'field' => $data_key ) ); } }
 		if ( strlen( wp_json_encode( $data ) ) > (int) apply_filters( 'sun_event_data_max_bytes', 65536, $producer ) ) {
 			return new WP_Error( 'sun_event_data_too_large', __( 'The event data exceeds the allowed size.', 'sabri-unified-notifications' ), array( 'status' => 413 ) );
 		}
@@ -169,7 +172,7 @@ final class SUN_Event_Validator {
 			foreach(array_slice($value,0,100,true) as $key=>$item){
 				$clean=$this->sanitize_data($item,$depth+1);
 				if(is_wp_error($clean)){return $clean;}
-				$out[sanitize_key((string)$key)]=$clean;
+				$safe_key=sanitize_key((string)$key);$blocked=array('password','secret','token','email','phone','diagnosis','remedy','clinical_record','medical_record','message_body','raw_message','raw_media','media_path','filesystem_path');if(in_array($safe_key,$blocked,true)&&!apply_filters('sun_allow_sensitive_event_data_key',false,$safe_key,$depth)){return new WP_Error('sun_event_sensitive_data_forbidden',__('Sensitive raw data is not allowed in notification event payloads.','sabri-unified-notifications'),array('status'=>400,'field'=>$safe_key));}$out[$safe_key]=$clean;
 			}
 			return $out;
 		}
