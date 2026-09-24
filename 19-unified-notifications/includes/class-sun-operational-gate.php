@@ -18,9 +18,13 @@ final class SUN_Operational_Gate {
 	 * @return array<string,mixed>
 	 */
 	public static function snapshot() {
-		$local  = (bool) get_option( 'sun_notification_safe_mode', false );
-		$file20 = (bool) apply_filters( 'sun_file20_safe_mode_active', false );
-		$file24 = (bool) apply_filters( 'sun_file24_notification_containment_active', false );
+		$local = (bool) get_option( 'sun_notification_safe_mode', false );
+		$file20_available = false !== has_filter( 'sun_file20_safe_mode_active' );
+		$file24_available = false !== has_filter( 'sun_file24_notification_containment_active' );
+		/* File 20 and File 24 are required owner contracts. Their absence is not
+		 * interpreted as an all-clear for external delivery. */
+		$file20 = $file20_available ? (bool) apply_filters( 'sun_file20_safe_mode_active', false ) : true;
+		$file24 = $file24_available ? (bool) apply_filters( 'sun_file24_notification_containment_active', false ) : true;
 		$active = $local || $file20 || $file24;
 
 		return array(
@@ -28,7 +32,9 @@ final class SUN_Operational_Gate {
 			'safe_mode_active'          => $active,
 			'local_containment'         => $local,
 			'file20_safe_mode'          => $file20,
+			'file20_contract_available' => $file20_available,
 			'file24_containment'        => $file24,
+			'file24_contract_available' => $file24_available,
 			'in_app_reading_allowed'    => true,
 			'external_delivery_allowed' => ! $active,
 			'bulk_send_allowed'         => ! $active,
