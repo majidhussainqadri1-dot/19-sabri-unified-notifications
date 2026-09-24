@@ -76,7 +76,7 @@ final class SUN_Activator {
 			PRIMARY KEY (id), KEY object_lookup (object_type,object_id), KEY actor_created (actor_id,created_at), KEY trace_id (trace_id)
 		) {$charset};";
 		$sql[]="CREATE TABLE {$bulk} (
-			id bigint unsigned NOT NULL AUTO_INCREMENT, public_id char(36) NOT NULL, created_by bigint unsigned NOT NULL, audience_hash char(64) NOT NULL, recipient_count int unsigned NOT NULL, event_type varchar(191) NOT NULL, reason_text text NOT NULL, compensation_plan text NOT NULL, payload_ciphertext longtext NOT NULL, status varchar(20) NOT NULL DEFAULT 'preview', confirmation_hash char(64) NOT NULL, cancel_requested tinyint(1) NOT NULL DEFAULT 0, processed_count int unsigned NOT NULL DEFAULT 0, failed_count int unsigned NOT NULL DEFAULT 0, created_at datetime NOT NULL, updated_at datetime NOT NULL,
+			id bigint unsigned NOT NULL AUTO_INCREMENT, public_id char(36) NOT NULL, created_by bigint unsigned NOT NULL, audience_hash char(64) NOT NULL, recipient_count int unsigned NOT NULL, event_type varchar(191) NOT NULL, reason_text text NULL, compensation_plan text NULL, payload_ciphertext longtext NOT NULL, status varchar(20) NOT NULL DEFAULT 'preview', confirmation_hash char(64) NOT NULL, cancel_requested tinyint(1) NOT NULL DEFAULT 0, processed_count int unsigned NOT NULL DEFAULT 0, failed_count int unsigned NOT NULL DEFAULT 0, created_at datetime NOT NULL, updated_at datetime NOT NULL,
 			PRIMARY KEY (id), UNIQUE KEY public_id (public_id), KEY status_created (status,created_at)
 		) {$charset};";
 		$sql[]="CREATE TABLE {$idem} (
