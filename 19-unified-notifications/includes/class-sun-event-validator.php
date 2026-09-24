@@ -183,7 +183,8 @@ final class SUN_Event_Validator {
 			}
 		}
 		$allowed = apply_filters( 'sun_event_allowed_data_fields', array_values( array_unique( $allowed ) ), (string) $event_type, $config );
-		return array_values( array_unique( array_filter( array_map( 'sanitize_key', is_array($allowed)?$allowed:array() ) ) ) );
+		$final=array();foreach((array)$allowed as $field){$field=sanitize_key((string)$field);if(''!==$field&&!$this->sensitive_key($field)){$final[]=$field;}}
+		return array_values( array_unique( $final ) );
 	}
 
 	/** @param string $key Key. @return bool */
