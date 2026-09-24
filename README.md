@@ -2,26 +2,26 @@
 
 Canonical intelligent notification and attention infrastructure for the **Sabri Social Homeopathy Platform**.
 
-## Current 3.0.2 repository release
+## Current 3.1.0 repository candidate
 
 - File number: **19**
-- Runtime / schema: **3.0.2 / 3.0.1**
+- Runtime / schema: **3.1.0 / 3.1.0**
 - Repository source folder: `19-unified-notifications`
 - Canonical installable package folder: `unified-notifications-19`
 - Text domain: `sabri-unified-notifications`
 - REST namespace: `sabri-notifications/v1`
 - PHP minimum: **8.3**
 - WordPress minimum: **7.0**
-- Deterministic package: `19-sabri-unified-notifications-3.0.2.zip`
-- Frozen package SHA-256: `f08d27ac1148ea2a15309e8ccb7452e75fc32cc6d31663d1873365d54533f469`
-- PR #14 merged the audited 3.0.2 source into `main` at `28e01559a2d00e655e50daaa2cbe3877dc0833cd`; main QA run `35877953837` passed PHP 8.3/8.4 unit, advanced, completeness-regression, TextBee, static/security/privacy, clean-extract package and frozen-checksum deterministic rebuild gates
+- Deterministic package: `19-sabri-unified-notifications-3.1.0.zip`
+- Package SHA-256: **PENDING until the exact 3.1.0 candidate passes deterministic CI rebuild**
+- 3.1.0 source is being reviewed on a corrective branch; main/staging/live are not implied by this candidate.
 - Governing basis: consolidated central governing corpus + File 19 dedicated master plan + later Founder-approved Intelligent Attention extension
 
 File 19 remains the sole notification projection, preferences, orchestration, delivery, history and notification-intelligence owner. Domain truth remains with the native owner files; File 19 never becomes the source of truth for appointments, messages, publishing, marketplace, identity, search or other domain objects.
 
 ## TextBee SMS provider bridge
 
-3.0.2 retains the first-party TextBee bridge and adds completeness/security hardening; 3.0.1 originally added the TextBee bridge to File 19's existing provider-neutral SMS contract. It uses the current account-level TextBee endpoint and keeps credentials outside WordPress data.
+3.1.0 retains the first-party TextBee bridge and adds completeness/security hardening; 3.0.1 originally added the TextBee bridge to File 19's existing provider-neutral SMS contract. It uses the current account-level TextBee endpoint and keeps credentials outside WordPress data.
 
 Production configuration belongs in `wp-config.php` only:
 
@@ -48,7 +48,7 @@ Existing 2.4 controls remain: one in-app center/File 20 single bell, versioned f
 
 ## Truth of status
 
-The 3.0.2 repository release closes the latest 20-round repository audit findings: canonical re-authorization for privileged advanced REST, executable automation rules, saved-search owner binding, runtime shadow/canary evaluation, end-to-end trace stages, optimistic per-device concurrency, schema-neutral version bookkeeping, routed-provider identity/cost/rate accounting, missing-state reconciliation, durable authenticated mutation idempotency, and signed/timestamped/replay-protected provider webhooks. Repository CI/package evidence is tracked separately from staging and Live. **Staging-Accepted**, **Live-Deployed** and **Operational** are not implied by source completion. Exact deployed code remains unverified until deployment parity is checked.
+The 3.1.0 candidate extends the earlier audit closure with the fresh cross-plan findings: File 01 route registry synchronization, File 25 token consumption, fail-closed File 26 saved-search ownership, owner-attested live/revocation mutations, Search/Research/Knowledge/Analytics policies, explicit notification DTO allowlists, minimized and retained event payloads, expired-attention guards, digest overflow/receipt reconciliation, health/region routing, invalid push-token revocation, bulk reason/reversal evidence, expanded System Check and a governed legacy-migration audit framework. Repository CI/package evidence is tracked separately from staging and Live. **Staging-Accepted**, **Live-Deployed** and **Operational** are not implied by source completion. Exact deployed code remains unverified until deployment parity is checked.
 
 ## Public integration examples
 
@@ -58,10 +58,12 @@ sun_register_notification_producer('file17', [
     'event_types' => [ 'Communication.*' ],
     'schema_versions' => [ '1.0' ],
     'secret_callback' => static fn () => getenv('FILE17_NOTIFICATION_SECRET'),
+    'mutation_callback' => static fn ($operation, $context) => file17_authorize_notification_mutation($operation, $context),
+    'data_schemas' => [ 'Communication.*' => [ 'thread_label' ] ],
 ]);
 
 sun_register_notification_saved_search($user_id, 'file26', $search_id, 'Diabetes research', 'daily');
-sun_update_live_notification($notification_public_id, ['summary' => 'Processing 70%']);
+sun_update_live_notification($notification_public_id, ['summary' => 'Processing 70%'], 'file17');
 sun_revoke_notifications_by_source('file21', $event_id, 'source_retracted');
 ```
 
@@ -70,6 +72,6 @@ AI is optional and adapter-based. If no approved AI provider is configured, catc
 See `19-unified-notifications/docs/ADVANCED-ATTENTION-OS-3.0.0.md` for the complete advanced requirement catalogue and implementation map.
 
 
-## 3.0.2 completeness hardening
+## 3.1.0 cross-plan completion
 
-The 3.0.2 / DB 3.0.1 release adds two bounded operational tables: `sun_request_idempotency` for short-lived encrypted mutation replay responses and `sun_webhook_receipts` for provider webhook replay prevention. Delivery records now retain both the actual provider and canonical route-provider identity so rate caps and known-cost accounting use the route that was actually selected. Reconciliation repairs missing derived attention-state rows and expires short-lived replay evidence. Normal uninstall remains non-destructive.
+The 3.1.0 / DB 3.1.0 candidate retains the two bounded replay-safety tables and adds cross-plan governance/schema changes. The earlier 3.0.2 release added two bounded operational tables: `sun_request_idempotency` for short-lived encrypted mutation replay responses and `sun_webhook_receipts` for provider webhook replay prevention. Delivery records now retain both the actual provider and canonical route-provider identity so rate caps and known-cost accounting use the route that was actually selected. Reconciliation repairs missing derived attention-state rows and expires short-lived replay evidence. Normal uninstall remains non-destructive.
