@@ -49,9 +49,10 @@ final class SUN_Routing_Service {
         $base_key = $this->base_provider_key( $channel );
         $errors = array();
         $region = sanitize_key( (string) apply_filters( 'sun_notification_recipient_region', '', absint( $delivery['recipient_id'] ?? 0 ), $notification, $delivery ) );
+        $route_configured = $this->channel_has_routes( $channel );
         $candidates = $this->candidates( $channel, $region );
 
-        if ( empty( $candidates ) && $base instanceof SUN_Delivery_Adapter ) {
+        if ( empty( $candidates ) && ! $route_configured && $base instanceof SUN_Delivery_Adapter ) {
             $direct = $base->send( $delivery, $notification );
             if ( is_array( $direct ) ) { $direct['route_provider']=$base_key; $direct['estimated_cost_micros']=null; }
             return $direct;
@@ -91,7 +92,7 @@ final class SUN_Routing_Service {
         }
 
         $candidate_keys = array_map( static function( $c ) { return sanitize_key( (string) $c['provider_key'] ); }, $candidates );
-        if ( $base instanceof SUN_Delivery_Adapter && ! in_array( $base_key, $candidate_keys, true ) ) {
+        if ( ! $route_configured && $base instanceof SUN_Delivery_Adapter && ! in_array( $base_key, $candidate_keys, true ) ) {
             $fallback = $base->send( $delivery, $notification );
             if ( ! is_wp_error( $fallback ) ) {
                 if ( is_array( $fallback ) ) { $fallback['route_provider']=$base_key; $fallback['estimated_cost_micros']=null; }
@@ -118,6 +119,12 @@ final class SUN_Routing_Service {
     public function record_health( $channel, $provider, $success ) {
         global $wpdb;
         $wpdb->update( SUN_Database::table( 'provider_routes' ), array( 'health_state'=>$success?'healthy':'degraded','updated_at'=>SUN_Database::now() ), array( 'channel'=>sanitize_key($channel),'provider_key'=>sanitize_key($provider) ) );
+    }
+
+    /** @param string $channel Channel. @return bool */
+    private function channel_has_routes( $channel ) {
+        global $wpdb;
+        return (bool) $wpdb->get_var( $wpdb->prepare( 'SELECT id FROM ' . SUN_Database::table( 'provider_routes' ) . ' WHERE channel=%s LIMIT 1', sanitize_key( $channel ) ) );
     }
 
     /** @param array<string,mixed> $candidate Candidate. @return bool */
