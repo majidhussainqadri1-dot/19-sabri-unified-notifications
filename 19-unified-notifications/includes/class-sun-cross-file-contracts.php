@@ -95,7 +95,7 @@ final class SUN_Cross_File_Contracts {
 	public static function health( $health=array() ) {
 		$health=is_array($health)?$health:array();
 		$health['file01_registry']=self::file01_registry_ready();
-		$health['file20_single_bell']=(bool)has_action('sun_file20_notification_slot');
+		$health['file20_single_bell']=class_exists('Sabri\\UnifiedShell\\Plugin')&&(bool)has_action('sun_file20_notification_slot');
 		$health['file26_saved_search_verifier']=self::saved_search_verifier_ready();
 		$health['visual_owner']='file-25-css-variable-contract';
 		return $health;
