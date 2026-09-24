@@ -46,6 +46,9 @@ final class SUN_Legacy_Migration {
 	/** @return array<string,mixed> */
 	public static function health(){
 		$state=get_option(self::OPTION,array());$sources=self::sources();
-		return array('ready'=>!empty($state['ready'])&&!empty($sources),'declared_sources'=>count($sources),'last_dry_run'=>$state['generated_at']??null,'blocking_reason'=>$state['blocking_reason']??(empty($sources)?'legacy_source_contracts_unverified':null),'rule'=>'no historical table or bell is migrated without an owner-declared reversible adapter and dry-run evidence');
+		$applicable=!empty($sources)?true:apply_filters('sun_legacy_notification_migration_applicable',null,$sources);
+		if(false===$applicable){return array('ready'=>true,'applicable'=>false,'declared_sources'=>0,'last_dry_run'=>$state['generated_at']??null,'blocking_reason'=>null,'rule'=>'legacy migration is not applicable only when an owner contract explicitly attests that no legacy notification source remains');}
+		$ready=!empty($state['ready'])&&!empty($sources);
+		return array('ready'=>$ready,'applicable'=>true===$applicable?true:null,'declared_sources'=>count($sources),'last_dry_run'=>$state['generated_at']??null,'blocking_reason'=>$ready?null:($state['blocking_reason']??'legacy_source_contracts_unverified'),'rule'=>'no historical table or bell is migrated without an owner-declared reversible adapter and dry-run evidence');
 	}
 }
