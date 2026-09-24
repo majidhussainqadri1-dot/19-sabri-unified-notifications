@@ -21,7 +21,7 @@ final class SUN_Activator {
 			add_rewrite_rule('^notifications/open/([a-f0-9\-]{36})/?$','index.php?sun_notifications_route=open&sun_notification_id=$matches[1]','top');
 			add_rewrite_rule('^notifications/unsubscribe/([^/]+)/?$','index.php?sun_notifications_route=unsubscribe&sun_notification_token=$matches[1]','top');
 			add_rewrite_rule('^sabri-notifications-service-worker\.js$','index.php?sun_notifications_route=service-worker','top');
-			update_option('sun_plugin_version',SUN_VERSION,false);update_option('sun_db_version',SUN_DB_VERSION,false);update_option('sun_activation_snapshot',self::activation_snapshot(),false);flush_rewrite_rules(false);
+			update_option('sun_plugin_version',SUN_VERSION,false);update_option('sun_db_version',SUN_DB_VERSION,false);update_option('sun_activation_snapshot',self::activation_snapshot(),false);SUN_Cross_File_Contracts::sync_file01_registry();flush_rewrite_rules(false);
 		}finally{delete_option($lock_key);}
 	}
 
