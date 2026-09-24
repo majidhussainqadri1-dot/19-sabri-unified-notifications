@@ -3,7 +3,7 @@
  * Plugin Name: Sabri Unified Notifications and Alerts
  * Plugin URI: https://sabrihomeopathy.com/
  * Description: Canonical intelligent attention and notification operating system: unified inbox/bell, priority, search/history, snooze/pin/action states, AI catch-up, automation rules, focus modes, wellbeing budgets, live/revocable notifications, multi-device controls, routed external delivery, experiments, tracing and privacy-safe diagnostics for the Sabri Social Homeopathy Platform.
- * Version: 3.0.3
+ * Version: 3.0.4
  * Requires at least: 7.0
  * Requires PHP: 8.3
  * Author: Dr. Allamah Majid Hussain Sabri Muhaddith Mursheed
@@ -11,7 +11,7 @@
  * Domain Path: /languages
  */
 if ( ! defined( 'ABSPATH' ) ) { exit; }
-define( 'SUN_VERSION', '3.0.3' );
+define( 'SUN_VERSION', '3.0.4' );
 define( 'SUN_DB_VERSION', '3.0.2' );
 define( 'SUN_FILE', __FILE__ );
 define( 'SUN_PATH', plugin_dir_path( __FILE__ ) );
