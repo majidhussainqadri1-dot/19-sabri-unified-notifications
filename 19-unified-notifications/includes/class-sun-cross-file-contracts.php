@@ -3,12 +3,11 @@
 if ( ! defined( 'ABSPATH' ) ) { exit; }
 
 final class SUN_Cross_File_Contracts {
-	const FILE26_SAVED_META = 'sabri_file26_saved_queries_v1';
-
 	/** @return void */
 	public static function register() {
 		if ( is_admin() ) { add_action( 'admin_init', array( __CLASS__, 'sync_file01_registry' ), 60 ); }
 		add_filter( 'sun_file19_cross_file_health', array( __CLASS__, 'health' ) );
+		add_filter( 'spcrc/file19_contract_state', array( __CLASS__, 'file24_assurance_state' ), 10, 2 );
 	}
 
 	/** @return array<string,mixed> */
@@ -17,7 +16,16 @@ final class SUN_Cross_File_Contracts {
 			'module_key' => 'file-19', 'owner_file' => '19', 'owner_name' => 'Sabri Unified Notifications and Alerts',
 			'slug' => 'sabri-unified-notifications', 'namespace_prefix' => 'SUN_', 'software_version' => SUN_VERSION,
 			'contract_version' => '3.0.0', 'state' => 'active',
-			'required' => array(), 'optional' => array(),
+			'required' => array(
+				array( 'module_key'=>'file-00','minimum_version'=>'1.2.44','maximum_version'=>'','purpose'=>'Canonical recipient identity, eligibility and verified contact assertions.','fail_mode'=>'Protected notification access and privileged actions fail closed.' ),
+				array( 'module_key'=>'file-20','minimum_version'=>'1.4.17','maximum_version'=>'','purpose'=>'Single global notification bell, center placement and shell Safe Mode.','fail_mode'=>'Shell notification placement is unavailable and external delivery containment remains fail closed.' ),
+				array( 'module_key'=>'file-24','minimum_version'=>'0.99.0','maximum_version'=>'','purpose'=>'Cross-cutting security, privacy, provider and incident assurance.','fail_mode'=>'Assurance is degraded; high-risk external operations remain contained.' ),
+			),
+			'optional' => array(
+				array( 'module_key'=>'file-02','minimum_version'=>'1.0.0','maximum_version'=>'','purpose'=>'Fresh passkey authentication assurance for governance actions.','fail_mode'=>'Governance actions requiring step-up are unavailable.' ),
+				array( 'module_key'=>'file-25','minimum_version'=>'0.0.1','maximum_version'=>'','purpose'=>'Canonical visual tokens and public presentation components.','fail_mode'=>'File 19 uses scoped accessible fallback presentation only.' ),
+				array( 'module_key'=>'file-26','minimum_version'=>'1.0.0','maximum_version'=>'','purpose'=>'Canonical saved-search ownership verification for watch rules.','fail_mode'=>'Saved-search watches cannot be created or changed.' ),
+			),
 			'capabilities' => array( 'notification_projection','single_bell','preferences','delivery_queue','digest','device_delivery','attention_os','dead_letter','privacy_lifecycle' ),
 			'commands' => array( 'IngestNotificationEvent.v1','UpdateNotificationPreferences.v1','RegisterNotificationDevice.v1','RetryNotificationDelivery.v1' ),
 			'queries' => array( 'ListNotifications.v1','GetUnreadCount.v1','GetNotificationHealth.v1' ),
@@ -75,29 +83,37 @@ final class SUN_Cross_File_Contracts {
 
 	/** @return bool */
 	public static function saved_search_verifier_ready() {
-		return class_exists( 'Sabri\\File26\\Central_Plan' ) || false !== has_filter( 'sun_validate_saved_search_ownership' );
+		return false !== has_filter( 'sun_validate_saved_search_ownership' );
 	}
 
 	/** @return true|WP_Error */
 	public static function saved_search_owned( $user_id, $owner, $search_id ) {
 		$user_id=absint($user_id); $owner=sanitize_key((string)$owner); $search_id=substr(sanitize_text_field((string)$search_id),0,191);
 		if($user_id<1||''===$search_id){return new WP_Error('sun_saved_search_invalid',__('A valid saved-search owner and identifier are required.','sabri-unified-notifications'),array('status'=>400));}
+		if(false===has_filter('sun_validate_saved_search_ownership')){return new WP_Error('sun_saved_search_owner_unavailable',__('The canonical saved-search owner is unavailable.','sabri-unified-notifications'),array('status'=>503));}
 		$external=apply_filters('sun_validate_saved_search_ownership',null,$user_id,$owner,$search_id);
 		if(is_wp_error($external)){return $external;}
-		if(is_bool($external)){return $external?true:new WP_Error('sun_saved_search_not_owned',__('The saved search is not owned by this user.','sabri-unified-notifications'),array('status'=>403));}
-		if(!in_array($owner,array('file26','file-26','search','sabri-file26'),true)){return new WP_Error('sun_saved_search_owner_unverified',__('The saved-search owner cannot be verified.','sabri-unified-notifications'),array('status'=>503));}
-		$records=get_user_meta($user_id,self::FILE26_SAVED_META,true);
-		if(!is_array($records)||!isset($records[$search_id])||!is_array($records[$search_id])){return new WP_Error('sun_saved_search_not_owned',__('The saved search is not owned by this user.','sabri-unified-notifications'),array('status'=>403));}
-		$expires=(string)($records[$search_id]['expires_at']??'');
-		if($expires&&strtotime($expires.' UTC')<=time()){return new WP_Error('sun_saved_search_expired',__('The saved search has expired.','sabri-unified-notifications'),array('status'=>410));}
-		return true;
+		if(true===$external){return true;}
+		if(false===$external){return new WP_Error('sun_saved_search_not_owned',__('The saved search is not owned by this user.','sabri-unified-notifications'),array('status'=>403));}
+		return new WP_Error('sun_saved_search_owner_unverified',__('The saved-search owner did not return a canonical ownership assertion.','sabri-unified-notifications'),array('status'=>503));
+	}
+
+	/** File 24 contract state for the canonical assurance matrix. */
+	public static function file24_assurance_state( $current = 'unassessed', $definition = array() ) {
+		unset( $current, $definition );
+		if ( ! defined( 'SUN_VERSION' ) || ! class_exists( 'SUN_Notification_Service' ) ) { return 'missing'; }
+		$db = (string) get_option( 'sun_db_version', '' );
+		if ( ! defined( 'SUN_DB_VERSION' ) || '' === $db || SUN_DB_VERSION !== $db ) { return 'degraded'; }
+		return 'compatible';
 	}
 
 	/** @param array<string,mixed> $health Health. @return array<string,mixed> */
 	public static function health( $health=array() ) {
 		$health=is_array($health)?$health:array();
 		$health['file01_registry']=self::file01_registry_ready();
-		$health['file20_single_bell']=class_exists('Sabri\\UnifiedShell\\Plugin')&&(bool)has_action('sun_file20_notification_slot');
+		$surface=false===has_filter('sun_file20_notification_surface_state')?null:apply_filters('sun_file20_notification_surface_state',null);
+		$health['file20_single_bell']=is_array($surface)&&'file-20'===($surface['owner']??'')&&!empty($surface['detected'])&&!empty($surface['destination']);
+		$health['file20_surface_contract']=is_array($surface)?($surface['contract']??''):'';
 		$health['file26_saved_search_verifier']=self::saved_search_verifier_ready();
 		$health['visual_owner']='file-25-css-variable-contract';
 		return $health;
