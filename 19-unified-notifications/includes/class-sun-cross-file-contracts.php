@@ -135,9 +135,10 @@ final class SUN_Cross_File_Contracts {
 	public static function shell_status() {
 		$contract = apply_filters( 'sun_file20_notification_contract', array() );
 		$file19 = is_array( $contract ) ? ( $contract['file19'] ?? array() ) : array();
+		$available = defined( 'SABRI_SHELL_VERSION' ) && class_exists( 'Sabri\\UnifiedShell\\Renderer' );
 		return array(
-			'available' => defined( 'SABRI_SHELL_VERSION' ) || has_action( 'sun_file20_notification_slot' ),
-			'single_bell' => is_array( $file19 ) && ! empty( $file19['single_bell'] ),
+			'available' => $available,
+			'single_bell' => $available && method_exists( 'Sabri\\UnifiedShell\\Renderer', 'claim_notifications_output' ) && shortcode_exists( 'sabri_notification_bell' ) && is_array( $file19 ) && ! empty( $file19['single_bell'] ),
 			'slot' => is_array( $file19 ) ? (string) ( $file19['slot'] ?? '' ) : '',
 		);
 	}
@@ -152,7 +153,7 @@ final class SUN_Cross_File_Contracts {
 		$contract = apply_filters( 'sabri_file25_notification_visual_contract', null, array(
 			'consumer'=>'file-19',
 			'required_css_variables'=>array(
-				'--sabri-file25-color-primary','--sabri-file25-color-primary-strong','--sabri-file25-color-surface',
+				'--sabri-file25-color-primary','--sabri-file25-color-primary-strong','--sabri-file25-color-surface','--sabri-file25-color-surface-muted',
 				'--sabri-file25-color-border','--sabri-file25-color-text','--sabri-file25-color-muted','--sabri-file25-color-danger',
 				'--sabri-file25-radius-card','--sabri-file25-shadow-card',
 			),
