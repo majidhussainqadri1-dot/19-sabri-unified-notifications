@@ -49,9 +49,9 @@ final class SUN_Platform_Events {
 	/**
 	 * Publish a bounded File 19 fact through File 01.
 	 *
-	 * Repository code may run in isolated test/development contexts without
-	 * File 01. In that case local File 19 behavior remains available but health
-	 * reports the missing required backbone; staging/release gates must fail.
+	 * File 01 is a required dependency for contract-bearing File 19 mutations.
+	 * If it is unavailable, transactional File 19 mutations fail closed; delivery
+	 * failure facts are reconciled later because provider outcomes cannot be rolled back.
 	 *
 	 * @param string              $event_name Event contract name.
 	 * @param string              $aggregate_id Opaque File 19 aggregate identifier.
@@ -65,7 +65,7 @@ final class SUN_Platform_Events {
 			return new WP_Error( 'sun_platform_event_contract_unknown', __( 'The File 19 platform event contract is unknown.', 'sabri-unified-notifications' ) );
 		}
 		if ( ! self::backbone_available() ) {
-			return true;
+			return new WP_Error( 'sun_file01_event_backbone_unavailable', __( 'The required File 01 event backbone is unavailable.', 'sabri-unified-notifications' ), array( 'status'=>503 ) );
 		}
 		$contract = $contracts[ $event_name ];
 		$aggregate_id = sanitize_text_field( (string) $aggregate_id );
