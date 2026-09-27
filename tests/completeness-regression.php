@@ -47,7 +47,7 @@ cr_check(false!==strpos($notifications,"NotificationCreated.v1")&&false!==strpos
 $preferences=cr_src('includes/class-sun-preferences.php');
 cr_check(false!==strpos($preferences,"NotificationPreferenceChanged.v1")&&false!==strpos($preferences,"SUN_Database::begin()"),'preference fact publication is transaction-bound');
 cr_check(false!==strpos($delivery,"NotificationDeliveryFailed.v1"),'delivery failure fact publication wired');
-cr_check(false!==strpos($notifications,"'read'===$action&&'read'===$row['status']")&&false!==strpos($notifications,"$where[]="status='unread'""),'single/bulk notification mutation idempotency hardened');
+cr_check(false!==strpos($notifications,"'read'===\$action&&'read'===\$row['status']")&&false!==strpos($notifications,"\$where[]=\"status='unread'\""),'single/bulk notification mutation idempotency hardened');
 
 $ownership=cr_src('includes/class-sun-four-plan-compliance.php');
 cr_check(false!==strpos($ownership,"AccountAuthenticationFailed.v1'=>array('owner'=>2")&&false!==strpos($ownership,"PasswordResetCompleted.v1'=>array('owner'=>2"),'authentication event ownership aligned to File 02');
