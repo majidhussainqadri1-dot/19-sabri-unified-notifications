@@ -2,32 +2,31 @@
 
 | Status layer | Current evidence |
 |---|---|
-| Specified | File 19 master plan + central governing corpus + Intelligent Attention 3.0 register + 20-round completeness audit findings incorporated |
-| Repository HEAD | **3.0.2** runtime / **3.0.1** DB schema merged to `main`; audited source merge commit `28e01559a2d00e655e50daaa2cbe3877dc0833cd` via PR #14 |
-| Coded scope | Canonical advanced authorization, executable rules/saved-search owner binding, live shadow/canary wiring, end-to-end traces, device concurrency, routed-provider accounting, state repair, REST idempotency and signed replay-safe provider webhooks |
-| TextBee | Existing first-party TextBee SMS bridge retained; provider acceptance remains distinct from carrier delivery |
-| Package | Deterministic `19-sabri-unified-notifications-3.0.2.zip`, canonical `unified-notifications-19/`, frozen SHA-256 `f08d27ac1148ea2a15309e8ccb7452e75fc32cc6d31663d1873365d54533f469` |
-| Automated QA | PR exact-head run `35877830616` and merged-main run `35877953837` passed PHP 8.3/8.4 baseline, advanced, completeness-regression, TextBee, static/security/privacy, clean-extract package and frozen-checksum deterministic rebuild gates |
-| Staging-Accepted | **Not claimed** in this repository coding pass |
-| Live-Deployed | **Unverified**. Repository state must not be treated as deployed state |
-| Operational | **Not claimed**; requires exact deployed-version/DB/migration parity, provider readiness, real-role journeys, monitoring and Live re-test |
+| Specified | File 19 master plan + consolidated central governing corpus + Intelligent Attention 3.0 register + current twenty-round cross-file corrective review |
+| Audited baseline | Main HEAD `942bff557c020617c805b5cd982f69ec8a717fac` was the frozen pre-correction repository baseline for this review |
+| Corrective candidate | Branch `file19-hourly-20-review-20260927-r1`; runtime **3.0.5**, DB schema **3.0.2** |
+| Coded scope | File 01 registry/event-backbone closure, plan-complete command/query manifest, outbound NotificationCreated/Read/DeliveryFailed/PreferenceChanged events, stronger manifest parity checks, idempotent notification/preference state changes, delivery-failure reconciliation, plus retained Intelligent Attention 3.0 functionality |
+| Cross-file owner contracts | File 00 identity, File 01 registry/event backbone, File 02 fresh step-up, File 20 single notification surface/Safe Mode, File 24 containment/assurance, File 25 visual ownership, File 26 saved-search ownership |
+| Package | Target `19-sabri-unified-notifications-3.0.5.zip`, canonical top folder `unified-notifications-19/`; checksum remains **PENDING** until exact-candidate CI deterministic build succeeds |
+| Automated QA | **Pending for 3.0.5 corrective branch**; earlier 3.0.4 main HEAD CI was green but is not evidence for this changed candidate |
+| Staging-Accepted | **Not claimed** |
+| Live-Deployed | **Unverified**; repository code is not deployment evidence |
+| Operational | **Not claimed** |
 
-## 3.0.2 audit closure scope
+## 3.0.5 corrective scope
 
-This candidate closes the repository defects found in the latest 20-round File 19 audit:
+This candidate addresses repository-level defects found by the current twenty-round review:
 
-1. advanced experiment/trace/synthetic permissions now re-check canonical File 00 eligibility and required Founder/step-up authority;
-2. automation matches now execute File-19-owned actions and route domain actions back to the native owner;
-3. File 26 saved-search watches bind both owner and saved-search ID;
-4. shadow and canary experiments are invoked by the real policy path;
-5. trace evidence spans event intake, policy, projection, queue, provider attempt/receipt and native action;
-6. per-device profiles use optimistic concurrency;
-7. schema-neutral runtime upgrades update persisted plugin-version evidence and always keep schedules present;
-8. delivery records retain route-provider identity for correct cost/rate-cap accounting;
-9. reconciliation repairs missing derived notification-state rows;
-10. authenticated mutating REST requests receive durable replay-safe idempotency;
-11. provider-neutral webhook verification supports HMAC signature, timestamp window and durable replay rejection.
+1. File 19 now declares File 01 as a required registry/event-backbone dependency.
+2. The File 01 manifest comparison checks the complete contract-bearing shape rather than only version/state/routes.
+3. File 19 registers versioned API and outbound-event schemas in the File 01 registry.
+4. The planned `MarkNotification.v1` command and `GetNotificationPreferences.v1` query are present in the manifest.
+5. `NotificationCreated.v1`, `NotificationRead.v1`, `NotificationDeliveryFailed.v1` and `NotificationPreferenceChanged.v1` are wired to the File 01 reliable event backbone.
+6. Read/archive/unarchive and preference writes are hardened against duplicate no-op churn.
+7. Delivery-failure events have a reconciliation path for temporary event-backbone publication failures.
 
-## Live truth boundary
+## Remaining evidence gates
 
-The repository `main` branch can establish source-code and automated-package facts only. It cannot establish the active WordPress plugin version, deployed files/checksum, live DB schema/migration state, provider credentials, runtime logs, or real delivery. Final Live acceptance therefore remains: identify exact deployed artifact → verify DB/schema/migration parity → re-check File 00/File 20/producer/provider contracts → execute controlled real-role journeys → verify rollback/monitoring → only then mark Live/Operational.
+Before this candidate can be called repository-green, its exact branch/head must pass PHP 8.3/8.4 unit, advanced, completeness, TextBee, static/security/privacy, clean-extract package and deterministic-rebuild gates. Cross-repository producer compatibility must also be rechecked against current owner repositories.
+
+Staging and Live remain separate realities. Exact deployed plugin version, deployed checksum, live DB/schema version, migration state, provider configuration and real-role journeys have not been verified in this repository review.

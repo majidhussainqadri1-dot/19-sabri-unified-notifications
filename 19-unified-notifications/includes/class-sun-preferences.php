@@ -12,7 +12,55 @@ final class SUN_Preferences {
 	public function get( $user_id, $category, $channel ) {global $wpdb;$category=sanitize_key($category);$channel=sanitize_key($channel);$defaults=$this->defaults($user_id,$category,$channel);$row=$wpdb->get_row($wpdb->prepare('SELECT * FROM '.SUN_Database::table('preferences').' WHERE user_id=%d AND category=%s AND channel=%s LIMIT 1',absint($user_id),$category,$channel),ARRAY_A);if(!$row){return$defaults;}return array_merge($defaults,array('enabled'=>(bool)$row['enabled'],'digest_frequency'=>sanitize_key($row['digest_frequency']),'quiet_enabled'=>(bool)$row['quiet_enabled'],'quiet_start'=>$row['quiet_start'],'quiet_end'=>$row['quiet_end'],'timezone'=>$row['timezone']?:$defaults['timezone'],'version'=>(int)$row['version']));}
 	/** @param int $user_id User ID. @return array<int,array<string,mixed>> */ public function get_all($user_id){$out=array();foreach($this->categories() as $category){foreach($this->channels() as $channel){$out[]=$this->get($user_id,$category,$channel);}}return$out;}
 	/** @param int $user_id User ID. @param array<string,mixed> $input Input. @return array<string,mixed>|WP_Error */
-	public function update($user_id,array $input){global $wpdb;$category=sanitize_key((string)($input['category']??''));$channel=sanitize_key((string)($input['channel']??''));if(!in_array($category,$this->categories(),true)||!in_array($channel,$this->channels(),true)){return new WP_Error('sun_preference_invalid',__('The notification preference is invalid.','sabri-unified-notifications'),array('status'=>400));}$current=$this->get($user_id,$category,$channel);$version=absint($input['version']??$current['version']);if($version!==(int)$current['version']){return new WP_Error('sun_preference_conflict',__('Your notification settings changed in another session. Reload and try again.','sabri-unified-notifications'),array('status'=>409));}$essential=in_array($category,array('security','safety','system'),true);$enabled=!empty($input['enabled']);if($essential&&'in_app'===$channel){$enabled=true;}$digest=sanitize_key((string)($input['digest_frequency']??'immediate'));if(!in_array($digest,array('immediate','daily','weekly'),true)||$essential){$digest='immediate';}$timezone=$this->valid_timezone((string)($input['timezone']??$current['timezone']));$start=$this->valid_time((string)($input['quiet_start']??'22:00'));$end=$this->valid_time((string)($input['quiet_end']??'07:00'));$now=SUN_Database::now();$table=SUN_Database::table('preferences');$id=(int)$wpdb->get_var($wpdb->prepare("SELECT id FROM {$table} WHERE user_id=%d AND category=%s AND channel=%s",$user_id,$category,$channel));$data=array('user_id'=>absint($user_id),'category'=>$category,'channel'=>$channel,'enabled'=>$enabled?1:0,'digest_frequency'=>$digest,'quiet_enabled'=>!empty($input['quiet_enabled'])&&!$essential?1:0,'quiet_start'=>$start,'quiet_end'=>$end,'timezone'=>$timezone,'consent_source'=>sanitize_key((string)($input['consent_source']??'settings')),'consent_at'=>$enabled?$now:null,'version'=>(int)$current['version']+1,'updated_at'=>$now);if($id){$updated=$wpdb->update($table,$data,array('id'=>$id,'version'=>$version));if(0===$updated){return new WP_Error('sun_preference_conflict',__('Your notification settings changed in another session. Reload and try again.','sabri-unified-notifications'),array('status'=>409));}}else{$data['created_at']=$now;if(false===$wpdb->insert($table,$data)){return new WP_Error('sun_preference_write_failed',__('The notification setting could not be saved.','sabri-unified-notifications'),array('status'=>500));}}SUN_Audit::record('preference_changed','preference',$user_id.':'.$category.':'.$channel,array('purpose'=>'user_choice'),$user_id);do_action('sun_notification_preference_changed',$user_id,$category,$channel,$data);return$this->get($user_id,$category,$channel);}
+	public function update($user_id,array $input){
+		global $wpdb;
+		$user_id=absint($user_id);
+		$category=sanitize_key((string)($input['category']??''));
+		$channel=sanitize_key((string)($input['channel']??''));
+		if($user_id<1||!in_array($category,$this->categories(),true)||!in_array($channel,$this->channels(),true)){return new WP_Error('sun_preference_invalid',__('The notification preference is invalid.','sabri-unified-notifications'),array('status'=>400));}
+		$current=$this->get($user_id,$category,$channel);
+		$version=absint($input['version']??$current['version']);
+		if($version!==(int)$current['version']){return new WP_Error('sun_preference_conflict',__('Your notification settings changed in another session. Reload and try again.','sabri-unified-notifications'),array('status'=>409));}
+		$essential=in_array($category,array('security','safety','system'),true);
+		$enabled=!empty($input['enabled']);if($essential&&'in_app'===$channel){$enabled=true;}
+		$digest=sanitize_key((string)($input['digest_frequency']??'immediate'));if(!in_array($digest,array('immediate','daily','weekly'),true)||$essential){$digest='immediate';}
+		$timezone=$this->valid_timezone((string)($input['timezone']??$current['timezone']));
+		$start=$this->valid_time((string)($input['quiet_start']??$current['quiet_start']??'22:00'));
+		$end=$this->valid_time((string)($input['quiet_end']??$current['quiet_end']??'07:00'));
+		$quiet_enabled=!empty($input['quiet_enabled'])&&!$essential;
+		if((bool)$current['enabled']===$enabled
+			&& (string)$current['digest_frequency']===$digest
+			&& (bool)$current['quiet_enabled']===$quiet_enabled
+			&& $this->valid_time((string)$current['quiet_start'])===$start
+			&& $this->valid_time((string)$current['quiet_end'])===$end
+			&& $this->valid_timezone((string)$current['timezone'])===$timezone){return$current;}
+		$now=SUN_Database::now();$table=SUN_Database::table('preferences');
+		$id=(int)$wpdb->get_var($wpdb->prepare("SELECT id FROM {$table} WHERE user_id=%d AND category=%s AND channel=%s",$user_id,$category,$channel));
+		$data=array('user_id'=>$user_id,'category'=>$category,'channel'=>$channel,'enabled'=>$enabled?1:0,'digest_frequency'=>$digest,'quiet_enabled'=>$quiet_enabled?1:0,'quiet_start'=>$start,'quiet_end'=>$end,'timezone'=>$timezone,'consent_source'=>sanitize_key((string)($input['consent_source']??'settings')),'consent_at'=>$enabled?$now:null,'version'=>(int)$current['version']+1,'updated_at'=>$now);
+		$preference_ref=hash('sha256','user:'.$user_id.'|'.$category.'|'.$channel);
+		SUN_Database::begin();
+		try{
+			if($id){
+				$updated=$wpdb->update($table,$data,array('id'=>$id,'version'=>$version));
+				if(1!==(int)$updated){throw new RuntimeException('preference_conflict');}
+			}else{
+				$data['created_at']=$now;
+				if(false===$wpdb->insert($table,$data)){throw new RuntimeException('preference_write_failed');}
+			}
+			$platform_event=SUN_Platform_Events::publish('NotificationPreferenceChanged.v1',$preference_ref,array('preference_ref'=>$preference_ref,'category'=>$category,'channel'=>$channel,'enabled'=>$enabled,'digest_frequency'=>$digest,'quiet_enabled'=>$quiet_enabled,'version'=>(int)$data['version']),'preference-changed:'.$preference_ref.':'.(int)$data['version']);
+			if(is_wp_error($platform_event)){throw new RuntimeException('platform_event_'.$platform_event->get_error_code());}
+			SUN_Database::commit();
+		}catch(Throwable $exception){
+			SUN_Database::rollback();$reason=sanitize_key($exception->getMessage());
+			if('preference_conflict'===$reason){return new WP_Error('sun_preference_conflict',__('Your notification settings changed in another session. Reload and try again.','sabri-unified-notifications'),array('status'=>409));}
+			if(str_starts_with($reason,'platform_event_')){return new WP_Error('sun_preference_event_publish_failed',__('The notification setting could not be committed with its platform event.','sabri-unified-notifications'),array('status'=>503,'reason'=>$reason));}
+			return new WP_Error('sun_preference_write_failed',__('The notification setting could not be saved.','sabri-unified-notifications'),array('status'=>500));
+		}
+		SUN_Audit::record('preference_changed','preference',$preference_ref,array('purpose'=>'user_choice'),$user_id);
+		do_action('sun_notification_preference_changed',$user_id,$category,$channel,$data);
+		return$this->get($user_id,$category,$channel);
+	}
+
 	/** @param int $user_id User ID. @param string $category Category. @param string $channel Channel. @param bool $mandatory Mandatory alert. @param DateTimeImmutable|null $now Current instant. @return DateTimeImmutable */
 	public function next_delivery_time($user_id,$category,$channel,$mandatory=false,$now=null){$pref=$this->get($user_id,$category,$channel);$tz=new DateTimeZone($this->valid_timezone((string)$pref['timezone']));$now=$now instanceof DateTimeImmutable?$now->setTimezone($tz):new DateTimeImmutable('now',$tz);if($mandatory||empty($pref['quiet_enabled'])){return$now->setTimezone(new DateTimeZone('UTC'));}$start=$this->time_on_date($now,(string)$pref['quiet_start']);$end=$this->time_on_date($now,(string)$pref['quiet_end']);if($start==$end){return$now->setTimezone(new DateTimeZone('UTC'));}if($end<$start){if($now>=$start){$end=$end->modify('+1 day');}elseif($now<$end){$start=$start->modify('-1 day');}}return($now>=$start&&$now<$end)?$end->setTimezone(new DateTimeZone('UTC')):$now->setTimezone(new DateTimeZone('UTC'));}
 	/** @param int $user_id User ID. @param string $category Category. @param string $channel Channel. @param DateTimeImmutable $base Base UTC time. @return array{time:DateTimeImmutable,key:string|null} */

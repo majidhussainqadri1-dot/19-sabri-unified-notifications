@@ -5,7 +5,7 @@
 | ID | Requirement | Principal implementation | Automated evidence |
 |---|---|---|---|
 | F19-FR-001 | Versioned event intake | `SUN_Producer_Registry`, `SUN_Event_Validator`, REST `/events` | unit + static audit |
-| F19-FR-002 | Idempotency/deduplication | unique producer-event/notification/delivery keys plus durable authenticated REST mutation idempotency | completeness regression + static/schema audit |
+| F19-FR-002 | Idempotency/deduplication | unique producer-event/notification/delivery keys, idempotent state/preference no-op handling, File 01 event-outbox dedupe plus durable authenticated REST mutation idempotency | completeness regression + static/schema audit |
 | F19-FR-003 | Explicit recipient resolution | validator rejects role guessing; eligibility via current File 00 `SMC_Contracts::assertions()` | unit + completeness regression |
 | F19-FR-004 | Policy engine | `SUN_Policy_Engine`, versioned policy table | static audit |
 | F19-FR-005 | Template registry | `SUN_Template_Engine`, safe variables, locale/channel/version | unit tests |
@@ -23,7 +23,7 @@
 | F19-FR-017 | Honest delivery status | accepted/delivered/bounced/failed/suppressed; signed/timestamped/replay-safe provider webhook verification | completeness regression + code review |
 | F19-FR-018 | Deep-link safety | same-origin allowlist and protected click-time route | unit tests |
 | F19-FR-019 | Bulk/admin notices | explicit IDs, documented reason/compensation plan, preview, confirmation, bounded batches, cancel flag | completeness/static + staging target |
-| F19-FR-020 | Observability | health snapshot, queue lag, adapters, sanitized export | static audit |
+| F19-FR-020 | Observability | health snapshot, queue lag, adapters, File 01 registry/event-backbone readiness, sanitized export | static audit |
 | F19-FR-021 | Reconciliation | expiry, stale devices, stuck/orphan deliveries, dead-letter retry, missing attention-state repair, replay-evidence cleanup | completeness regression + static + staging target |
 
 ## Non-functional requirements
@@ -32,7 +32,7 @@
 |---|---|---|
 | F19-NFR-001 | Object/field authorization | `SUN_Auth`, recipient-scoped queries, privileged advanced endpoints revalidate canonical File 00 identity and fresh File 02 passkey step-up separately; negative tests still required on staging |
 | F19-NFR-002 | Privacy lifecycle | encryption, minimization, export/erasure, retention hold and docs |
-| F19-NFR-003 | Reliability | event/delivery dedupe, durable REST mutation idempotency, bounded retries, dead letters, derived-state repair and degraded external channels |
+| F19-NFR-003 | Reliability | File 01 reliable outbound-event backbone, event/delivery dedupe, durable REST mutation idempotency, bounded retries, dead letters, delivery-failure event reconciliation, derived-state repair and degraded external channels |
 | F19-NFR-004 | Performance | bounded list/queue/bulk/device queries and indexed schema |
 | F19-NFR-005 | Accessibility | semantic templates, keyboard controls, responsive/RTL CSS and staging matrix |
 | F19-NFR-006 | Observability | privacy-safe health/audit plus event→policy→projection→queue/provider→action trace stages |
@@ -42,10 +42,11 @@
 | F19-NFR-010 | Localization | text domain, locale templates, timezone handling, RTL and English-US base |
 
 
-## 3.0.4 cross-file owner-contract traceability
+## 3.0.5 cross-file owner-contract traceability
 
 | Boundary | Canonical owner | File 19 evidence | Companion evidence / gate |
 |---|---|---|---|
+| Module/contract registry and reliable platform event backbone | File 01 | required dependency; full manifest parity; `sun.notifications.api@1.0.0` and `sun.notifications.events@1.0.0`; `SUN_Platform_Events` publishes four notification facts through `SPF_Event_Bus` | exact File 01 runtime/registry rows and outbox dispatch required on staging |
 | Recipient identity, membership eligibility and verified contact | File 00 | `SUN_Auth::assertions()` consumes `SMC_Contracts::assertions()`; retired `sabri_membership_claims_v2` is rejected by static regression | exact File 00 runtime required on staging |
 | Fresh privileged authentication step-up | File 02 | `SUN_Auth::file02_step_up_verified()` consumes bounded current passkey assurance and enforces freshness | companion File 02 runtime required for privileged actions |
 | Module/route/dependency registry | File 01 | structured required/optional manifest, route mapping, activation/admin governed sync and health evidence | File 01 authorization decides whether registry writes are accepted |
@@ -66,3 +67,9 @@ Repository evidence is split by behavior rather than by mere requirement-ID pres
 - **AF-041–048:** shadow/canary policy evaluation, end-to-end trace, synthetic non-delivery diagnostics, failover, cost-aware routing, privacy-preserving analytics and no-dark-pattern KPI guardrail.
 
 Provider delivery, real cross-device synchronization, accessibility, load, browser/mobile behavior, configured AI/provider behavior and domain-owner end-to-end journeys remain staging/operational evidence and are not converted into repository claims.
+
+## 3.0.5 residual-completeness closure
+
+The 2026-09-27 fresh review found that the 3.0.4 manifest declared four outbound events but runtime code did not publish them through the canonical File 01 event backbone, and File 19 did not register its versioned API/event schema surface with File 01. The same review found the plan-listed `MarkNotification.v1` command and `GetNotificationPreferences.v1` query absent from the manifest and identified avoidable repeated state/preference version churn.
+
+The 3.0.5 candidate adds those contracts and regressions without changing File 19 database schema. Cross-repository producer compatibility remains a separate owner-repository gate; repository green does not imply staging or Live parity.

@@ -1,5 +1,18 @@
 # Changelog
 
+## 3.0.5 — 2026-09-27 — File 01 event-contract closure
+
+- Added File 01 as the required canonical module/contract-registry and reliable platform-event-backbone dependency.
+- Added `SUN_Platform_Events` and wired the four File 19 plan-mandated outbound facts: `NotificationCreated.v1`, `NotificationRead.v1`, `NotificationDeliveryFailed.v1` and `NotificationPreferenceChanged.v1`.
+- Bound notification-created/read and preference-change event publication to the same database transaction where the File 19 state change occurs when File 01 is present.
+- Added reconciliation of delivery-failure platform events for temporary event-backbone publication failures.
+- Added File 01 API/event schema registration and full manifest-shape parity checks instead of version/state-only comparison.
+- Completed the manifest command/query inventory with `MarkNotification.v1` and `GetNotificationPreferences.v1`.
+- Hardened single and bulk notification mutations plus preference updates against repeated no-op version churn.
+- Added File 01 registry/event-backbone health evidence and expanded completeness/static regression coverage.
+- Runtime advances to 3.0.5; database schema remains 3.0.2 because no File 19 table/column change is required.
+- Staging and Live deployment remain separate evidence gates.
+
 ## 3.0.1 — 2026-09-02 — TextBee SMS provider candidate
 
 - Added a first-party TextBee bridge to the existing provider-neutral `sun_send_sms` contract.

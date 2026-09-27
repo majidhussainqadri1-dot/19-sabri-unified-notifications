@@ -5,8 +5,9 @@ function cr_check($condition,$label){global$tests,$failures;++$tests;if(!$condit
 function cr_src($path){global$plugin;return file_get_contents($plugin.'/'.$path);}
 
 $bootstrap=cr_src('19-unified-notifications.php');
-cr_check(false!==strpos($bootstrap,"Version: 3.0.4")&&false!==strpos($bootstrap,"SUN_DB_VERSION', '3.0.2"),'runtime/schema release bump');
+cr_check(false!==strpos($bootstrap,"Version: 3.0.5")&&false!==strpos($bootstrap,"SUN_DB_VERSION', '3.0.2"),'runtime release bump and schema continuity');
 cr_check(false!==strpos($bootstrap,'class-sun-request-idempotency.php')&&false!==strpos($bootstrap,'class-sun-provider-webhook-verifier.php'),'replay-safety classes bootstrapped');
+cr_check(false!==strpos($bootstrap,'class-sun-platform-events.php'),'File 01 platform event adapter bootstrapped');
 
 $auth_src=cr_src('includes/class-sun-auth.php');
 cr_check(false!==strpos($auth_src,'SMC_Contracts::assertions')&&false===strpos($auth_src,'sabri_membership_claims_v2'),'File 00 current identity contract replaces retired claims filter');
@@ -37,9 +38,16 @@ cr_check(false!==strpos($experiments,'evaluate_decision')&&false!==strpos($exper
 cr_check(false!==strpos($policy,'evaluate_decision'),'policy engine invokes experiment runtime');
 cr_check(false!==strpos($policy,"'policy_decision'"),'policy trace stage');
 
-$notifications=cr_src('includes/class-sun-notification-service.php');$delivery=cr_src('includes/class-sun-delivery-service.php');
+$notifications=cr_src('includes/class-sun-notification-service.php');$delivery=cr_src('includes/class-sun-delivery-service.php');$platform_events=cr_src('includes/class-sun-platform-events.php');
 foreach(array('event_intake','event_processed','projection_created','queue_enqueue') as $stage){cr_check(false!==strpos($notifications,$stage),'trace stage '.$stage);}
 foreach(array('provider_attempt','provider_receipt') as $stage){cr_check(false!==strpos($delivery,$stage),'trace stage '.$stage);}
+foreach(array('NotificationCreated.v1','NotificationRead.v1','NotificationDeliveryFailed.v1','NotificationPreferenceChanged.v1') as $event_name){cr_check(false!==strpos($platform_events,$event_name),'platform event contract '.$event_name);}
+cr_check(false!==strpos($platform_events,'SPF_Event_Bus::publish'),'File 01 reliable event backbone invoked');
+cr_check(false!==strpos($notifications,"NotificationCreated.v1")&&false!==strpos($notifications,"NotificationRead.v1"),'notification created/read facts published');
+$preferences=cr_src('includes/class-sun-preferences.php');
+cr_check(false!==strpos($preferences,"NotificationPreferenceChanged.v1")&&false!==strpos($preferences,"SUN_Database::begin()"),'preference fact publication is transaction-bound');
+cr_check(false!==strpos($delivery,"NotificationDeliveryFailed.v1"),'delivery failure fact publication wired');
+cr_check(false!==strpos($notifications,"'read'===\$action&&'read'===\$row['status']")&&false!==strpos($notifications,"\$where[]=\"status='unread'\""),'single/bulk notification mutation idempotency hardened');
 
 $ownership=cr_src('includes/class-sun-four-plan-compliance.php');
 cr_check(false!==strpos($ownership,"AccountAuthenticationFailed.v1'=>array('owner'=>2")&&false!==strpos($ownership,"PasswordResetCompleted.v1'=>array('owner'=>2"),'authentication event ownership aligned to File 02');
@@ -56,13 +64,17 @@ cr_check(false!==strpos($db,"'webhook_receipts'")&&false!==strpos($webhook,'hash
 cr_check(false!==strpos($delivery,'SUN_Provider_Webhook_Verifier::verify'),'delivery webhook path uses core verifier');
 
 $reconciliation=cr_src('includes/class-sun-reconciliation.php');
+cr_check(false!==strpos($reconciliation,'reconcile_delivery_failure_events')&&false!==strpos($reconciliation,"NotificationDeliveryFailed.v1"),'delivery failure event reconciliation wired');
 cr_check(false!==strpos($reconciliation,'expired_idempotency')&&false!==strpos($reconciliation,'expired_webhook_receipts'),'ephemeral replay evidence cleanup');
 
 
 $cross=cr_src('includes/class-sun-cross-file-contracts.php');$legacy=cr_src('includes/class-sun-legacy-migration.php');
 cr_check(false!==strpos($cross,'SPF_Registry::register_manifest')&&false!==strpos($cross,'SPF_Registry::map_route'),'File 01 manifest/route registry adapter');
 cr_check(false!==strpos($cross,'sun_validate_saved_search_ownership')&&false===strpos($cross,'sabri_file26_saved_queries_v1')&&false!==strpos($automation,'SUN_Cross_File_Contracts::saved_search_owned'),'File 26 saved-search ownership uses owner contract and never private meta');
-cr_check(false!==strpos($cross,"'module_key'=>'file-00'")&&false!==strpos($cross,"'module_key'=>'file-20'")&&false!==strpos($cross,"'module_key'=>'file-24'"),'File 01 manifest declares required File 00/20/24 dependencies');
+cr_check(false!==strpos($cross,"'module_key'=>'file-00'")&&false!==strpos($cross,"'module_key'=>'file-01'")&&false!==strpos($cross,"'module_key'=>'file-20'")&&false!==strpos($cross,"'module_key'=>'file-24'"),'File 01 manifest declares required File 00/01/20/24 dependencies');
+cr_check(false!==strpos($cross,'SPF_Registry::register_contract')&&false!==strpos($cross,"'sun.notifications.events'")&&false!==strpos($cross,"'sun.notifications.api'"),'File 01 versioned API/event registry contracts wired');
+cr_check(false!==strpos($cross,"'MarkNotification.v1'")&&false!==strpos($cross,"'GetNotificationPreferences.v1'"),'plan command/query inventory complete');
+cr_check(false!==strpos($cross,'manifest_is_current')&&false!==strpos($cross,"'commands','queries','events'"),'manifest current-state comparison covers full contract-bearing shape');
 cr_check(false!==strpos($cross,'spcrc/file19_contract_state')&&false!==strpos($cross,'sun_file20_notification_surface_state'),'File 24 assurance and File 20 surface contracts published/consumed');
 cr_check(false!==strpos($attention,"n.status NOT IN ('deleted','expired')")&&false!==strpos($attention,'n.expires_at IS NULL OR n.expires_at>%s'),'attention search/state expiry guards');
 $validator=cr_src('includes/class-sun-event-validator.php');
@@ -79,6 +91,7 @@ cr_check(false!==strpos($admin,"'reason'=>")&&false!==strpos($admin,"'compensati
 $health=cr_src('includes/class-sun-health.php');
 cr_check(false!==strpos($health,"'request_idempotency','webhook_receipts'")&&false!==strpos($health,"'file01_registry'")&&false!==strpos($health,"'legacy_migration_gate'"),'health covers current schema and cross-file gates');
 cr_check(false!==strpos($health,"'file00_contract'")&&false!==strpos($health,"'file02_step_up_provider'")&&false!==strpos($health,"'file24_containment_contract'"),'health uses current File 00/02/24 contract evidence');
+cr_check(false!==strpos($health,"'file01_contract_registry'")&&false!==strpos($health,"'file01_event_backbone'"),'health exposes File 01 contract/event readiness');
 $functions=cr_src('includes/functions.php');
 cr_check(false!==strpos($functions,'sun_live_owner_required')&&false!==strpos($attention,'sun_live_owner_mismatch'),'live projection update is producer-bound');
 $css=cr_src('assets/css/notifications.css');

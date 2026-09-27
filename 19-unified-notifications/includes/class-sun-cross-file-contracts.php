@@ -15,9 +15,10 @@ final class SUN_Cross_File_Contracts {
 		return array(
 			'module_key' => 'file-19', 'owner_file' => '19', 'owner_name' => 'Sabri Unified Notifications and Alerts',
 			'slug' => 'sabri-unified-notifications', 'namespace_prefix' => 'SUN_', 'software_version' => SUN_VERSION,
-			'contract_version' => '3.0.1', 'state' => 'active',
+			'contract_version' => '3.0.2', 'state' => 'active',
 			'required' => array(
 				array( 'module_key'=>'file-00','minimum_version'=>'1.2.44','maximum_version'=>'','purpose'=>'Canonical recipient identity, eligibility and verified contact assertions.','fail_mode'=>'Protected notification access and privileged actions fail closed.' ),
+				array( 'module_key'=>'file-01','minimum_version'=>'2.0.1','maximum_version'=>'','purpose'=>'Canonical module/contract registry and reliable platform event backbone.','fail_mode'=>'Cross-file contract registration and versioned File 19 outbound events are unavailable; release readiness is degraded.' ),
 				array( 'module_key'=>'file-20','minimum_version'=>'1.4.17','maximum_version'=>'','purpose'=>'Single global notification bell, center placement and shell Safe Mode.','fail_mode'=>'Shell notification placement is unavailable and external delivery containment remains fail closed.' ),
 				array( 'module_key'=>'file-24','minimum_version'=>'0.99.0','maximum_version'=>'','purpose'=>'Cross-cutting security, privacy, provider and incident assurance.','fail_mode'=>'Assurance is degraded; high-risk external operations remain contained.' ),
 			),
@@ -27,8 +28,8 @@ final class SUN_Cross_File_Contracts {
 				array( 'module_key'=>'file-26','minimum_version'=>'1.0.0','maximum_version'=>'','purpose'=>'Canonical saved-search ownership verification for watch rules.','fail_mode'=>'Saved-search watches cannot be created or changed.' ),
 			),
 			'capabilities' => array( 'notification_projection','single_bell','preferences','delivery_queue','digest','device_delivery','attention_os','dead_letter','privacy_lifecycle' ),
-			'commands' => array( 'IngestNotificationEvent.v1','UpdateNotificationPreferences.v1','RegisterNotificationDevice.v1','RetryNotificationDelivery.v1' ),
-			'queries' => array( 'ListNotifications.v1','GetUnreadCount.v1','GetNotificationHealth.v1' ),
+			'commands' => array( 'IngestNotificationEvent.v1','MarkNotification.v1','UpdateNotificationPreferences.v1','RegisterNotificationDevice.v1','RetryNotificationDelivery.v1' ),
+			'queries' => array( 'ListNotifications.v1','GetUnreadCount.v1','GetNotificationPreferences.v1','GetNotificationHealth.v1' ),
 			'events' => array( 'NotificationCreated.v1','NotificationRead.v1','NotificationDeliveryFailed.v1','NotificationPreferenceChanged.v1' ),
 			'routes' => array( '/notifications/','/settings/notifications/','/notifications/unsubscribe/' ),
 			'data_classes' => array( 'private_notification_projection','delivery_evidence','notification_preference','restricted_operational' ),
@@ -47,14 +48,65 @@ final class SUN_Cross_File_Contracts {
 		);
 	}
 
+	/** File 01 registry contracts for the File 19 API and outbound event surface. */
+	public static function registry_contracts() {
+		$manifest = self::manifest();
+		return array(
+			array(
+				'contract_key' => 'sun.notifications.api',
+				'contract_version' => '1.0.0',
+				'owner_module' => 'file-19',
+				'status' => 'current',
+				'schema' => array(
+					'rest_namespace' => SUN_REST_NAMESPACE,
+					'commands' => $manifest['commands'],
+					'queries' => $manifest['queries'],
+					'authorization' => 'File 00 identity plus native object/state checks; File 02 fresh step-up for privileged governance actions.',
+					'privacy' => 'Explicit recipient-scoped DTOs; no raw private model export.',
+				),
+				'consumers' => array(),
+			),
+			array(
+				'contract_key' => 'sun.notifications.events',
+				'contract_version' => SUN_Platform_Events::CONTRACT_VERSION,
+				'owner_module' => 'file-19',
+				'status' => 'current',
+				'schema' => array(
+					'publishes' => SUN_Platform_Events::contracts(),
+					'delivery_semantics' => 'File 01 reliable outbox; at-least-once; consumer idempotency required.',
+					'domain_truth' => 'Notification facts only; native domain state is never inferred from a notification event.',
+				),
+				'consumers' => array(),
+			),
+		);
+	}
+
+	/** @param array<string,mixed> $existing Existing File 01 module DTO. @param array<string,mixed> $manifest Desired manifest. @return bool */
+	private static function manifest_is_current( array $existing, array $manifest ) {
+		$fields = array( 'owner_file','owner_name','slug','namespace_prefix','software_version','contract_version','state','required','optional','capabilities','commands','queries','events','routes','data_classes','canonical_entities','writes','global_shell_owner','application_shell_owner','health' );
+		foreach ( $fields as $field ) {
+			if ( SUN_Database::canonical_json( $existing[ $field ] ?? null ) !== SUN_Database::canonical_json( $manifest[ $field ] ?? null ) ) { return false; }
+		}
+		return true;
+	}
+
+	/** @param array<string,mixed>|null $current Existing File 01 contract DTO. @param array<string,mixed> $wanted Wanted contract. @return bool */
+	private static function registry_contract_is_current( $current, array $wanted ) {
+		return is_array( $current )
+			&& ( $current['owner_module'] ?? '' ) === $wanted['owner_module']
+			&& ( $current['status'] ?? '' ) === $wanted['status']
+			&& SUN_Database::canonical_json( $current['schema'] ?? array() ) === SUN_Database::canonical_json( $wanted['schema'] )
+			&& SUN_Database::canonical_json( $current['consumers'] ?? array() ) === SUN_Database::canonical_json( $wanted['consumers'] );
+	}
+
 	/** Attempt authorized File 01 registration; never bypass File 01 governance. */
 	public static function sync_file01_registry() {
 		if ( ! class_exists( 'SPF_Registry' ) || ! is_user_logged_in() || ! current_user_can( 'manage_sabri_notifications' ) ) { return; }
-		$status = array( 'version'=>SUN_VERSION, 'attempted_at'=>SUN_Database::now(), 'manifest'=>false, 'routes'=>array() );
+		$status = array( 'version'=>SUN_VERSION, 'attempted_at'=>SUN_Database::now(), 'manifest'=>false, 'routes'=>array(), 'contracts'=>array() );
 		$existing = SPF_Registry::get_module( 'file-19' );
 		$context = array( 'purpose'=>'file19_cross_file_registry_sync' );
 		if ( is_array( $existing ) && isset( $existing['record_version'] ) ) { $context['expected_version'] = (int) $existing['record_version']; }
-		$manifest=self::manifest();$manifest_current=is_array($existing)&&($existing['software_version']??'')===SUN_VERSION&&($existing['contract_version']??'')===$manifest['contract_version']&&($existing['state']??'')==='active'&&array_values((array)($existing['routes']??array()))===array_values($manifest['routes']);
+		$manifest=self::manifest();$manifest_current=is_array($existing)&&self::manifest_is_current($existing,$manifest);
 		$result=$manifest_current?array('unchanged'=>true):SPF_Registry::register_manifest($manifest,$context);
 		if ( is_wp_error( $result ) ) { $status['error']=$result->get_error_code(); update_option( 'sun_file01_registry_sync', $status, false ); return; }
 		$status['manifest'] = true;
@@ -65,6 +117,24 @@ final class SUN_Cross_File_Contracts {
 			if ( isset( $by_key[ $route['route_key'] ]['record_version'] ) ) { $ctx['expected_version'] = (int) $by_key[ $route['route_key'] ]['record_version']; }
 			$current=$by_key[$route['route_key']]??null;$route_current=is_array($current)&&($current['route_path']??'')===$route['route_path']&&($current['owner_module']??'')===$route['owner_module']&&($current['layout_context']??'')===$route['layout_context']&&($current['status']??'')===$route['status']&&($current['destination']??'')===$route['destination'];$mapped=$route_current?array('unchanged'=>true):SPF_Registry::map_route($route,$ctx);
 			$status['routes'][ $route['route_key'] ] = is_wp_error( $mapped ) ? $mapped->get_error_code() : ( $route_current ? 'unchanged' : 'ok' );
+		}
+		$existing_contracts = SPF_Registry::list_contracts( array( 'owner_module'=>'file-19', 'limit'=>100 ) );
+		if ( is_wp_error( $existing_contracts ) ) {
+			$status['error'] = $existing_contracts->get_error_code();
+			update_option( 'sun_file01_registry_sync', $status, false );
+			return;
+		}
+		$by_contract = array();
+		foreach ( (array) $existing_contracts as $row ) {
+			$by_contract[ (string) $row['contract_key'] . '@' . (string) $row['contract_version'] ] = $row;
+		}
+		foreach ( self::registry_contracts() as $contract ) {
+			$key = $contract['contract_key'] . '@' . $contract['contract_version'];
+			$current = $by_contract[ $key ] ?? null;
+			$ctx = array( 'purpose'=>'file19_cross_file_contract_sync' );
+			if ( is_array( $current ) && isset( $current['record_version'] ) ) { $ctx['expected_version'] = (int) $current['record_version']; }
+			$registered = self::registry_contract_is_current( $current, $contract ) ? array( 'unchanged'=>true ) : SPF_Registry::register_contract( $contract, $ctx );
+			$status['contracts'][ $key ] = is_wp_error( $registered ) ? $registered->get_error_code() : ( self::registry_contract_is_current( $current, $contract ) ? 'unchanged' : 'ok' );
 		}
 		update_option( 'sun_file01_registry_sync', $status, false );
 	}
@@ -79,6 +149,20 @@ final class SUN_Cross_File_Contracts {
 			if ( isset( $needed[ $route['route_key'] ] ) && 'file-19' === ( $route['owner_module'] ?? '' ) && 'active' === ( $route['status'] ?? '' ) ) { $needed[ $route['route_key'] ] = true; }
 		}
 		return ! in_array( false, $needed, true );
+	}
+
+	/** @return bool */
+	public static function file01_contracts_ready() {
+		if ( ! class_exists( 'SPF_Registry' ) || ! is_callable( array( 'SPF_Registry', 'list_contracts' ) ) ) { return false; }
+		$rows = SPF_Registry::list_contracts( array( 'owner_module'=>'file-19', 'limit'=>100 ) );
+		if ( is_wp_error( $rows ) ) { return false; }
+		$by_contract = array();
+		foreach ( (array) $rows as $row ) { $by_contract[ (string) $row['contract_key'] . '@' . (string) $row['contract_version'] ] = $row; }
+		foreach ( self::registry_contracts() as $wanted ) {
+			$key = $wanted['contract_key'] . '@' . $wanted['contract_version'];
+			if ( ! self::registry_contract_is_current( $by_contract[ $key ] ?? null, $wanted ) ) { return false; }
+		}
+		return true;
 	}
 
 	/** @return bool */
@@ -111,6 +195,8 @@ final class SUN_Cross_File_Contracts {
 	public static function health( $health=array() ) {
 		$health=is_array($health)?$health:array();
 		$health['file01_registry']=self::file01_registry_ready();
+		$health['file01_contract_registry']=self::file01_contracts_ready();
+		$health['file01_event_backbone']=SUN_Platform_Events::backbone_available();
 		$surface=false===has_filter('sun_file20_notification_surface_state')?null:apply_filters('sun_file20_notification_surface_state',null);
 		$health['file20_single_bell']=is_array($surface)&&'file-20'===($surface['owner']??'')&&!empty($surface['detected'])&&!empty($surface['destination']);
 		$health['file20_surface_contract']=is_array($surface)?($surface['contract']??''):'';
