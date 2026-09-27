@@ -48,3 +48,26 @@ The sole bell is emitted at `sun_file20_notification_slot`. The `sun_file20_noti
 - configuration/name filters for each provider.
 
 Secrets must be resolved from environment, secret manager or protected server configuration; never committed.
+
+## File 01 registry and outbound event backbone
+
+File 01 is the canonical registry and reliable platform-event backbone. File 19 registers two versioned registry contracts when the authorized File 01 governance surface is available:
+
+- `sun.notifications.api@1.0.0`: File 19 REST namespace, commands, queries, authorization and privacy boundaries.
+- `sun.notifications.events@1.0.0`: the four File 19-owned outbound notification facts and their privacy/retention semantics.
+
+File 19 publishes only notification facts, never native domain truth:
+
+| Event | Aggregate | Privacy class | Minimum payload |
+|---|---|---|---|
+| `NotificationCreated.v1` | notification | internal | notification public ID, category, priority, producer, source event ID, status |
+| `NotificationRead.v1` | notification | internal | notification public ID, status |
+| `NotificationDeliveryFailed.v1` | notification delivery | restricted | delivery public ID, channel, attempt, terminal flag, error code |
+| `NotificationPreferenceChanged.v1` | notification preference | restricted | opaque preference ref, category, channel, enabled, digest frequency, quiet-hours flag, version |
+
+The File 01 event bus supplies the durable outbox, deduplication, retry/dead-letter and at-least-once dispatch semantics. Consumers remain idempotent. File 19 never includes raw notification body, email, phone, device token, clinical detail, message body or provider secret in these cross-file event payloads.
+
+Notification-created/read and preference-change facts are inserted into the File 01 outbox before the surrounding state transaction commits when File 01 is installed. Delivery failure is an external side-effect/result and cannot be rolled back; File 19 therefore records the delivery state first and reconciliation republishes the same idempotent failure fact if the File 01 publish step was temporarily unavailable.
+
+Repository absence of File 01 is tolerated for isolated source tests, but health reports the required dependency as unavailable and staging/release readiness must remain degraded.
+
