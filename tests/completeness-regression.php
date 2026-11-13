@@ -5,7 +5,7 @@ function cr_check($condition,$label){global$tests,$failures;++$tests;if(!$condit
 function cr_src($path){global$plugin;return file_get_contents($plugin.'/'.$path);}
 
 $bootstrap=cr_src('19-unified-notifications.php');
-cr_check(false!==strpos($bootstrap,"Version: 3.0.5")&&false!==strpos($bootstrap,"SUN_DB_VERSION', '3.0.2"),'runtime release bump and schema continuity');
+cr_check(false!==strpos($bootstrap,"Version: 3.0.6")&&false!==strpos($bootstrap,"SUN_DB_VERSION', '3.0.2"),'runtime release bump and schema continuity');
 cr_check(false!==strpos($bootstrap,'class-sun-request-idempotency.php')&&false!==strpos($bootstrap,'class-sun-provider-webhook-verifier.php'),'replay-safety classes bootstrapped');
 cr_check(false!==strpos($bootstrap,'class-sun-platform-events.php'),'File 01 platform event adapter bootstrapped');
 
@@ -98,7 +98,7 @@ $css=cr_src('assets/css/notifications.css');
 cr_check(false!==strpos($css,'--sabri-color-primary')&&false!==strpos($css,'--sabri-shadow-card'),'File 25 visual token bridge');
 cr_check(false!==strpos($legacy,'sun_legacy_notification_sources')&&false!==strpos($legacy,'sun_legacy_notification_migration_applicable')&&false!==strpos($legacy,'legacy_source_contracts_unverified')&&false!==strpos($legacy,'public static function execute')&&false!==strpos($legacy,'public static function rollback'),'historical migration is reversible, applicability-aware and evidence-gated');
 $push=cr_src('includes/adapters/class-sun-push-adapter.php');cr_check(false!==strpos($push,'sun_push_invalid_token_codes')&&false!==strpos($push,"'status'=>'revoked'"),'invalid push tokens are revoked');
-cr_check(false!==strpos($privacy,'$page=1')&&false!==strpos($privacy,'\'done\'=>count((array)$rows)<$limit'),'legacy event erasure is paginated to completion');
+cr_check(false!==strpos($privacy,'$page=1')&&false!==strpos($privacy,'count($rows)<$limit&&0===$failed')&&false!==strpos($privacy,'sun_privacy_legacy_scrub_failed'),'legacy event erasure is paginated and fails closed on errors');
 
 if($failures){fwrite(STDERR,"FAIL (".count($failures)."/$tests):\n - ".implode("\n - ",$failures)."\n");exit(1);}
 echo "PASS: $tests completeness-audit regression assertions\n";

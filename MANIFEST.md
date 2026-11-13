@@ -2,7 +2,7 @@
 
 - Canonical plugin source: `19-unified-notifications/`
 - Bootstrap: `19-unified-notifications/19-unified-notifications.php`
-- Runtime version: **3.0.5**
+- Runtime version: **3.0.6**
 - Database version: **3.0.2**
 - File 01 contract version declared by File 19: **3.0.2**
 - Canonical installable folder: `unified-notifications-19/`
@@ -17,6 +17,6 @@
 - Security/privacy: File 00 fail-closed identity, File 02 privileged step-up, sensitive external-content minimization, webhook replay protection, request idempotency, privacy export/erasure/retention, File 24 containment.
 - Front end: one File 20-owned bell placement, notification center/settings, protected deep-link route, responsive RTL-aware CSS and progressive JS.
 - Repository QA: PHP 8.3/8.4 unit, advanced, completeness, provider, static/security/privacy, package and deterministic rebuild checks.
-- Release target: deterministic `19-sabri-unified-notifications-3.0.5.zip` plus SHA-256; checksum is frozen only after exact-candidate CI.
+- Release target: deterministic `19-sabri-unified-notifications-3.0.6.zip` plus SHA-256; checksum is frozen only after exact-candidate CI.
 
 Repository/source evidence does not establish staging or Live deployment parity.

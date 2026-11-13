@@ -104,7 +104,12 @@ final class SUN_TextBee_Provider {
 		$success_count = isset( $data['successCount'] ) ? (int) $data['successCount'] : 0;
 		$failure_count = isset( $data['failureCount'] ) ? (int) $data['failureCount'] : 0;
 		$provider_receipt = sanitize_text_field( (string) ( $data['smsBatchId'] ?? '' ) );
-		$accepted = ! empty( $data['success'] ) || '' !== $provider_receipt || ( $success_count > 0 && 0 === $failure_count );
+		/* TextBee queued responses report success=true; immediate responses instead
+		 * report successCount/failureCount. A receipt ID is never proof that
+		 * acceptance succeeded. Mixed/failed replies fail closed for one recipient. */
+		$queued_accepted = array_key_exists( 'success', $data ) && true === $data['success'];
+		$immediate_accepted = ! array_key_exists( 'success', $data ) && $success_count > 0;
+		$accepted = 0 === $failure_count && ( $queued_accepted || $immediate_accepted );
 		if ( ! $accepted ) {
 			return new WP_Error( 'sun_textbee_rejected', __( 'The SMS provider did not accept the message.', 'sabri-unified-notifications' ) );
 		}

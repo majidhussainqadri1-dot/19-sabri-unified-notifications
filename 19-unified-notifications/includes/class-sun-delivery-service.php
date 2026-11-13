@@ -15,7 +15,85 @@ final class SUN_Delivery_Service {
 	public function process_queue($limit=25){global $wpdb;$limit=max(1,min(100,absint($limit)));$token=$this->acquire_lock();$empty=array('processed'=>0,'accepted'=>0,'failed'=>0,'suppressed'=>0,'expired'=>0,'skipped'=>0);if(!$token){return $empty;}$stats=$empty;try{$table=SUN_Database::table('deliveries');$rows=$wpdb->get_results($wpdb->prepare("SELECT * FROM {$table} WHERE status IN ('queued','failed') AND scheduled_at<=%s AND (next_attempt_at IS NULL OR next_attempt_at<=%s) ORDER BY id ASC LIMIT %d",SUN_Database::now(),SUN_Database::now(),$limit),ARRAY_A);foreach((array)$rows as $delivery){++$stats['processed'];$result=$this->process_one($delivery);$status=is_wp_error($result)?'failed':(string)($result['status']??'failed');if('delivered'===$status){$status='accepted';}if(!isset($stats[$status])){$status='failed';}++$stats[$status];}}finally{$this->release_lock($token);}return $stats;}
 	/** @param array<string,mixed> $delivery Delivery. @return array<string,mixed>|WP_Error */ public function process_one(array $delivery){if(!$this->claim($delivery)){return array('status'=>'skipped','reason'=>'claim_conflict');}$delivery['attempt_count']=(int)$delivery['attempt_count']+1;if(!empty($delivery['digest_key'])){return $this->process_digest($delivery);}return $this->send_single($delivery);}
 	/** @param string $channel Channel. @param array<string,mixed> $payload Payload. @param WP_REST_Request|null $request Request. @return true|WP_Error */
-	public function provider_webhook($channel,array $payload,$request=null){global $wpdb;$channel=sanitize_key($channel);if(!isset($this->adapters[$channel])){return new WP_Error('sun_webhook_channel_invalid',__('Provider webhook channel is invalid.','sabri-unified-notifications'),array('status'=>404));}$verified=SUN_Provider_Webhook_Verifier::verify($channel,$payload,$request);if(is_wp_error($verified)){return $verified;}$provider_id=sanitize_text_field((string)($payload['provider_message_id']??''));$status=sanitize_key((string)($payload['status']??''));$allowed=array('accepted','delivered','bounced','failed','suppressed');if(!$provider_id||strlen($provider_id)>191||!in_array($status,$allowed,true)){return new WP_Error('sun_webhook_invalid',__('Provider webhook payload is invalid.','sabri-unified-notifications'),array('status'=>400));}$table=SUN_Database::table('deliveries');$row=$wpdb->get_row($wpdb->prepare("SELECT id,public_id,notification_id,recipient_id,status,channel,digest_key,attempt_count FROM {$table} WHERE provider_message_id=%s AND channel=%s LIMIT 1",$provider_id,$channel),ARRAY_A);if(!$row){return new WP_Error('sun_webhook_delivery_not_found',__('Delivery evidence was not found.','sabri-unified-notifications'),array('status'=>404));}$transitions=array('accepted'=>array('accepted','delivered','bounced','failed','suppressed'),'delivered'=>array('delivered'),'bounced'=>array('bounced'),'failed'=>array('failed','delivered'),'suppressed'=>array('suppressed'));if(!in_array($status,$transitions[$row['status']]??array(),true)){return new WP_Error('sun_webhook_transition_invalid',__('Provider status transition is invalid.','sabri-unified-notifications'),array('status'=>409));}$data=array('status'=>$status,'updated_at'=>SUN_Database::now());if('delivered'===$status){$data['delivered_at']=SUN_Database::now();}$updated=null;if(!empty($row['digest_key'])){if('delivered'===$status){$updated=$wpdb->query($wpdb->prepare("UPDATE {$table} SET status=%s,delivered_at=%s,updated_at=%s WHERE recipient_id=%d AND channel=%s AND digest_key=%s AND provider_message_id=%s AND status IN ('accepted','failed')",$status,SUN_Database::now(),SUN_Database::now(),(int)$row['recipient_id'],$channel,$row['digest_key'],$provider_id));}else{$updated=$wpdb->query($wpdb->prepare("UPDATE {$table} SET status=%s,updated_at=%s WHERE recipient_id=%d AND channel=%s AND digest_key=%s AND provider_message_id=%s AND status IN ('accepted','failed')",$status,SUN_Database::now(),(int)$row['recipient_id'],$channel,$row['digest_key'],$provider_id));}}else{$updated=$wpdb->update($table,$data,array('id'=>(int)$row['id']));}if(false===$updated){return new WP_Error('sun_webhook_update_failed',__('Provider status could not be recorded.','sabri-unified-notifications'));}SUN_Audit::record('provider_status_updated','delivery',$provider_id,array('status'=>$status,'channel'=>$channel,'purpose'=>'delivery_status'),0);$trace=$this->trace_id_for_notification((int)$row['notification_id']);SUN_Trace_Service::record($trace?:$provider_id,'provider_receipt',$status,array('channel'=>$channel,'provider_message_id'=>$provider_id),(int)$row['notification_id'],(int)$row['id']);if(in_array($status,array('failed','bounced'),true)){$platform_event=SUN_Platform_Events::publish('NotificationDeliveryFailed.v1',(string)$row['public_id'],array('delivery_public_id'=>(string)$row['public_id'],'channel'=>$channel,'attempt'=>(int)$row['attempt_count'],'terminal'=>'bounced'===$status,'error_code'=>'provider_'.$status),'delivery-failed:'.(string)$row['public_id'].':'.(int)$row['attempt_count'].':provider-'.$status);if(is_wp_error($platform_event)){SUN_Audit::record('platform_event_publish_failed','delivery',(string)$row['public_id'],array('event'=>'NotificationDeliveryFailed.v1','error_code'=>$platform_event->get_error_code(),'purpose'=>'event_reconciliation'),0);}}return true;}
+	public function provider_webhook($channel,array $payload,$request=null){
+		global $wpdb;
+		$channel=sanitize_key($channel);
+		if(!isset($this->adapters[$channel])){return new WP_Error('sun_webhook_channel_invalid',__('Provider webhook channel is invalid.','sabri-unified-notifications'),array('status'=>404));}
+		$verified=SUN_Provider_Webhook_Verifier::verify($channel,$payload,$request);
+		if(is_wp_error($verified)){return $verified;}
+		/* The verifier authenticates the provider-specific request. A payload-only
+		 * identity must not choose a delivery row after verification. */
+		$provider=is_object($request)&&method_exists($request,'get_header')
+			?sanitize_key((string)$request->get_header('x-sun-provider')):'';
+		if(''===$provider){return new WP_Error('sun_webhook_provider_identity_required',__('The verified webhook must identify its provider.','sabri-unified-notifications'),array('status'=>401));}
+		if(isset($payload['provider'])&&sanitize_key((string)$payload['provider'])!==$provider){
+			return new WP_Error('sun_webhook_provider_mismatch',__('Webhook provider identity does not match its verified request.','sabri-unified-notifications'),array('status'=>401));
+		}
+		$provider_id=sanitize_text_field((string)($payload['provider_message_id']??''));
+		$status=sanitize_key((string)($payload['status']??''));
+		if(''===$provider_id||strlen($provider_id)>191||!in_array($status,array('accepted','delivered','bounced','failed','suppressed'),true)){
+			return new WP_Error('sun_webhook_invalid',__('Provider webhook payload is invalid.','sabri-unified-notifications'),array('status'=>400));
+		}
+		$table=SUN_Database::table('deliveries');
+		$rows=$wpdb->get_results($wpdb->prepare(
+			"SELECT id,public_id,notification_id,recipient_id,status,channel,digest_key,attempt_count FROM {$table} WHERE provider_message_id=%s AND channel=%s AND (provider=%s OR route_provider=%s) LIMIT 2",
+			$provider_id,$channel,$provider,$provider
+		),ARRAY_A);
+		if(!is_array($rows)){return new WP_Error('sun_webhook_delivery_lookup_failed',__('Delivery records could not be verified.','sabri-unified-notifications'),array('status'=>503));}
+		if(empty($rows)){return new WP_Error('sun_webhook_delivery_not_found',__('Delivery evidence was not found.','sabri-unified-notifications'),array('status'=>404));}
+		$row=$rows[0];
+		/* One provider receipt can identify several entries only within the
+		 * same digest for one recipient. Different deliveries are ambiguous. */
+		if(count($rows)>1&&(
+			empty($row['digest_key'])||
+			(string)$rows[1]['digest_key']!==(string)$row['digest_key']||
+			(int)$rows[1]['recipient_id']!==(int)$row['recipient_id']
+		)){
+			return new WP_Error('sun_webhook_delivery_ambiguous',__('Provider receipt matches more than one delivery.','sabri-unified-notifications'),array('status'=>409));
+		}
+		$transitions=array(
+			'accepted'=>array('accepted','delivered','bounced','failed','suppressed'),
+			'delivered'=>array('delivered'),'bounced'=>array('bounced'),
+			'failed'=>array('failed','delivered'),'suppressed'=>array('suppressed')
+		);
+		if(!in_array($status,$transitions[$row['status']]??array(),true)){
+			return new WP_Error('sun_webhook_transition_invalid',__('Provider status transition is invalid.','sabri-unified-notifications'),array('status'=>409));
+		}
+		$now=SUN_Database::now();
+		if(!empty($row['digest_key'])){
+			/* Provider AND receipt matching prevents updating a different route
+			 * when two services emit the same provider_message_id. */
+			$fields='status=%s,updated_at=%s';
+			$args=array($status,$now);
+			if('delivered'===$status){$fields.=',delivered_at=%s';$args[]=$now;}
+			$args=array_merge($args,array((int)$row['recipient_id'],$channel,(string)$row['digest_key'],$provider_id,$provider,$provider));
+			$updated=$wpdb->query($wpdb->prepare(
+				"UPDATE {$table} SET {$fields} WHERE recipient_id=%d AND channel=%s AND digest_key=%s AND provider_message_id=%s AND (provider=%s OR route_provider=%s) AND status IN ('accepted','failed')",
+				$args
+			));
+		}else{
+			$data=array('status'=>$status,'updated_at'=>$now);
+			if('delivered'===$status){$data['delivered_at']=$now;}
+			$updated=$wpdb->update($table,$data,array('id'=>(int)$row['id']));
+		}
+		if(false===$updated){return new WP_Error('sun_webhook_update_failed',__('Provider status could not be recorded.','sabri-unified-notifications'),array('status'=>503));}
+		if(0===(int)$updated&&(string)$row['status']!==$status){
+			return new WP_Error('sun_webhook_update_conflict',__('Provider receipt could not update the expected delivery.','sabri-unified-notifications'),array('status'=>409));
+		}
+		SUN_Audit::record('provider_status_updated','delivery',$provider_id,array('status'=>$status,'channel'=>$channel,'provider'=>$provider,'purpose'=>'delivery_status'),0);
+		$trace=$this->trace_id_for_notification((int)$row['notification_id']);
+		SUN_Trace_Service::record($trace?:$provider_id,'provider_receipt',$status,array('channel'=>$channel,'provider_message_id'=>$provider_id),(int)$row['notification_id'],(int)$row['id']);
+		if(in_array($status,array('failed','bounced'),true)){
+			$platform_event=SUN_Platform_Events::publish('NotificationDeliveryFailed.v1',(string)$row['public_id'],array(
+				'delivery_public_id'=>(string)$row['public_id'],'channel'=>$channel,'attempt'=>(int)$row['attempt_count'],
+				'terminal'=>'bounced'===$status,'error_code'=>'provider_'.$status
+			),'delivery-failed:'.(string)$row['public_id'].':'.(int)$row['attempt_count'].':provider-'.$status);
+			if(is_wp_error($platform_event)){
+				SUN_Audit::record('platform_event_publish_failed','delivery',(string)$row['public_id'],array('event'=>'NotificationDeliveryFailed.v1','error_code'=>$platform_event->get_error_code(),'purpose'=>'event_reconciliation'),0);
+			}
+		}
+		return true;
+	}
 	/** @return array<int,array<string,mixed>> */ public function adapter_health(){return array_values(array_map(static function($adapter){return $adapter->health();},$this->adapters));}
 	/** @param array<string,mixed> $delivery Delivery. @return array<string,mixed>|WP_Error */
 	private function send_single(array $delivery){$notification=$this->load_notification((int)$delivery['notification_id']);if(is_wp_error($notification)){if('sun_notification_expired'===$notification->get_error_code()){$result=array('status'=>'expired','reason'=>'notification_expired');$this->finalize($delivery,$result);return $result;}return $this->record_failure($delivery,$notification);}if(!$this->auth->is_recipient_eligible((int)$delivery['recipient_id'])){$result=array('status'=>'suppressed','reason'=>'recipient_ineligible');$this->finalize($delivery,$result);return $result;}$adapter=$this->adapters[(string)$delivery['channel']]??null;if(!$adapter){return $this->record_failure($delivery,new WP_Error('sun_adapter_missing',__('Delivery channel unavailable.','sabri-unified-notifications')));}SUN_Trace_Service::record((string)($notification['trace_id']??$delivery['public_id']),'provider_attempt','started',array('channel'=>$delivery['channel'],'attempt'=>(int)$delivery['attempt_count']),(int)$delivery['notification_id'],(int)$delivery['id']);$result=$adapter->send($delivery,$notification);if(is_wp_error($result)){SUN_Trace_Service::record((string)($notification['trace_id']??$delivery['public_id']),'provider_attempt','failed',array('channel'=>$delivery['channel'],'error'=>$result->get_error_code()),(int)$delivery['notification_id'],(int)$delivery['id']);return $this->record_failure($delivery,$result);}SUN_Trace_Service::record((string)($notification['trace_id']??$delivery['public_id']),'provider_attempt',(string)($result['status']??'accepted'),array('channel'=>$delivery['channel'],'provider'=>$result['provider']??'','route_provider'=>$result['route_provider']??''),(int)$delivery['notification_id'],(int)$delivery['id']);$this->finalize($delivery,$result);return $result;}
