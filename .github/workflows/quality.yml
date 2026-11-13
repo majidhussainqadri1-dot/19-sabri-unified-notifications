@@ -37,6 +37,8 @@ jobs:
         run: php tests/privacy-provider-regression.php
       - name: TextBee failed-response functional regressions
         run: php tests/textbee-failure-regression.php
+      - name: V12.1 File 19 all 81 requirement identifiers
+        run: php tests/requirements-catalogue-81.php
       - name: Safe Mode and File 01 registry contract regressions
         run: php tests/containment-registry-regression.php
       - name: File 19 3.0.7 static and security regression audit
