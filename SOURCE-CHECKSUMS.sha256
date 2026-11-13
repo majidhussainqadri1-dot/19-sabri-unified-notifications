@@ -1,4 +1,4 @@
-a9aa00a553e4f113b6c8b3bdf52073144cd67d7cf68916ccb91f6a81b09bcaec  ./.github/workflows/quality.yml
+e373d06708093c1e254cb59a15513ee5084c755c8b05bf19115cb2e31cc62156  ./.github/workflows/quality.yml
 f79b583b137cab6e600cd6ccf4802bb6af867eb9c63fdcb9fbfb5a71724e1bdf  ./.gitignore
 5e78516e5aebd796c589df0c250d8db5401fbd5ee0b4f129d4c293d6e0b20835  ./19-unified-notifications/19-unified-notifications.php
 5481cf3f3d4595034a7f0fe8c186a31952ef147653cac841c846ca6fdb8f4136  ./19-unified-notifications/LICENSE
@@ -96,6 +96,7 @@ f882f4b22f1f8bc9c1105b512642a5717b2e978ed99001bd7d3d26dfeef4aae4  ./RELEASE-SHA2
 db806ff97ef9ae602daf96e1469c31a0f10353169aad253676fc2dd79576cfe3  ./docs/FILE19-3.0-FINAL-HANDOFF.md
 e276ffaecc3aa4a4f51e2654f5d6df5d5599d4201cf8df2d7b7b91dc69028032  ./docs/FILE19-3.0-PR-NOTE.md
 30fd941f06bfd8abea472a1decdb81fbdf06e56723e0c955b5f333ef6004daf0  ./docs/FILE19-3.0.7-CORRECTIVE-AUDIT.md
+7bb206ef0deb14aadca06117f177e7da6cd0c4af3817fdc84847e8aec6f8d25a  ./docs/FILE19-S0-HOSTINGER-READONLY-FREEZE.md
 2d88438fd086822ffb1e55493ad84aadd4436c01d27173a841f06af333f46d2c  ./docs/FILE19-V12.1-3.0.6-COMPLETION-GATES.md
 6967a1a0b950ce66d417b676241f6e6341915ed93c028de47a9e885019e1d62d  ./docs/FILE19-V12.1-CEN-TRACEABILITY.md
 c1c25c43616636d9844274b7927a410afaf56d5a9b80314516772157e90e82c3  ./tests/advanced-unit.php
@@ -110,3 +111,4 @@ ac78bc2be3bbcd4420fd8bc0e7ad48427bc344c7464a113361373537e8e6ed16  ./tests/textbe
 85fbd927b3bbccbbecee848fed1394e00d7297bc43978fc3ba8799713ace10da  ./tests/textbee-provider.php
 766010ffe80599e1bdc482a24feea1047bce77ceb6fbb78dfb4f4f75eab71eba  ./tests/unit.php
 25bb34341f8f673ca0182a75bb0fc6a926299c6526571a44ce79dfc41a54ad9d  ./tools/build-release.sh
+4f024ae96e4df368ed9e7bca5d729ccd6c5c98b13cd2e4d03911c3a3b8bda028  ./tools/file19-readonly-live-freeze.sh
