@@ -1,12 +1,13 @@
 <?php
 /**
  * Central Master Plan V12.1 File 19 identifier-inventory regression.
- * Checks only catalogue traceability; never asserts runtime/staging acceptance.
+ * Checks three source catalogues only; never asserts runtime/staging acceptance.
  */
 $root = dirname(__DIR__).'/19-unified-notifications/docs/';
 $sources = array(
     'functional-and-central' => $root.'REQUIREMENTS-TRACEABILITY.md',
     'advanced' => $root.'ADVANCED-ATTENTION-OS-3.0.0.md',
+    'central-laws' => dirname(__DIR__).'/docs/FILE19-V12.1-CEN-TRACEABILITY.md',
 );
 $seen = array();
 $failures = array();
