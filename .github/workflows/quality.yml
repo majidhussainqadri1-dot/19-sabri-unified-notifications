@@ -50,8 +50,14 @@ jobs:
           expected="$(awk '{print $1}' RELEASE-SHA256.txt)"
           if [ "$expected" != "PENDING" ]; then test "$second" = "$expected"; fi
           grep -q '19-sabri-unified-notifications-3.0.6.zip' RELEASE-SHA256.txt
-          echo "FILE19_3_0_5_SHA256=$second"
+          echo "FILE19_3_0_6_SHA256=$second"
           cat build/19-sabri-unified-notifications-3.0.6.zip.sha256
+      - name: Record exact-head source checksums (excluding self-reference)
+        run: |
+          find . -type f ! -path './.git/*' ! -path './build/*' ! -name SOURCE-CHECKSUMS.sha256 -print0 | LC_ALL=C sort -z | xargs -0 sha256sum > /tmp/file19-source-checksums.txt
+          mkdir -p build
+          cp /tmp/file19-source-checksums.txt build/SOURCE-CHECKSUMS-3.0.6.sha256
+          cat /tmp/file19-source-checksums.txt
       - name: Upload release candidate
         if: matrix.php == '8.3'
         uses: actions/upload-artifact@v4
@@ -60,4 +66,5 @@ jobs:
           path: |
             build/19-sabri-unified-notifications-3.0.6.zip
             build/19-sabri-unified-notifications-3.0.6.zip.sha256
+            build/SOURCE-CHECKSUMS-3.0.6.sha256
           if-no-files-found: error
