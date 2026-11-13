@@ -4,7 +4,7 @@
 |---|---|
 | Specified | File 19 master plan + consolidated central governing corpus + Intelligent Attention 3.0 register + current twenty-round cross-file review |
 | Audited baseline | Main commit `942bff557c020617c805b5cd982f69ec8a717fac` was the frozen pre-correction baseline |
-| Runtime source lineage | Runtime **3.0.7** (correction branch), DB schema **3.0.2**; 3.0.5 runtime lineage began at `c2881b12fc7e91c050782f7b17bda00d1d69b2f2`; 3.0.6 source corrections have been merged into the repository; this is not evidence of staging or Live deployment |
+| Runtime source lineage | Runtime **3.0.7** (versioned source candidate), DB schema **3.0.2**; 3.0.5 runtime lineage began at `c2881b12fc7e91c050782f7b17bda00d1d69b2f2`; 3.0.6 source corrections have been merged into the repository; this is not evidence of staging or Live deployment |
 | Exact current repository HEAD | Read the repository `main` ref and its matching GitHub Actions run. This file deliberately does not claim that its own parent commit is the current HEAD, avoiding an impossible self-referential/stale SHA assertion |
 | Coded scope | File 01 registry/event-backbone closure, plan-complete command/query manifest, outbound NotificationCreated/Read/DeliveryFailed/PreferenceChanged events, stronger manifest parity checks, idempotent notification/preference state changes, delivery-failure reconciliation, plus retained Intelligent Attention 3.0 functionality |
 | Cross-file owner contracts | File 00 identity, File 01 registry/event backbone, File 02 fresh step-up, File 20 single notification surface/Safe Mode, File 24 containment/assurance, File 25 visual ownership, File 26 saved-search ownership |
@@ -49,6 +49,6 @@ The 3.0.7 regression suite is located at `tests/containment-registry-regression.
 
 ## Repository-completion boundary
 
-The 3.0.6 repository source was merged; 3.0.7 is a corrective branch pending exact-head checks and review. Repository completion holds only while the exact current main SHA has a successful matching File 19 Quality workflow and the release candidate checksum and all exact-head source hashes remain consistent. Source, staging and Live are independent realities. Cross-repository producer compatibility remains subject to exact current companion heads and must be rechecked whenever a producer repository changes.
+3.0.6 repository source was merged previously. The 3.0.7 source is a versioned corrective candidate whose current merge and CI status must be determined from the exact GitHub repository ref and matching workflow, not inferred from this document. Repository completion holds only while the exact current main SHA has a successful matching File 19 Quality workflow and the release candidate checksum and all exact-head source hashes remain consistent. Source, staging and Live are independent realities. Cross-repository producer compatibility remains subject to exact current companion heads and must be rechecked whenever a producer repository changes.
 
 Staging and Live are separate realities. Exact deployed plugin version, deployed checksum, live DB/schema version, migration state, provider configuration and real-role journeys are not verified by this repository status.
