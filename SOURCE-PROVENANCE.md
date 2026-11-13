@@ -17,3 +17,11 @@ No historical package bytes were silently reconstructed or claimed as recovered.
 - The merged 3.0.6 repository source changes privacy export/erasure, signed provider receipt binding, TextBee acceptance and tests. Schema remains 3.0.2.
 - `SOURCE-CHECKSUMS.sha256` is regenerated from the exact candidate commit, excluding itself to prevent circular hashes. A passing matching commit workflow is required.
 - This is repository evidence only. It does not attest Hostinger deployed code, provider configuration, live database or migrations, staging acceptance, operational delivery, or live parity.
+
+## 2026-11-13 — 3.0.7 source-only containment and registry correction
+
+- Base merged repository main SHA: `f506b7556afae873a9426f4f5d64df682c13219c`, runtime 3.0.6 / declared DB 3.0.2.
+- The new 3.0.7 branch corrects ordinary consumer-filter containment override and stale File 01 registry health/route readiness.
+- Evidence-first pre-fix test: 7 of 11 safety/registry assertions fail on inherited source (not a Live incident measurement).
+- All provider, clinical, identity and deployment/DB configuration claims remain unverified without authorized Hostinger runtime access.
+- The historical 3.0.6 ZIP checksum `0e536825782e1dd83686b7ee4fa017dc57df731fb5e32b8113ac0fc4640eee40` is not reused for 3.0.7.
