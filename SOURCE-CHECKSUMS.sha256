@@ -1,4 +1,4 @@
-5ff997d60df88cdc849f1a4b3b0d7a55d3a980ce90db7cf6d7bc0ad6f80c952c  ./.github/workflows/quality.yml
+a9aa00a553e4f113b6c8b3bdf52073144cd67d7cf68916ccb91f6a81b09bcaec  ./.github/workflows/quality.yml
 f79b583b137cab6e600cd6ccf4802bb6af867eb9c63fdcb9fbfb5a71724e1bdf  ./.gitignore
 5e78516e5aebd796c589df0c250d8db5401fbd5ee0b4f129d4c293d6e0b20835  ./19-unified-notifications/19-unified-notifications.php
 5481cf3f3d4595034a7f0fe8c186a31952ef147653cac841c846ca6fdb8f4136  ./19-unified-notifications/LICENSE
@@ -97,12 +97,14 @@ db806ff97ef9ae602daf96e1469c31a0f10353169aad253676fc2dd79576cfe3  ./docs/FILE19-
 e276ffaecc3aa4a4f51e2654f5d6df5d5599d4201cf8df2d7b7b91dc69028032  ./docs/FILE19-3.0-PR-NOTE.md
 30fd941f06bfd8abea472a1decdb81fbdf06e56723e0c955b5f333ef6004daf0  ./docs/FILE19-3.0.7-CORRECTIVE-AUDIT.md
 2d88438fd086822ffb1e55493ad84aadd4436c01d27173a841f06af333f46d2c  ./docs/FILE19-V12.1-3.0.6-COMPLETION-GATES.md
+6967a1a0b950ce66d417b676241f6e6341915ed93c028de47a9e885019e1d62d  ./docs/FILE19-V12.1-CEN-TRACEABILITY.md
 c1c25c43616636d9844274b7927a410afaf56d5a9b80314516772157e90e82c3  ./tests/advanced-unit.php
 4dc7911283b5b5803052f56ab98f75c2881ce9c407bcecc68c530093a673ee99  ./tests/bootstrap.php
 6b88f27d13a6f99843c73535bb773a10094835d75e6b38cdb48ac2f274e7c210  ./tests/completeness-regression.php
 dcd3f44ed0a7eec5bb0dc71bf60bc451f68e87f181c3eda021b23301c98731c2  ./tests/containment-registry-regression.php
 6e599f9ffed85a920f5820ca031fa6a7deedc1f30c2feaaa68112962d0da2818  ./tests/package-audit.sh
 e7a0933867c686aa6d5ad6755f5f7501842f95c648c2dbbd0ef291b3f4cb2234  ./tests/privacy-provider-regression.php
+ff80e51260b8b8c882f746d5e5cdda0ed779cce61918420c48927f9b5e4b1968  ./tests/requirements-catalogue-81.php
 28315b0cbb134d796bec14f478fae9e40bbbf7bf257ea39780e67e442f301b3f  ./tests/static-audit.sh
 ac78bc2be3bbcd4420fd8bc0e7ad48427bc344c7464a113361373537e8e6ed16  ./tests/textbee-failure-regression.php
 85fbd927b3bbccbbecee848fed1394e00d7297bc43978fc3ba8799713ace10da  ./tests/textbee-provider.php
