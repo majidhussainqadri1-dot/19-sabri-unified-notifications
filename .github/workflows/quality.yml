@@ -58,6 +58,7 @@ jobs:
           mkdir -p build
           cp /tmp/file19-source-checksums.txt build/SOURCE-CHECKSUMS-3.0.6.sha256
           cat /tmp/file19-source-checksums.txt
+          cmp -s SOURCE-CHECKSUMS.sha256 /tmp/file19-source-checksums.txt || { echo 'Exact-head source digest manifest mismatch' >&2; exit 1; }
       - name: Upload release candidate
         if: matrix.php == '8.3'
         uses: actions/upload-artifact@v4
