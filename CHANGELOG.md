@@ -1,5 +1,14 @@
 # Changelog
 
+## 3.0.7 — 2026-11-13 — Safe Mode and File 01 registry readiness hardening candidate
+
+- Prevented the general `sun_operational_action_allowed` consumer filter from reauthorizing actions denied by File 20, File 24 or local emergency Safe Mode. The filter may now restrict but not broaden permissions.
+- Tightened File 01 registry readiness: the registered module manifest must match File 19's current manifest, and the active route entries must match owner, path, layout, status, destination and redirects. An active marker or route key alone is insufficient.
+- Added 11 deterministic positive/negative gate and registry regression assertions. On unpatched 3.0.6 source, 7 negative assertions failed, demonstrating the two root causes.
+- File 19 runtime advances to 3.0.7. Schema remains 3.0.2, with no table/column changes.
+- Source QA, exact-head packaging, staging acceptance and Live deployment are distinct evidence boundaries. Live remains unverified.
+
+
 ## 3.0.6 — 2026-11-13 — Privacy and provider-receipt correctness candidate
 
 - Corrected the privacy exporter to paginate notification preferences, subscriptions, devices, attention states, automation rules, device profiles and correction-watch records; no longer truncates larger auxiliary datasets on the first page.

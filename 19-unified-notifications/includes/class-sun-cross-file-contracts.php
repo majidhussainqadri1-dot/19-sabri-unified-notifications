@@ -143,12 +143,32 @@ final class SUN_Cross_File_Contracts {
 	public static function file01_registry_ready() {
 		if ( ! class_exists( 'SPF_Registry' ) ) { return false; }
 		$module = SPF_Registry::get_module( 'file-19' );
-		if ( ! is_array( $module ) || 'active' !== ( $module['state'] ?? '' ) ) { return false; }
-		$needed = array( 'file19-notifications'=>false, 'file19-notification-settings'=>false, 'file19-notification-unsubscribe'=>false );
-		foreach ( (array) SPF_Registry::list_routes() as $route ) {
-			if ( isset( $needed[ $route['route_key'] ] ) && 'file-19' === ( $route['owner_module'] ?? '' ) && 'active' === ( $route['status'] ?? '' ) ) { $needed[ $route['route_key'] ] = true; }
+		$manifest = self::manifest();
+		if ( ! is_array( $module ) || 'active' !== ( $module['state'] ?? '' )
+			|| ! self::manifest_is_current( $module, $manifest ) ) {
+			return false;
 		}
-		return ! in_array( false, $needed, true );
+		/* An active module flag and active route keys are insufficient evidence:
+		 * stale contract commands or an altered destination must not be healthy. */
+		$registered = SPF_Registry::list_routes();
+		if ( is_wp_error( $registered ) || ! is_array( $registered ) ) { return false; }
+		$routes = array();
+		foreach ( $registered as $route ) {
+			if ( is_array( $route ) && isset( $route['route_key'] ) ) {
+				$routes[ (string) $route['route_key'] ] = $route;
+			}
+		}
+		foreach ( self::routes() as $expected ) {
+			$key = (string) $expected['route_key'];
+			$actual = $routes[$key] ?? null;
+			if ( ! is_array( $actual ) ) { return false; }
+			foreach ( array( 'route_path','owner_module','layout_context','status','destination' ) as $field ) {
+				if ( (string) ( $actual[$field] ?? '' ) !== (string) ( $expected[$field] ?? '' ) ) { return false; }
+			}
+			if ( SUN_Database::canonical_json( $actual['redirects'] ?? array() )
+				!== SUN_Database::canonical_json( $expected['redirects'] ?? array() ) ) { return false; }
+		}
+		return true;
 	}
 
 	/** @return bool */

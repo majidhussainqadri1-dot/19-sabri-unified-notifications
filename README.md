@@ -2,7 +2,14 @@
 
 Canonical intelligent notification and attention infrastructure for the **Sabri Social Homeopathy Platform**.
 
-## Current 3.0.6 corrective candidate
+## Current 3.0.7 source containment and registry hardening candidate
+
+- Runtime / schema: **3.0.7 / 3.0.2**. This remains source truth only; no Live version or DB status has been confirmed.
+- File 20/File 24/local Safe Mode containment is non-overridable by an ordinary File 19 consumer filter. Consumer hooks may restrict but never re-authorize a denied high-risk action.
+- File 01 readiness now requires exact canonical module manifest and trusted route metadata (path, status, destination, layout and redirects), rather than merely an active module and active route keys.
+- Added independently executable positive/negative tests covering all affected states. This 3.0.7 source candidate is not staging or production acceptance.
+
+## Historical 3.0.6 source corrections
 
 - File number: **19**
 - Runtime / schema: **3.0.6 / 3.0.2**
