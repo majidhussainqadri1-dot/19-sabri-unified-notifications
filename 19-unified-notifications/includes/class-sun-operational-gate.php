@@ -43,8 +43,7 @@ final class SUN_Operational_Gate {
 
 	/**
 	 * Check a named File 19 action. Consumers may narrow permission further,
-	 * but may not silently bypass an active containment state without an
-	 * explicit audited override filter.
+	 * and may never bypass an active containment state.
 	 *
 	 * @param string $action Action key.
 	 * @return bool
@@ -58,6 +57,12 @@ final class SUN_Operational_Gate {
 			$allowed = empty( $state['safe_mode_active'] );
 		}
 
-		return (bool) apply_filters( 'sun_operational_action_allowed', $allowed, $action, $state );
+		/*
+		 * Consumer filters may narrow an authorized action, never lift a denial.
+		 * In particular, missing File 20/File 24 owner evidence and an active
+		 * local Safe Mode are authoritative containment decisions.
+		 */
+		$consumer_allowed = (bool) apply_filters( 'sun_operational_action_allowed', $allowed, $action, $state );
+		return $allowed && $consumer_allowed;
 	}
 }
