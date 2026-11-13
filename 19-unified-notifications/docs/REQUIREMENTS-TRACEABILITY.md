@@ -1,5 +1,7 @@
 # Requirements Traceability
 
+V12.1 canonical File 19 identifier inventory: **81** unique requirements (21 FR, 10 NFR, 2 CEN and 48 AF). These tables map source evidence and pending verification scenarios; the presence of an ID is **not** a claim of per-requirement staging, provider or Live acceptance.
+
 ## Functional requirements
 
 | ID | Requirement | Principal implementation | Automated evidence |
@@ -41,6 +43,15 @@
 | F19-NFR-009 | Compatibility | PHP 8.3/8.4 automated matrix; project baseline WP 7.0.1/PHP 8.3 pending staging |
 | F19-NFR-010 | Localization | text domain, locale templates, timezone handling, RTL and English-US base |
 
+
+## V12.1 canonical owner and action laws
+
+| ID | Governing requirement (faithful summary of V12.1) | Source-level implementation mapping | Outstanding acceptance |
+|---|---|---|---|
+| F19-CEN-01 | File 19 must obey its own canonical owner contract, the central single-free-tier/green/privacy/safety laws, and File 26's canonical search/projection ownership; use native-owner tests. | `SUN_Cross_File_Contracts::manifest()`; `SUN_Four_Plan_Compliance`; File 00 membership assertions; File 01 owner registry; File 20 one-bell/Safe Mode; File 24 containment; `SUN_Cross_File_Contracts::saved_search_owned()` accepts only File 26 proof; `tests/unit.php` and `tests/containment-registry-regression.php`. | Current **installed** owner versions, cross-owner real event and search data, native tests and role-bound acceptance must be demonstrated on staging; no duplicate File 26 canonical store. |
+| F19-CEN-02 | Owner create/update/delete must go through authorized native commands; every read, event, index, cache and notification projection remains subject to versioned contracts and re-authorization. | `SUN_Auth` current File 00 eligibility, `SUN_Deep_Link::authorize_click()`, `SUN_Event_Validator`, `SUN_Platform_Events` through File 01, recipient-scoped `SUN_Notification_Service`, REST mutation/idempotency and native-owner action callbacks. | Prove authorization rechecks at click and every mutation/read boundary with real producer integrations, cache invalidation, deleted/revoked objects and unauthorized negative cases. |
+
+The two central laws are not additional features invented for runtime 3.0.7; they were present in the founder-approved V12.1 central registry (chapter 11, File 19, p. 147) and are now explicitly traceable in source documentation. The `tests/requirements-catalogue-81.php` check enforces identifier presence and uniqueness, **not behavioral acceptance**.
 
 ## 3.0.5 cross-file owner-contract traceability
 
