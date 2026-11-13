@@ -5,7 +5,7 @@ function cr_check($condition,$label){global$tests,$failures;++$tests;if(!$condit
 function cr_src($path){global$plugin;return file_get_contents($plugin.'/'.$path);}
 
 $bootstrap=cr_src('19-unified-notifications.php');
-cr_check(false!==strpos($bootstrap,"Version: 3.0.6")&&false!==strpos($bootstrap,"SUN_DB_VERSION', '3.0.2"),'runtime release bump and schema continuity');
+cr_check(false!==strpos($bootstrap,"Version: 3.0.7")&&false!==strpos($bootstrap,"SUN_DB_VERSION', '3.0.2"),'runtime release bump and schema continuity');
 cr_check(false!==strpos($bootstrap,'class-sun-request-idempotency.php')&&false!==strpos($bootstrap,'class-sun-provider-webhook-verifier.php'),'replay-safety classes bootstrapped');
 cr_check(false!==strpos($bootstrap,'class-sun-platform-events.php'),'File 01 platform event adapter bootstrapped');
 
