@@ -1,5 +1,16 @@
 # Changelog
 
+## 3.0.6 — 2026-11-13 — Privacy and provider-receipt correctness candidate
+
+- Corrected the privacy exporter to paginate notification preferences, subscriptions, devices, attention states, automation rules, device profiles and correction-watch records; no longer truncates larger auxiliary datasets on the first page.
+- Made privacy export database read failures explicit rather than silently returning empty data; preserved deterministic per-group IDs across pages.
+- Made privacy erasure fail closed on database writes, legacy decryption/encryption failures and legacy scrub errors. WordPress receives `WP_Error` on incomplete erasure, preventing a failed request from being recorded as completed.
+- Scoped authenticated external provider receipts to the signed `X-SUN-Provider` identity and rejected ambiguous cross-provider/cross-recipient matches before updating status.
+- Required TextBee's actual queued or immediate acceptance signal; a batch identifier or explicitly failed/partial response alone cannot represent accepted SMS.
+- Fixed the plugin readme runtime/stable-tag version mismatch and introduced independent positive/negative privacy/provider regression fixtures.
+- Carried forward schema **3.0.2** unchanged, with no new tables. Package checksum is frozen only after an exact-branch CI build; staging, deployed and operational acceptance remain unverified.
+
+
 ## 3.0.5 — 2026-09-27 — File 01 event-contract closure
 
 - Added File 01 as the required canonical module/contract-registry and reliable platform-event-backbone dependency.
