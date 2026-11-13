@@ -6,6 +6,10 @@
 set -euo pipefail
 umask 077
 
+if [[ "$#" -lt 1 ]]; then
+  echo "Provide the absolute WordPress root as the only argument." >&2
+  exit 2
+fi
 WP_ROOT="$1"
 if [[ -z "$WP_ROOT" || "$WP_ROOT" != /* || ! -d "$WP_ROOT" ]]; then
   echo "An existing absolute WordPress root directory is required." >&2
