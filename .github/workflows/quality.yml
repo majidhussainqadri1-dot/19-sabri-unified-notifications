@@ -56,6 +56,13 @@ jobs:
           grep -q '19-sabri-unified-notifications-3.0.7.zip' RELEASE-SHA256.txt
           echo "FILE19_3_0_7_SHA256=$second"
           cat build/19-sabri-unified-notifications-3.0.7.zip.sha256
+      - name: File 19 read-only deployed-reality collector syntax and safe boundaries
+        run: |
+          bash -n tools/file19-readonly-live-freeze.sh
+          grep -Fq 'mktemp /tmp/file19-readonly-evidence-' tools/file19-readonly-live-freeze.sh
+          grep -Fq -- '--skip-plugins --skip-themes' tools/file19-readonly-live-freeze.sh
+          grep -Fq 'SHOW COLUMNS FROM' tools/file19-readonly-live-freeze.sh
+          grep -Fq 'MANIFEST.sha256' tools/file19-readonly-live-freeze.sh
       - name: Record exact-head source checksums (excluding self-reference)
         run: |
           find . -type f ! -path './.git/*' ! -path './build/*' ! -name SOURCE-CHECKSUMS.sha256 -print0 | LC_ALL=C sort -z | xargs -0 sha256sum > /tmp/file19-source-checksums.txt
