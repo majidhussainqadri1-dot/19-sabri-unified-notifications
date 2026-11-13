@@ -14,6 +14,6 @@ No historical package bytes were silently reconstructed or claimed as recovered.
 
 - Immutable source baseline for corrective work: main commit `04078025b643ab7696e4cb4e37826bf152defa18` (runtime 3.0.5 / schema 3.0.2).
 - Exact 3.0.5 deterministic release SHA-256 remains historical evidence: `92131b0a5a5e78a9e67016615392e30c221650ebbd2bb9ebed9b577fa4b11a09`.
-- Current 3.0.6 branch changes privacy export/erasure, signed provider receipt binding, TextBee acceptance and tests. Schema remains 3.0.2.
+- The merged 3.0.6 repository source changes privacy export/erasure, signed provider receipt binding, TextBee acceptance and tests. Schema remains 3.0.2.
 - `SOURCE-CHECKSUMS.sha256` is regenerated from the exact candidate commit, excluding itself to prevent circular hashes. A passing matching commit workflow is required.
 - This is repository evidence only. It does not attest Hostinger deployed code, provider configuration, live database or migrations, staging acceptance, operational delivery, or live parity.
