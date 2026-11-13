@@ -61,4 +61,4 @@ Do not disable security controls, retry unsafe deployments, infer installation, 
 
 Report `new / confirmed / corrected locally / merged / staged accepted / live re-tested / remaining / blocked` distinctly; never turn a passing source unit test into a completed Live incident. Any new live defect follows **Live symptom → Live evidence → exact deployed version → DB/schema → deployment parity → root cause → fix → test → package → deploy → live retest**.
 
-**Release rule:** 3.0.6 remains a candidate until its current exact HEAD and recorded checksum pass, and a reviewed PR is accepted. It is not `Live-Deployed` or `Operational`.
+**Source release evidence:** PR #21 was merged and its matching main-head workflow run 43358601633 passed on PHP 8.3 and 8.4; the deterministic 3.0.6 ZIP checksum remains frozen. This repository acceptance is not `Staging-Accepted`, `Live-Deployed` or `Operational`. The release can be staged only after its installed dependencies and migration state are separately attested.
