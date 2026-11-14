@@ -40,9 +40,9 @@ The placeholder must be replaced with the administrator-verified path. Do not pa
 ## Parity and root-cause decision
 
 1. Freeze actual Hostinger deployed File 19 metadata before reading repository code as a diagnostic.
-2. If installed build is 3.0.7, independently compare the canonical frozen 3.0.7 archive hash 2a77ffcea0ab1cf5a9794f22171d7af280ceea7a3e9658bd10b5a4ae33cbd107 and each relevant file hash. This ZIP checksum is not automatically the hash of an extracted plugin directory.
+2. Establish the exact installed build FIRST. If installed build is 3.0.9, compare to source-candidate ZIP SHA-256 `8bfde10b1e66f93b09468bd8cc12fe2afe41a8541a444f9813b3578a9ed753a8`; if 3.0.8, compare to historical ZIP SHA-256 `b2611522c0dcbc1d081dd83e4a051cabc06eaef5be7af675a0ee40865329dc41`; if 3.0.7, independently compare the canonical frozen 3.0.7 archive hash 2a77ffcea0ab1cf5a9794f22171d7af280ceea7a3e9658bd10b5a4ae33cbd107 and each relevant file hash. This ZIP checksum is not automatically the hash of an extracted plugin directory.
 3. If installed version differs or schema/option state disagrees, mark DRIFT and halt normal application-code debugging. Conduct Deployment-Parity and migration audit first.
-4. Only after the exact installed artifact, DB state and relevant logs are known may a live root cause be attributed. Source 3.0.8 is a candidate, not proof of deployment.
+4. Only after the exact installed artifact, DB state and relevant logs are known may a live root cause be attributed. Source 3.0.9 is a candidate, not proof of deployment. Historical versions must not be assumed installed.
 5. S0 acceptance is not S10 release authorization; Staging, rollback, Founder acceptance, controlled deploy and S11 retest remain separate.
 
 ## Connector observations
