@@ -1,3 +1,10 @@
+## 3.0.9 — 2026-11-14 — V12.3 isolated Push service-worker scope candidate
+
+- A cross-file source check found File 20 PWA registers a root-scope service worker when enabled, while File 19 Web Push also registered root-scope. A deterministic Node test reproduced the competing scope in inherited 3.0.8 source; this is not proof of Live failure.
+- File 19 now publishes a dedicated home_url-aware pushWorkerScope and registers PushManager with /sabri-notifications-push/ instead of '/'. This keeps new File 19 registrations from replacing File 20's PWA root registration.
+- Old clients' existing root-scope registrations, provider delivery and PWA operation still require controlled browser/staging migration tests. No destructive auto-unregister or live deployment was attempted.
+- Declared database schema 3.0.2 remains unchanged. The 3.0.8 candidate ZIP is preserved historically.
+
 ## 3.0.8 — 2026-11-14 — V12.3 source localization and URL safety candidate
 
 - Proven source-level defect: dynamic notification controls and explanations ignored translation dictionary; a Node regression reproduced the failure before the fix.
