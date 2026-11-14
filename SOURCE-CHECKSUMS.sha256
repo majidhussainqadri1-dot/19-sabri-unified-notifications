@@ -104,7 +104,7 @@ e276ffaecc3aa4a4f51e2654f5d6df5d5599d4201cf8df2d7b7b91dc69028032  ./docs/FILE19-
 3e259fe632cdc1f44dbeae876620506950b54cdbb78c70b73a661b0282966e8a  ./docs/FILE19-V12.3-HOSTINGER-OPERATOR-HANDOFF.md
 7cd1afcddfd06b009241c529b7c24a85e5fdf729575c5bc04d09d14b7e547baf  ./docs/FILE19-V12.3-SOURCE-REVIEW-ROUNDS.md
 c1c25c43616636d9844274b7927a410afaf56d5a9b80314516772157e90e82c3  ./tests/advanced-unit.php
-4dc7911283b5b5803052f56ab98f75c2881ce9c407bcecc68c530093a673ee99  ./tests/bootstrap.php
+8ee7b3092836d7532e8f4b0f090f401618d504efac7019f9e997b568da53e2a0  ./tests/bootstrap.php
 016e7a4becc70bf4c6edeb8850da71eb614889e27f2c6c1ff76f4b0fb8a0a335  ./tests/completeness-regression.php
 dcd3f44ed0a7eec5bb0dc71bf60bc451f68e87f181c3eda021b23301c98731c2  ./tests/containment-registry-regression.php
 6c3ad5928f2622a6b6f8acb25c23103684a7bf02df3a2e1685f33fe144b32528  ./tests/package-audit.sh
@@ -114,7 +114,7 @@ f786e913e1c3b14a44dc102742a914053dc84d6ee851c216462a6a417f61f678  ./tests/static
 ac78bc2be3bbcd4420fd8bc0e7ad48427bc344c7464a113361373537e8e6ed16  ./tests/textbee-failure-regression.php
 85fbd927b3bbccbbecee848fed1394e00d7297bc43978fc3ba8799713ace10da  ./tests/textbee-provider.php
 766010ffe80599e1bdc482a24feea1047bce77ceb6fbb78dfb4f4f75eab71eba  ./tests/unit.php
-2a18526f7c9bdce705e394ca80749cbee2cbef07b638447b5fee0291843c2819  ./tests/v123-acceptance-inventory.php
+6c51d50f9011ad8e3934802527716ec5ebb258ea89d93f2378e4f6e22709edad  ./tests/v123-acceptance-inventory.php
 74a51a153ac8225207f79bb6d0a4f00e10d782da4084b082b0f5c521aa4c27c9  ./tests/v123-localization-ui.test.cjs
 a6571f369b3f8ca9d928a409fcc52f24ca8165857dcf730ba91b7708efd80b32  ./tools/build-release.sh
 4f024ae96e4df368ed9e7bca5d729ccd6c5c98b13cd2e4d03911c3a3b8bda028  ./tools/file19-readonly-live-freeze.sh
