@@ -39,6 +39,8 @@ jobs:
         run: php tests/privacy-provider-regression.php
       - name: TextBee failed-response functional regressions
         run: php tests/textbee-failure-regression.php
+      - name: V12.3 81-ID evidence-first acceptance inventory
+        run: php tests/v123-acceptance-inventory.php
       - name: V12.1 File 19 all 81 requirement identifiers
         run: php tests/requirements-catalogue-81.php
       - name: Safe Mode and File 01 registry contract regressions
