@@ -26,6 +26,12 @@ Round 1 outcome: **source corrections proposed in candidate**; exact-head CI and
 
 Round 2 outcome: **no additional independently reproduced source root cause from the sampled areas**; detailed hostile-role/WordPress/DB/companion staging tests remain BLOCKED until S0/S2/S3.
 
+## Additional cross-file service worker source review — 2026-11-14
+
+- File 20 PWA default configuration registers a root-scope service worker. File 19 3.0.8 Web Push registration did so too when the user enabled browser notifications.
+- Regression on the inherited 3.0.8 source explicitly observed root scope in GitHub Actions run 43595055700 (both PHP jobs). Source candidate 3.0.9 scopes new File 19 Push registrations under /sabri-notifications-push/ via a WordPress-generated URL.
+- No old browser registrations are silently unregistered; multi-version upgrade, File20 PWA offline mode and actual push delivery must be tested on isolated staging, then Live only after approved release.
+
 ## Required later full two-pass acceptance
 
 - Full acceptance Review A on sanitized staging: 81 requirement ID journeys, owner/role matrix, accessibility, locale, delivery states, API contracts, 10k+ load. Every finding receives a reproducible defect, correction and regression.
