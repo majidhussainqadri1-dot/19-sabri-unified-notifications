@@ -2,7 +2,7 @@
 
 **Recorded:** 2026-11-14. **Repository:** `19-sabri-unified-notifications`.
 **Governing primary source:** Sabri Website Master Plan V12.3, File 19, pages 191–196, plus central CEN-REL-001 and V12.3 cross-cutting UX/QA/operations rules.
-**Baseline:** `main` at `66a4de6077e32c4c6cd692ae3d906afc4a5f3eb2`, runtime source 3.0.7, declared DB 3.0.2. A separate 3.0.8 source candidate is under review. Live/Hostinger artifact, active DB and migration are not verified.
+**Baseline:** `main` at `66a4de6077e32c4c6cd692ae3d906afc4a5f3eb2`, runtime source 3.0.7, declared DB 3.0.2. 3.0.8 is a historical source candidate; a distinct 3.0.9 source candidate fixes weekly digest Monday-clock behavior. Do not infer deployment from either. Live/Hostinger artifact, active DB and migration are not verified.
 
 The existence of a source file, a code path, an identifier or a green unit test is NOT acceptance. Every row below is deliberately `PENDING-LIVE-AND-STAGING` until time-stamped, role-bound evidence exists. Do not auto-promote rows based on CI. V12.3 additional cross-cutting obligations (single bell, native owner truth, Safe Mode, no sensitive preview, RTL, WCAG, safe fallback, per-category effective settings, event provenance, rollback) are extra acceptance assertions, not extra invented F19 identifiers.
 
@@ -105,12 +105,18 @@ Each row must receive `requirement_id, owner, source_sha, deployed_sha, db_schem
 ### Executable test boundaries
 `tests/requirements-catalogue-81.php` proves only 81 V12.1 identifiers. `tests/v123-acceptance-inventory.php` validates this V12.3 evidence ledger; neither proves 81 runtime outcomes. `tests/v123-localization-ui.test.cjs` asserts actual browser-JS rendering with localized configuration and malicious-link negatives, not WordPress/Hostinger runtime.
 
+## New F19-FR-011/012 deterministic source test evidence (NOT staging acceptance)
+
+- Direct PHP regression `tests/v123-digest-timezone-regression.php` tests 12 scenarios: weekly Monday pre-/at-08:00, Sunday and Tuesday, daily boundaries, mandatory quiet-hours exception, local-night windows, and spring/fall DST.
+- Baseline 3.0.8 source failed two Monday-before-08:00 assertions on PHP 8.3 and 8.4 (GitHub Actions 43609414867). This is source regression evidence only, not a verified Live incident.
+- Versioned 3.0.9 source candidate corrects Monday scheduling without changing declared DB schema 3.0.2. Full File 19 requirement 81-ID acceptance remains `PENDING-LIVE-AND-STAGING`.
+
 ## S0–S11 status
 
 | Stage | Current evidence | Acceptance |
 |---|---|---|
 | S0 Live Reality Freeze | Hostinger artifact/DB/logs/backup not collected; Jetpack disconnected; WPVibe site unregistered | BLOCKED |
-| S1 exact GitHub evidence | Historical `main` 3.0.7 source/CI verified; 3.0.8 branch source/build evidence pending | PARTIAL |
+| S1 exact GitHub evidence | Historical source CI verified; 3.0.9 source candidate is versioned; exact-head CI/package manifest must pass separately | PARTIAL |
 | S2 parity/migration | No confirmed deployed checksum or actual DB migration version | BLOCKED |
 | S3 companion contracts | Installed companion builds unverified | BLOCKED |
 | S4 21 FR + 2 CEN | Source mappings exist; per-role end-to-end evidence not collected | BLOCKED |
