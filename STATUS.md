@@ -4,15 +4,22 @@
 |---|---|
 | Specified | File 19 master plan + consolidated central governing corpus + Intelligent Attention 3.0 register + current twenty-round cross-file review |
 | Audited baseline | Main commit `942bff557c020617c805b5cd982f69ec8a717fac` was the frozen pre-correction baseline |
-| Runtime source lineage | Runtime **3.0.7** (versioned source candidate), DB schema **3.0.2**; 3.0.5 runtime lineage began at `c2881b12fc7e91c050782f7b17bda00d1d69b2f2`; 3.0.6 source corrections have been merged into the repository; this is not evidence of staging or Live deployment |
+| Runtime source lineage | Runtime **3.0.8** (V12.3 source candidate; staging/live unverified), DB schema **3.0.2**; 3.0.5 runtime lineage began at `c2881b12fc7e91c050782f7b17bda00d1d69b2f2`; 3.0.6 source corrections have been merged into the repository; this is not evidence of staging or Live deployment |
 | Exact current repository HEAD | Read the repository `main` ref and its matching GitHub Actions run. This file deliberately does not claim that its own parent commit is the current HEAD, avoiding an impossible self-referential/stale SHA assertion |
 | Coded scope | File 01 registry/event-backbone closure, plan-complete command/query manifest, outbound NotificationCreated/Read/DeliveryFailed/PreferenceChanged events, stronger manifest parity checks, idempotent notification/preference state changes, delivery-failure reconciliation, plus retained Intelligent Attention 3.0 functionality |
 | Cross-file owner contracts | File 00 identity, File 01 registry/event backbone, File 02 fresh step-up, File 20 single notification surface/Safe Mode, File 24 containment/assurance, File 25 visual ownership, File 26 saved-search ownership |
-| Package | `19-sabri-unified-notifications-3.0.7.zip`, canonical top folder `unified-notifications-19/`; candidate SHA-256 **2a77ffcea0ab1cf5a9794f22171d7af280ceea7a3e9658bd10b5a4ae33cbd107** (first 3.0.7 deterministic build; matching exact-head recheck required), while the historical 3.0.6 ZIP SHA-256 remains `0e536825782e1dd83686b7ee4fa017dc57df731fb5e32b8113ac0fc4640eee40` |
+| Package | `19-sabri-unified-notifications-3.0.8.zip`, canonical top folder `unified-notifications-19/`; exact candidate checksum must be frozen after reproducible CI. Historical immutable **3.0.7** SHA-256: `2a77ffcea0ab1cf5a9794f22171d7af280ceea7a3e9658bd10b5a4ae33cbd107`; historical **3.0.6** SHA-256: `0e536825782e1dd83686b7ee4fa017dc57df731fb5e32b8113ac0fc4640eee40`. No actual Hostinger deployment inferred. |
 | Automated QA | Every changed candidate and merged `main` HEAD must pass the File 19 Quality workflow on PHP 8.3 and 8.4, including unit, advanced, completeness, TextBee, static/security/privacy, clean-extract package and deterministic rebuild gates. GitHub Actions is the authoritative exact-head record |
 | Staging-Accepted | **Not claimed** |
 | Live-Deployed | **Unverified**; repository code is not deployment evidence |
 | Operational | **Not claimed** |
+
+## Current 3.0.8 V12.3 source-only changes
+
+- Dynamic notification controls, source explanations, empty states and browser push messages now use translatable WordPress script configuration.
+- Dynamic browser notification links now fail closed on invalid/external URL schemes; the fallback Sabri Green token uses V12.3 #087A4E.
+- A Node DOM/fetch regression reproduces the pre-fix state and tests positive and negative behavior; no live-state claim is made.
+- Real Urdu/Arabic translation assets and integrated browser/assistive-technology acceptance are not established by source-only tests.
 
 ## Inherited 3.0.5 cross-file corrective scope
 

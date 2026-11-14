@@ -2,7 +2,14 @@
 
 Canonical intelligent notification and attention infrastructure for the **Sabri Social Homeopathy Platform**.
 
-## Current 3.0.7 source containment and registry hardening candidate
+## Current 3.0.8 V12.3 source candidate — NOT LIVE
+
+- New source-side localization of dynamic notification labels, same-origin safe links and V12.3 primary-green fallback.
+- Browser-side regression covers localized controls and invalid/external links.
+- 3.0.7 remains an immutable historical release; 3.0.8 has a separate candidate hash.
+- S0 deployed-state evidence, real providers, companion integrations, staging and Live acceptance remain unverified.
+
+## Historical 3.0.7 source containment and registry hardening
 
 - Runtime / schema: **3.0.7 / 3.0.2**. This remains source truth only; no Live version or DB status has been confirmed.
 - File 20/File 24/local Safe Mode containment is non-overridable by an ordinary File 19 consumer filter. Consumer hooks may restrict but never re-authorize a denied high-risk action.
