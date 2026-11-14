@@ -21,6 +21,14 @@
 - **Source correction:** 3.0.9 candidate uses `home_url('/sabri-notifications-push/')` as File19-owned worker scope while keeping the existing PushManager device registration. File20 PWA remains the root-scope owner.
 - **Unresolved acceptance:** existing browser registrations from older versions must be inventoried and tested on staging; push permission, offline PWA, old worker retirement, no confidential cached content, and production parity remain unverified. No blind unregister or Live deployment.
 
+### F19-V123-SRC-006 — Push click-target origin and scheme were not validated
+
+- Before-fix source converted the Push notification's untrusted payload URL with new URL() and passed it directly to clients.openWindow().
+- GitHub Actions run 43595653540 failed on PHP 8.3/8.4 in a synthetic negative test; javascript:alert(1) was forwarded instead of a local notifications-center fallback.
+- Root cause: URL parsing was used without same-origin HTTP(S) verification. No confirmed Live exploit is asserted.
+- 3.0.9 source correction: enforce current-origin HTTP(S) at click time, preserve safe own-site links, and fall back under the site's WordPress root, including subdirectory installations.
+- Staging browser, actual provider payloads, deep-link owner authorization and old worker migration remain unverified.
+
 ## Historical source corrections (not new issues)
 
 Five 3.0.6 and two 3.0.7 source-level root causes had already been corrected on main. Their existence and CI fixes are not evidence of defects in installed production. None is marked Live Resolved.
