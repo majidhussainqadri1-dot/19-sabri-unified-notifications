@@ -2,6 +2,7 @@
 
 - A cross-file source check found File 20 PWA registers a root-scope service worker when enabled, while File 19 Web Push also registered root-scope. A deterministic Node test reproduced the competing scope in inherited 3.0.8 source; this is not proof of Live failure.
 - File 19 now publishes a dedicated home_url-aware pushWorkerScope and registers PushManager with /sabri-notifications-push/ instead of '/'. This keeps new File 19 registrations from replacing File 20's PWA root registration.
+- Negative synthetic CI reproduced an unsafe Push notificationclick target: a javascript: URL was forwarded to clients.openWindow. The worker now allows only same-origin HTTP(S) click URLs, with a private notifications fallback; no Live exploit is claimed.
 - Old clients' existing root-scope registrations, provider delivery and PWA operation still require controlled browser/staging migration tests. No destructive auto-unregister or live deployment was attempted.
 - Declared database schema 3.0.2 remains unchanged. The 3.0.8 candidate ZIP is preserved historically.
 
