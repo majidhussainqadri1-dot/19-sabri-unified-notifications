@@ -1,6 +1,6 @@
 # File 19 V12.3 — two focused source review passes (not staging acceptance)
 
-**Evidence date:** 2026-11-14. **Scope:** GitHub source candidate 3.0.8 against the File 19 V12.3 plan. These reviews do NOT replace two full acceptance reviews against deployed/staging code.
+**Evidence date:** 2026-11-14. **Scope:** GitHub 3.0.8 source (merged) and 3.0.9 corrective candidate against V12.3. These reviews do NOT replace two full acceptance reviews against deployed/staging code.
 
 ## Round 1 — Browser UI, translation, safe navigation and fallback theme
 
