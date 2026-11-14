@@ -2,11 +2,17 @@
 
 Canonical intelligent notification and attention infrastructure for the **Sabri Social Homeopathy Platform**.
 
-## Current 3.0.8 V12.3 source candidate — NOT LIVE
+## Current 3.0.9 V12.3 source candidate — NOT LIVE
+
+- Corrected the weekly Digest's Monday-before-08:00 scheduling: same-Monday delivery, not next-week deferral.
+- Added real synthetic PHP tests for weekly/daily scheduling, overnight quiet-hours and DST; pre-fix source failed two Monday cases on PHP 8.3 and 8.4.
+- Database declaration remains 3.0.2. Release candidate ZIP requires a distinct, frozen checksum; no Hostinger, staging or Live deployment inferred.
+
+## Historical 3.0.8 V12.3 localization and safe-navigation candidate
 
 - New source-side localization of dynamic notification labels, same-origin safe links and V12.3 primary-green fallback.
 - Browser-side regression covers localized controls and invalid/external links.
-- 3.0.7 remains an immutable historical release; 3.0.8 has a separate candidate hash.
+- 3.0.7 and 3.0.8 are immutable historical release candidates; 3.0.9 has a separate release provenance.
 - S0 deployed-state evidence, real providers, companion integrations, staging and Live acceptance remain unverified.
 
 ## Historical 3.0.7 source containment and registry hardening
