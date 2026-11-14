@@ -2,7 +2,7 @@
 
 **Date:** 2026-11-14. **Scope:** GitHub source candidate branch only. Never interpret this as a production incident report.
 **Source baseline:** `main@66a4de6077e32c4c6cd692ae3d906afc4a5f3eb2`; frozen runtime 3.0.7, declared schema 3.0.2, successful GitHub quality run 43369054072.
-**New candidate:** 3.0.8 with schema declaration unchanged at 3.0.2. No Hostinger deployment or migration was performed.
+**Source change chain:** 3.0.8 merged via PR #27; candidate 3.0.9 isolates Web Push scope and validates notification clicks, with source-declared schema unchanged at 3.0.2. No Hostinger deployment or migration was performed.
 
 ## V12.3 findings and containment
 
