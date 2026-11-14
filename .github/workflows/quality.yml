@@ -25,6 +25,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: V12.3 dynamic localized UI and safe-link regressions
+        run: node tests/v123-localization-ui.test.cjs
       - name: Deterministic baseline unit assertions
         run: php tests/unit.php
       - name: Intelligent Attention 3.0 assertions
