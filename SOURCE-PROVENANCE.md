@@ -18,6 +18,12 @@ No historical package bytes were silently reconstructed or claimed as recovered.
 - `SOURCE-CHECKSUMS.sha256` is regenerated from the exact candidate commit, excluding itself to prevent circular hashes. A passing matching commit workflow is required.
 - This is repository evidence only. It does not attest Hostinger deployed code, provider configuration, live database or migrations, staging acceptance, operational delivery, or live parity.
 
+## 2026-11-14 — 3.0.8 V12.3 source candidate (not deployed)
+
+- Scope: JavaScript localization, same-origin dynamic URLs, File 25 fallback green, and deterministic Node regression.
+- Frozen 3.0.7 installable ZIP SHA-256 remains `2a77ffcea0ab1cf5a9794f22171d7af280ceea7a3e9658bd10b5a4ae33cbd107`. Any 3.0.8 release must receive a distinct exact-HEAD reproducible SHA-256.
+- Declared DB version 3.0.2, unchanged; actual installed plugin and DB migration unverified.
+
 ## 2026-11-13 — 3.0.7 source-only containment and registry correction
 
 - Base merged repository main SHA: `f506b7556afae873a9426f4f5d64df682c13219c`, runtime 3.0.6 / declared DB 3.0.2.
