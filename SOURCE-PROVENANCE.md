@@ -18,6 +18,13 @@ No historical package bytes were silently reconstructed or claimed as recovered.
 - `SOURCE-CHECKSUMS.sha256` is regenerated from the exact candidate commit, excluding itself to prevent circular hashes. A passing matching commit workflow is required.
 - This is repository evidence only. It does not attest Hostinger deployed code, provider configuration, live database or migrations, staging acceptance, operational delivery, or live parity.
 
+## 2026-11-14 — 3.0.9 V12.3 F19-FR-012 source candidate (not deployed)
+
+- Root cause: current weekly digest method always uses `modify('next monday')` even before 08:00 on Monday; this bypasses the same-day occurrence and postpones digest one full week.
+- Pre-fix negative GitHub Actions `43609414867` failed 2/12 real scheduling PHP assertions on both PHP 8.3 and 8.4; synthetic fixtures only.
+- Changed only the prospective same-Monday scheduling algorithm and regression/test/release documentation; no database schema change (3.0.2), no Hostinger/staging/Live operations.
+- The 3.0.8 candidate ZIP `b2611522c0dcbc1d081dd83e4a051cabc06eaef5be7af675a0ee40865329dc41` is immutable. A new exact 3.0.9 candidate archive and distinct digest must be frozen separately.
+
 ## 2026-11-14 — 3.0.8 V12.3 source candidate (not deployed)
 
 - Scope: JavaScript localization, same-origin dynamic URLs, File 25 fallback green, and deterministic Node regression.
