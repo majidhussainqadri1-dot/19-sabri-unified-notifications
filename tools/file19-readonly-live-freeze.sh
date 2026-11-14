@@ -60,7 +60,7 @@ ro_db() { ro_wp db query "$1" --skip-column-names; }
   echo '=== File19 scheduled hook metadata; no job execution ==='
   ro_wp cron event list --fields=hook,next_run_gmt,schedule --format=csv 2>/dev/null | awk -F, 'NR==1 || $1 ~ /^sun_/' || echo 'CRON_INVENTORY_UNAVAILABLE'
 
-  echo '=== File19 database table names, aggregated row counts and column metadata only ==='
+  echo '=== File19 database table names, aggregate row counts, columns and index metadata only ==='
   prefix="$(ro_wp db prefix 2>/dev/null || true)"
   if [[ "$prefix" =~ ^[A-Za-z0-9_]+$ ]]; then
     tables="$(ro_db 'SHOW TABLES' 2>/dev/null || true)"
@@ -75,6 +75,8 @@ ro_db() { ro_wp db query "$1" --skip-column-names; }
       ro_db "SELECT COUNT(*) FROM $table" || echo 'UNAVAILABLE'
       echo 'column_metadata='
       ro_db "SHOW COLUMNS FROM $table" || echo 'UNAVAILABLE'
+      echo 'index_metadata='
+      ro_db "SHOW INDEX FROM $table" || echo 'UNAVAILABLE'
     done <<< "$tables"
     [[ "$any" -eq 1 ]] || echo 'NO_FILE19_TABLES_IDENTIFIED'
   else
