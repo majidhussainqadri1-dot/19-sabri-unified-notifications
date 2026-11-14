@@ -66,6 +66,7 @@ jobs:
           grep -Fq 'mktemp /tmp/file19-readonly-evidence-' tools/file19-readonly-live-freeze.sh
           grep -Fq -- '--skip-plugins --skip-themes' tools/file19-readonly-live-freeze.sh
           grep -Fq 'SHOW COLUMNS FROM' tools/file19-readonly-live-freeze.sh
+          grep -Fq 'SHOW INDEX FROM' tools/file19-readonly-live-freeze.sh
           grep -Fq 'MANIFEST.sha256' tools/file19-readonly-live-freeze.sh
       - name: Record exact-head source checksums (excluding self-reference)
         run: |
