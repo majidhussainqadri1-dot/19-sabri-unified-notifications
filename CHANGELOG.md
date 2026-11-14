@@ -1,3 +1,10 @@
+## 3.0.8 — 2026-11-14 — V12.3 source localization and URL safety candidate
+
+- Proven source-level defect: dynamic notification controls and explanations ignored translation dictionary; a Node regression reproduced the failure before the fix.
+- Dynamic UI and browser push strings now use WordPress-localized labels. Unsafe URL schemes and cross-origin links from malformed notification payloads are rejected.
+- File 19 fallback primary green now matches V12.3 #087A4E; File 25 continues to own the canonical token.
+- No DB schema bump: declared 3.0.2. No claim of deployed parity, staging acceptance or provider delivery. Frozen historical 3.0.7 artifact remains unchanged.
+
 # Changelog
 
 ## 3.0.7 — 2026-11-13 — Safe Mode and File 01 registry readiness hardening candidate
