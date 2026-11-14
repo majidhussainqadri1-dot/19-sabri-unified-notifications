@@ -18,6 +18,12 @@ No historical package bytes were silently reconstructed or claimed as recovered.
 - `SOURCE-CHECKSUMS.sha256` is regenerated from the exact candidate commit, excluding itself to prevent circular hashes. A passing matching commit workflow is required.
 - This is repository evidence only. It does not attest Hostinger deployed code, provider configuration, live database or migrations, staging acceptance, operational delivery, or live parity.
 
+## 2026-11-14 — 3.0.9 source-only File 20/PWA coexistence candidate
+
+- Source basis: File20 main at `8a4dbcaf4fef8e926b9b834ecfde16c21a0f00ca` registers its PWA service worker for default root scope; File19 inherited 3.0.8 registered Web Push with root scope. Root scope duplicate risk is conditional on the relevant feature activation and browser state.
+- Dedicated WordPress home_url-aware File19 push scope added. Inherited 3.0.8 ZIP SHA-256 remains `b2611522c0dcbc1d081dd83e4a051cabc06eaef5be7af675a0ee40865329dc41`. Source 3.0.9 package checksum to be computed via exact-head CI.
+- No unverified old service worker unregistration, no DB/schema bump, no production changes. Staging/browser migration evidence still mandatory.
+
 ## 2026-11-14 — 3.0.8 V12.3 source candidate (not deployed)
 
 - Scope: JavaScript localization, same-origin dynamic URLs, File 25 fallback green, and deterministic Node regression.
