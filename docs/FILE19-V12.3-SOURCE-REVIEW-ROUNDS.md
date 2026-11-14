@@ -32,6 +32,12 @@ Round 2 outcome: **no additional independently reproduced source root cause from
 - Regression on the inherited 3.0.8 source explicitly observed root scope in GitHub Actions run 43595055700 (both PHP jobs). Source candidate 3.0.9 scopes new File 19 Push registrations under /sabri-notifications-push/ via a WordPress-generated URL.
 - No old browser registrations are silently unregistered; multi-version upgrade, File20 PWA offline mode and actual push delivery must be tested on isolated staging, then Live only after approved release.
 
+## Additional source-level Push click negative test and correction
+
+- Synthetic GitHub CI 43595653540 initially reproduced that notificationclick forwarded javascript:alert(1) to clients.openWindow, before any allowlist.
+- Candidate 3.0.9 corrects this by requiring same-origin HTTP(S) and using a private notifications-center fallback; the new Node test checks malicious and safe routes plus WordPress subdirectories.
+- This is not a verified Live vulnerability; no browser/provider/staging acceptance or production action is claimed.
+
 ## Required later full two-pass acceptance
 
 - Full acceptance Review A on sanitized staging: 81 requirement ID journeys, owner/role matrix, accessibility, locale, delivery states, API contracts, 10k+ load. Every finding receives a reproducible defect, correction and regression.
