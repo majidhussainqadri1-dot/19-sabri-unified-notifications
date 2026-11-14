@@ -116,5 +116,7 @@ const sample = (overrides = {}) => ({
   for (const key of Object.keys(localized)) {
     check(new RegExp("'" + key + "'\\s*=>").test(php), 'PHP-to-JS i18n dictionary missing: ' + key);
   }
+  const css = fs.readFileSync(path.join(__dirname, '../19-unified-notifications/assets/css/notifications.css'), 'utf8');
+  check(/--sun-green:var\\(--sabri-color-primary,#087A4E\\)/.test(css), 'File 19 primary fallback must match V12.3 while leaving File 25 as owner');
   console.log('PASS: ' + count + ' V12.3 dynamic localization and safe-link assertions');
 })().catch((error) => { console.error(error); process.exitCode = 1; });
