@@ -18,6 +18,7 @@
 
 - File 20 source's PWA registers a root-scope worker by default; File 19 inherited root-scope push registration could compete with that owner in browsers where both features are enabled.
 - New File 19 source uses a dedicated push scope /sabri-notifications-push/ and WordPress home_url-aware script config. No changes to File 20 or its root PWA registration.
+- Click-time Push navigation now checks same-origin HTTP(S), rejecting malformed/non-web/off-site payloads and ambiguous backslashes; new negative Node regression was red before the fix.
 - Prior clients' existing root-scope worker registrations, staging provider/browser behavior and Live versions remain unverified. This is source-level compatibility work only.
 
 ## Historical 3.0.8 V12.3 source-only changes
