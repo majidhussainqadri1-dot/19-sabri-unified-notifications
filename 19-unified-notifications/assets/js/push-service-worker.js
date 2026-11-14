@@ -14,7 +14,10 @@ self.addEventListener('notificationclick', (event) => {
   const fallback = new URL('../notifications/', self.registration.scope).href;
   let target = fallback;
   try {
-    const candidate = new URL(event.notification.data?.url || fallback, self.location.origin);
+    const raw = String(event.notification.data?.url || fallback);
+    // Reject ambiguous backslash forms before URL normalisation can silently rewrite them.
+    if (raw.includes('\\\\')) throw new Error('ambiguous-push-url');
+    const candidate = new URL(raw, self.location.origin);
     if ((candidate.protocol === 'https:' || candidate.protocol === 'http:') &&
         candidate.origin === self.location.origin) target = candidate.href;
   } catch (_) { /* Keep the safe local fallback for malformed provider data. */ }
