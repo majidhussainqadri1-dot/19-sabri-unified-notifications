@@ -28,7 +28,7 @@ AI is optional and does not become domain authority. WhatsApp/RCS, FCM and APNs 
 == Changelog ==
 
 = 3.0.9 =
-V12.3 File20/File19 coexistence hardening: Web Push worker registration uses a File19-owned non-root scope from a WordPress home_url-aware config key, avoiding competing registration of File20's PWA root service worker. No DB schema change. Existing root registrations require a separate staging/browser migration audit; no live verification is claimed.
+V12.3 File20/File19 coexistence hardening: Web Push worker registration uses a File19-owned non-root scope from a WordPress home_url-aware config key, avoiding competing registration of File20's PWA root service worker. Click-time Push payload URLs are also restricted to same-origin HTTP(S), with a private notification-center fallback. No DB schema change. Existing root registrations require a separate staging/browser migration audit; no live verification is claimed.
 
 = 3.0.8 =
 V12.3 source-level localization hardening: dynamic notification controls and push feedback translated through WordPress, same-origin dynamic link validation, and Sabri Green fallback aligned with File 25. No database schema change. Source tests are not staging or Live acceptance.
