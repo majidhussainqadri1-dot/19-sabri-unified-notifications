@@ -2,7 +2,14 @@
 
 Canonical intelligent notification and attention infrastructure for the **Sabri Social Homeopathy Platform**.
 
-## Current 3.0.8 V12.3 source candidate — NOT LIVE
+## Current 3.0.9 V12.3 Web Push and File 20 PWA coexistence candidate — NOT LIVE
+
+- File 19's PushManager subscription now uses the isolated /sabri-notifications-push/ scope instead of the root '/' scope owned by File 20's PWA, with a WordPress home_url-aware scope from script configuration.
+- Node test simulates push registration, verifies scope, device registration, and localized feedback. It was introduced red against 3.0.8 root scope source before correction.
+- Browser registrations left over from earlier deployed versions must be inventoried on isolated staging; no silent unregister or live migration is attempted.
+- The historical reproducible 3.0.8 ZIP SHA-256 is b2611522c0dcbc1d081dd83e4a051cabc06eaef5be7af675a0ee40865329dc41. New source requires a separate 3.0.9 checksum and all S0–S11 release gates.
+
+## Historical 3.0.8 V12.3 source candidate — NOT LIVE
 
 - New source-side localization of dynamic notification labels, same-origin safe links and V12.3 primary-green fallback.
 - Browser-side regression covers localized controls and invalid/external links.
