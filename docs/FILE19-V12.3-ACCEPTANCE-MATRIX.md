@@ -2,7 +2,7 @@
 
 **Recorded:** 2026-11-14. **Repository:** `19-sabri-unified-notifications`.
 **Governing primary source:** Sabri Website Master Plan V12.3, File 19, pages 191–196, plus central CEN-REL-001 and V12.3 cross-cutting UX/QA/operations rules.
-**Baseline:** `main` at `66a4de6077e32c4c6cd692ae3d906afc4a5f3eb2`, runtime source 3.0.7, declared DB 3.0.2. A separate 3.0.8 source candidate is under review. Live/Hostinger artifact, active DB and migration are not verified.
+**Baseline:** `main` at `66a4de6077e32c4c6cd692ae3d906afc4a5f3eb2`, runtime source 3.0.7, declared DB 3.0.2. 3.0.8 source was merged via PR #27; a separate 3.0.9 Web Push scope candidate is under review. Both remain source-only, not deployed. Live/Hostinger artifact, active DB and migration are not verified.
 
 The existence of a source file, a code path, an identifier or a green unit test is NOT acceptance. Every row below is deliberately `PENDING-LIVE-AND-STAGING` until time-stamped, role-bound evidence exists. Do not auto-promote rows based on CI. V12.3 additional cross-cutting obligations (single bell, native owner truth, Safe Mode, no sensitive preview, RTL, WCAG, safe fallback, per-category effective settings, event provenance, rollback) are extra acceptance assertions, not extra invented F19 identifiers.
 
