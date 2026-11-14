@@ -8,7 +8,16 @@ self.addEventListener('push', (event) => {
 });
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
-  const target = new URL(event.notification.data?.url || '/notifications/', self.location.origin).href;
+  // Treat provider payload links as untrusted: a URI can be HTML-safe but still navigate off-site.
+  // The dedicated File 19 worker scope is nested under the WordPress home path, so ../notifications/
+  // preserves installations whose WordPress public URL is not at the host root.
+  const fallback = new URL('../notifications/', self.registration.scope).href;
+  let target = fallback;
+  try {
+    const candidate = new URL(event.notification.data?.url || fallback, self.location.origin);
+    if ((candidate.protocol === 'https:' || candidate.protocol === 'http:') &&
+        candidate.origin === self.location.origin) target = candidate.href;
+  } catch (_) { /* Keep the safe local fallback for malformed provider data. */ }
   event.waitUntil(clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windows) => {
     const existing = windows.find((client) => client.url === target);
     return existing ? existing.focus() : clients.openWindow(target);
