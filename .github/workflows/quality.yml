@@ -25,6 +25,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: V12.3 File 19 and File 20 isolated push worker scope
+        run: node tests/v123-push-scope.test.cjs
       - name: V12.3 dynamic localized UI and safe-link regressions
         run: node tests/v123-localization-ui.test.cjs
       - name: Deterministic baseline unit assertions
