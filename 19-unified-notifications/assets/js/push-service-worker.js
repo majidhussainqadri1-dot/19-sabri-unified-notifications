@@ -16,7 +16,7 @@ self.addEventListener('notificationclick', (event) => {
   try {
     const raw = String(event.notification.data?.url || fallback);
     // Reject ambiguous backslash forms before URL normalisation can silently rewrite them.
-    if (raw.includes('\\\\')) throw new Error('ambiguous-push-url');
+    if (raw.includes('\\')) throw new Error('ambiguous-push-url');
     const candidate = new URL(raw, self.location.origin);
     if ((candidate.protocol === 'https:' || candidate.protocol === 'http:') &&
         candidate.origin === self.location.origin) target = candidate.href;
