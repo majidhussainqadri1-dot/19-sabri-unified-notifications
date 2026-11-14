@@ -25,10 +25,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Temporary candidate archive SHA-256 capture for 3.0.9 freeze
-        run: |
-          bash tools/build-release.sh
-          sha256sum build/19-sabri-unified-notifications-3.0.9.zip
       - name: V12.3 dynamic localized UI and safe-link regressions
         run: node tests/v123-localization-ui.test.cjs
       - name: V12.3 weekly digest clock, quiet-hours and DST behavioral regressions
