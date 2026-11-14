@@ -2,7 +2,7 @@
 
 **Date:** 2026-11-14. **Scope:** GitHub source candidate branch only. Never interpret this as a production incident report.
 **Source baseline:** `main@66a4de6077e32c4c6cd692ae3d906afc4a5f3eb2`; frozen runtime 3.0.7, declared schema 3.0.2, successful GitHub quality run 43369054072.
-**New candidate:** 3.0.8 with schema declaration unchanged at 3.0.2. No Hostinger deployment or migration was performed.
+**Historical candidate:** 3.0.8 with schema declaration unchanged at 3.0.2. No Hostinger deployment or migration was performed.
 
 ## V12.3 findings and containment
 
@@ -16,6 +16,14 @@
 ## Historical source corrections (not new issues)
 
 Five 3.0.6 and two 3.0.7 source-level root causes had already been corrected on main. Their existence and CI fixes are not evidence of defects in installed production. None is marked Live Resolved.
+
+## 3.0.9 corrective source candidate — 2026-11-14, no Live diagnosis
+
+| Finding | Direct source evidence | Corrective status | Live status |
+|---|---|---|---|
+| F19-V123-SRC-005 Weekly digest Monday scheduling | `SUN_Preferences::digest_schedule()` previously used `modify('next monday')` even on Monday before 08:00; baseline GitHub Actions run 43609414867 failed **2/12** real PHP scheduling assertions on PHP 8.3 and 8.4 | Fixed in versioned 3.0.9 candidate; same-Monday calculation with direct PHP weekly/daily/quiet-hour/DST tests | **UNVERIFIED**; no deployed artifact/schema/cron/provider retest |
+
+Source schema declaration remains 3.0.2. Frozen 3.0.9 candidate archive SHA-256: `8bfde10b1e66f93b09468bd8cc12fe2afe41a8541a444f9813b3578a9ed753a8`, source acceptance only. Historical 3.0.8 package is immutable; this is **not** a claimed patch to an identified Live build. Repository CI success and actual deployment are separate realities.
 
 ## Operational blockers
 
